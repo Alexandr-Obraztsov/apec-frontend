@@ -1,7 +1,8 @@
-import React, { useRef } from 'react'
+import React, { useRef, memo, useCallback } from 'react'
 import styled from 'styled-components'
 import { Node } from '../types'
 import { useCircuitStore } from '../store/circuitStore'
+import { useDragNode } from '../hooks/useDragNode'
 
 interface NodeComponentProps {
 	node: Node
@@ -70,157 +71,108 @@ const NodeRing = styled.circle<NodeCircleProps>`
 	r: 12;
 `
 
-const NodeComponent: React.FC<NodeComponentProps> = ({
-	node,
-	isSelected,
-	isHovered,
-	isPlacementStart,
-	isHighlighted = false,
-}) => {
-	const selectNode = useCircuitStore(state => state.selectNode)
-	const updateNodePosition = useCircuitStore(state => state.updateNodePosition)
-	const placementMode = useCircuitStore(state => state.placementMode)
-	const setPlacementStartNode = useCircuitStore(
-		state => state.setPlacementStartNode
-	)
+const NodeComponent: React.FC<NodeComponentProps> = memo(
+	({
+		node,
+		isSelected,
+		isHovered,
+		isPlacementStart,
+		isHighlighted = false,
+	}) => {
+		const selectNode = useCircuitStore(state => state.selectNode)
+		const placementMode = useCircuitStore(state => state.placementMode)
+		const setPlacementStartNode = useCircuitStore(
+			state => state.setPlacementStartNode
+		)
 
-	const nodeRef = useRef<SVGCircleElement>(null)
-	const [isDragging, setIsDragging] = React.useState(false)
-	const [dragStartPosition, setDragStartPosition] = React.useState({
-		x: 0,
-		y: 0,
-	})
+		const nodeRef = useRef<SVGCircleElement>(null)
 
-	// Обработка клика по узлу
-	const handleClick = (e: React.MouseEvent) => {
-		e.stopPropagation()
+		// Используем хук для управления перетаскиванием
+		const { isDragging, handleMouseDown, handleMouseMove, handleMouseUp } =
+			useDragNode({
+				node,
+				isInPlacementMode: placementMode.active,
+			})
 
-		// Если в режиме размещения и первый узел не выбран
-		if (placementMode.active && !placementMode.startNodeId) {
-			setPlacementStartNode(node.id)
-			return
-		}
+		// Обработка клика по узлу - мемоизируем функцию
+		const handleClick = useCallback(
+			(e: React.MouseEvent) => {
+				e.stopPropagation()
 
-		// Если в режиме размещения и первый узел выбран - завершаем размещение
-		if (
-			placementMode.active &&
-			placementMode.startNodeId &&
-			placementMode.startNodeId !== node.id
-		) {
-			// Получаем функцию placeElement из store напрямую
-			useCircuitStore.getState().placeElement(node.id)
-			return
-		}
+				// Если в режиме размещения и первый узел не выбран
+				if (placementMode.active && !placementMode.startNodeId) {
+					setPlacementStartNode(node.id)
+					return
+				}
 
-		// В обычном режиме просто выбираем узел
-		selectNode(node.id)
-	}
+				// Если в режиме размещения и первый узел выбран - завершаем размещение
+				if (
+					placementMode.active &&
+					placementMode.startNodeId &&
+					placementMode.startNodeId !== node.id
+				) {
+					// Получаем функцию placeElement из store напрямую
+					useCircuitStore.getState().placeElement(node.id)
+					return
+				}
 
-	// Начало перетаскивания
-	const handleMouseDown = (e: React.MouseEvent) => {
-		// Только левая кнопка мыши
-		if (e.button !== 0 || placementMode.active) return
+				// В обычном режиме просто выбираем узел
+				selectNode(node.id)
+			},
+			[
+				node.id,
+				placementMode.active,
+				placementMode.startNodeId,
+				selectNode,
+				setPlacementStartNode,
+			]
+		)
 
-		e.stopPropagation()
-		setIsDragging(true)
-		setDragStartPosition({ x: e.clientX, y: e.clientY })
-	}
-
-	// Перемещение при перетаскивании
-	const handleMouseMove = (e: React.MouseEvent) => {
-		if (!isDragging) return
-
-		const dx = e.clientX - dragStartPosition.x
-		const dy = e.clientY - dragStartPosition.y
-
-		updateNodePosition(node.id, {
-			x: node.position.x + dx,
-			y: node.position.y + dy,
-		})
-
-		setDragStartPosition({ x: e.clientX, y: e.clientY })
-	}
-
-	// Завершение перетаскивания
-	const handleMouseUp = () => {
-		if (isDragging) {
-			setIsDragging(false)
-		}
-	}
-
-	// Глобальные обработчики
-	React.useEffect(() => {
-		if (isDragging) {
-			document.addEventListener('mousemove', handleMouseMoveGlobal)
-			document.addEventListener('mouseup', handleMouseUp)
-		}
-
-		return () => {
-			document.removeEventListener('mousemove', handleMouseMoveGlobal)
-			document.removeEventListener('mouseup', handleMouseUp)
-		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [isDragging])
-
-	// Глобальная версия handleMouseMove
-	const handleMouseMoveGlobal = (e: MouseEvent) => {
-		if (!isDragging) return
-
-		const dx = e.clientX - dragStartPosition.x
-		const dy = e.clientY - dragStartPosition.y
-
-		updateNodePosition(node.id, {
-			x: node.position.x + dx,
-			y: node.position.y + dy,
-		})
-
-		setDragStartPosition({ x: e.clientX, y: e.clientY })
-	}
-
-	return (
-		<g
-			style={{
-				cursor: isDragging ? 'grabbing' : 'grab',
-				pointerEvents: 'all',
-			}}
-		>
-			{(isSelected || isPlacementStart || isHighlighted) && (
-				<NodeRing
+		return (
+			<g
+				style={{
+					cursor: isDragging ? 'grabbing' : 'grab',
+					pointerEvents: 'all',
+				}}
+			>
+				{(isSelected || isPlacementStart || isHighlighted) && (
+					<NodeRing
+						cx={node.position.x}
+						cy={node.position.y}
+						$isSelected={isSelected}
+						$isHovered={isHovered}
+						$isPlacementStart={isPlacementStart}
+						$isHighlighted={isHighlighted}
+					/>
+				)}
+				<NodeCircle
+					ref={nodeRef}
 					cx={node.position.x}
 					cy={node.position.y}
 					$isSelected={isSelected}
 					$isHovered={isHovered}
 					$isPlacementStart={isPlacementStart}
 					$isHighlighted={isHighlighted}
+					onClick={handleClick}
+					onMouseDown={handleMouseDown}
+					onMouseMove={handleMouseMove}
+					onMouseUp={handleMouseUp}
 				/>
-			)}
-			<NodeCircle
-				ref={nodeRef}
-				cx={node.position.x}
-				cy={node.position.y}
-				$isSelected={isSelected}
-				$isHovered={isHovered}
-				$isPlacementStart={isPlacementStart}
-				$isHighlighted={isHighlighted}
-				onClick={handleClick}
-				onMouseDown={handleMouseDown}
-				onMouseMove={handleMouseMove}
-				onMouseUp={handleMouseUp}
-			/>
 
-			{/* Отображение имени узла */}
-			<text
-				x={node.position.x}
-				y={node.position.y - 15}
-				textAnchor='middle'
-				fill={isHighlighted ? 'var(--accent-color)' : 'var(--text-primary)'}
-				fontSize='12'
-				fontWeight={isHighlighted ? '600' : '500'}
-			>
-				{node.name}
-			</text>
-		</g>
-	)
-}
+				{/* Отображение имени узла */}
+				<text
+					x={node.position.x}
+					y={node.position.y - 15}
+					textAnchor='middle'
+					fill={isHighlighted ? 'var(--accent-color)' : 'var(--text-primary)'}
+					fontSize='12'
+					fontWeight={isHighlighted ? '600' : '500'}
+				>
+					{node.name}
+				</text>
+			</g>
+		)
+	}
+)
 
 export default NodeComponent

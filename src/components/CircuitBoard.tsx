@@ -1,9 +1,14 @@
-import React, { useRef, useState, useEffect } from 'react'
+import React, { useRef, useState, useEffect, useMemo, useCallback } from 'react'
 import styled from 'styled-components'
 import { useCircuitStore } from '../store/circuitStore'
-import CircuitElement from './CircuitElement'
 import { Position } from '../types'
-import NodeComponent from './NodeComponent'
+import {
+	NodesRenderer,
+	ElementsRenderer,
+	TempNode,
+	WireSnapPoint,
+	PlacementLineComponent,
+} from './BoardElements'
 
 const BoardContainer = styled.div`
 	flex: 1;
@@ -70,27 +75,31 @@ const Tooltip = styled.div`
 `
 
 const CircuitBoard: React.FC = () => {
-	const elements = useCircuitStore(state => state.elements)
+	// Separate the store selectors to minimize re-renders
 	const nodes = useCircuitStore(state => state.nodes)
+	const elements = useCircuitStore(state => state.elements)
 	const selectedNodeId = useCircuitStore(state => state.selectedNodeId)
 	const selectedElementId = useCircuitStore(state => state.selectedElementId)
+	const placementMode = useCircuitStore(state => state.placementMode)
+	const highlightedNodeId = useCircuitStore(state => state.highlightedNodeId)
 	const highlightedElementId = useCircuitStore(
 		state => state.highlightedElementId
 	)
-	const highlightedNodeId = useCircuitStore(state => state.highlightedNodeId)
+
+	// Use individual action functions instead of destructuring them all
+	const addNode = useCircuitStore(state => state.addNode)
+	const findNodeAtPosition = useCircuitStore(state => state.findNodeAtPosition)
+	const findClosestWire = useCircuitStore(state => state.findClosestWire)
+	const addNodeOnWire = useCircuitStore(state => state.addNodeOnWire)
+	const getNodeById = useCircuitStore(state => state.getNodeById)
 	const selectElement = useCircuitStore(state => state.selectElement)
 	const selectNode = useCircuitStore(state => state.selectNode)
 	const removeElement = useCircuitStore(state => state.removeElement)
-	const placementMode = useCircuitStore(state => state.placementMode)
 	const cancelPlacement = useCircuitStore(state => state.cancelPlacement)
 	const setPlacementStartNode = useCircuitStore(
 		state => state.setPlacementStartNode
 	)
 	const placeElement = useCircuitStore(state => state.placeElement)
-	const addNode = useCircuitStore(state => state.addNode)
-	const addNodeOnWire = useCircuitStore(state => state.addNodeOnWire)
-	const findNodeAtPosition = useCircuitStore(state => state.findNodeAtPosition)
-	const findClosestWire = useCircuitStore(state => state.findClosestWire)
 
 	const boardRef = useRef<HTMLDivElement>(null)
 	const [hoverNodeId, setHoverNodeId] = useState<string | null>(null)
@@ -100,8 +109,8 @@ const CircuitBoard: React.FC = () => {
 	const [wireSnapPoint, setWireSnapPoint] = useState<Position | null>(null)
 	const [hoveredWireId, setHoveredWireId] = useState<string | null>(null)
 
-	// Получить координаты относительно доски
-	const getBoardCoordinates = (e: React.MouseEvent): Position => {
+	// Получить координаты относительно доски - мемоизируем функцию
+	const getBoardCoordinates = useCallback((e: React.MouseEvent): Position => {
 		if (!boardRef.current) {
 			return { x: 0, y: 0 }
 		}
@@ -111,152 +120,197 @@ const CircuitBoard: React.FC = () => {
 			x: e.clientX - rect.left,
 			y: e.clientY - rect.top,
 		}
-	}
+	}, [])
 
-	// Обработчик клика по доске
-	const handleBoardClick = (e: React.MouseEvent) => {
-		// Отменяем всплытие события, чтобы не вызывать обработчики узлов
-		e.stopPropagation()
+	// Обработчик клика по доске - мемоизируем функцию
+	const handleBoardClick = useCallback(
+		(e: React.MouseEvent) => {
+			// Отменяем всплытие события, чтобы не вызывать обработчики узлов
+			e.stopPropagation()
 
-		const position = getBoardCoordinates(e)
+			const position = getBoardCoordinates(e)
 
-		// Если не в режиме размещения, проверяем клик по проводу
-		if (!placementMode.active) {
-			// Проверяем, есть ли рядом провод для выделения
-			const nearWire = findClosestWire(position, 10)
-			if (nearWire && nearWire.wire) {
-				// Если провод найден, выделяем его
-				selectElement(nearWire.wire.id)
+			// Если не в режиме размещения, проверяем клик по проводу
+			if (!placementMode.active) {
+				// Проверяем, есть ли рядом провод для выделения
+				const nearWire = findClosestWire(position, 10)
+				if (nearWire && nearWire.wire) {
+					// Если провод найден, выделяем его
+					selectElement(nearWire.wire.id)
+					return
+				}
+
+				// Если провода нет, снимаем выделение
+				selectElement(null)
+				selectNode(null)
 				return
 			}
 
-			// Если провода нет, снимаем выделение
-			selectElement(null)
-			selectNode(null)
-			return
-		}
+			// Ищем узел рядом с кликом (имеет приоритет)
+			const existingNode = findNodeAtPosition(position)
 
-		// Ищем узел рядом с кликом (имеет приоритет)
-		const existingNode = findNodeAtPosition(position)
-
-		// Если мы в режиме размещения и нашли узел
-		if (existingNode) {
-			if (!placementMode.startNodeId) {
-				// Если это первый клик, устанавливаем найденный узел как начальный
-				setPlacementStartNode(existingNode.id)
-			} else {
-				// Если это второй клик, завершаем размещение с найденным узлом
-				placeElement(existingNode.id)
-			}
-			return
-		}
-
-		// Проверяем, есть ли точка магнитного притяжения к проводу
-		if (wireSnapPoint && hoveredWireId) {
-			// Создаем узел в точке пересечения с проводом и разбиваем провод на два
-			const newNodeId = addNodeOnWire(wireSnapPoint, hoveredWireId)
-
-			if (!placementMode.startNodeId) {
-				// Если это первый клик, устанавливаем созданный узел как начальный
-				setPlacementStartNode(newNodeId)
-			} else {
-				// Если это второй клик, завершаем размещение
-				placeElement(newNodeId)
-			}
-			return
-		}
-
-		// Если это первый клик и узла рядом нет, создаем новый узел
-		if (!placementMode.startNodeId) {
-			const newNodeId = addNode(position)
-			setPlacementStartNode(newNodeId)
-			return
-		}
-
-		// Если это второй клик и узла рядом нет, создаем новый узел и завершаем размещение
-		const endNodeId = addNode(position)
-		placeElement(endNodeId)
-	}
-
-	// Отслеживаем перемещение мыши для отображения предпросмотра
-	const handleMouseMove = (e: React.MouseEvent) => {
-		const position = getBoardCoordinates(e)
-
-		// Сначала проверяем ближайший узел
-		const nearbyNode = findNodeAtPosition(position)
-
-		// Если в режиме размещения
-		if (placementMode.active) {
-			if (nearbyNode) {
-				// Если узел найден, приоритезируем его
-				setTempNodePosition(null)
-				setHoverNodeId(nearbyNode.id)
-				setWireSnapPoint(null)
-				setHoveredWireId(null)
-			} else {
-				// Если узел не найден, проверяем магнитное притяжение к проводам
-				const closestWire = findClosestWire(position)
-
-				if (closestWire && closestWire.wire) {
-					setWireSnapPoint(closestWire.point)
-					setHoveredWireId(closestWire.wire.id)
-					setHoverNodeId(null)
-					setTempNodePosition(null)
+			// Если мы в режиме размещения и нашли узел
+			if (existingNode) {
+				if (!placementMode.startNodeId) {
+					// Если это первый клик, устанавливаем найденный узел как начальный
+					setPlacementStartNode(existingNode.id)
 				} else {
-					// Ни узла, ни провода рядом нет - показываем временный узел
+					// Если это второй клик, завершаем размещение с найденным узлом
+					placeElement(existingNode.id)
+				}
+				return
+			}
+
+			// Проверяем, есть ли точка магнитного притяжения к проводу
+			if (wireSnapPoint && hoveredWireId) {
+				// Создаем узел в точке пересечения с проводом и разбиваем провод на два
+				const newNodeId = addNodeOnWire(wireSnapPoint, hoveredWireId)
+
+				if (!placementMode.startNodeId) {
+					// Если это первый клик, устанавливаем созданный узел как начальный
+					setPlacementStartNode(newNodeId)
+				} else {
+					// Если это второй клик, завершаем размещение
+					placeElement(newNodeId)
+				}
+				return
+			}
+
+			// Если это первый клик и узла рядом нет, создаем новый узел
+			if (!placementMode.startNodeId) {
+				const newNodeId = addNode(position)
+				setPlacementStartNode(newNodeId)
+				return
+			}
+
+			// Если это второй клик и узла рядом нет, создаем новый узел и завершаем размещение
+			const endNodeId = addNode(position)
+			placeElement(endNodeId)
+		},
+		[
+			placementMode.active,
+			placementMode.startNodeId,
+			findNodeAtPosition,
+			findClosestWire,
+			wireSnapPoint,
+			hoveredWireId,
+			addNodeOnWire,
+			setPlacementStartNode,
+			addNode,
+			placeElement,
+			selectElement,
+			selectNode,
+			getBoardCoordinates,
+		]
+	)
+
+	// Отслеживаем перемещение мыши - мемоизируем функцию
+	const handleMouseMove = useCallback(
+		(e: React.MouseEvent) => {
+			const position = getBoardCoordinates(e)
+
+			// Сначала проверяем ближайший узел
+			const nearbyNode = findNodeAtPosition(position)
+
+			// Если в режиме размещения
+			if (placementMode.active) {
+				if (nearbyNode) {
+					// Если узел найден, приоритезируем его
+					setTempNodePosition(null)
+					setHoverNodeId(nearbyNode.id)
 					setWireSnapPoint(null)
 					setHoveredWireId(null)
-					setHoverNodeId(null)
-					setTempNodePosition(position)
+				} else {
+					// Если узел не найден, проверяем магнитное притяжение к проводам
+					const closestWire = findClosestWire(position)
+
+					if (closestWire && closestWire.wire) {
+						setWireSnapPoint(closestWire.point)
+						setHoveredWireId(closestWire.wire.id)
+						setHoverNodeId(null)
+						setTempNodePosition(null)
+					} else {
+						// Ни узла, ни провода рядом нет - показываем временный узел
+						setWireSnapPoint(null)
+						setHoveredWireId(null)
+						setHoverNodeId(null)
+						setTempNodePosition(position)
+					}
 				}
-			}
 
-			// Если в режиме размещения с выбранным начальным узлом
-			if (placementMode.startNodeId) {
-				// Логика уже обработана выше
-			}
-		} else {
-			// Если не в режиме размещения
-			// Проверяем наведение на провод для выделения
-			const closestWire = findClosestWire(position, 10)
-
-			if (closestWire && closestWire.wire) {
-				setHoveredWireId(closestWire.wire.id)
+				// Если в режиме размещения с выбранным начальным узлом
+				if (placementMode.startNodeId) {
+					// Логика уже обработана выше
+				}
 			} else {
+				// Если не в режиме размещения
+				// Проверяем наведение на провод для выделения
+				const closestWire = findClosestWire(position, 10)
+
+				if (closestWire && closestWire.wire) {
+					setHoveredWireId(closestWire.wire.id)
+				} else {
+					setHoveredWireId(null)
+				}
+
+				// В обычном режиме не показываем temporary node
+				setHoverNodeId(null)
+				setTempNodePosition(null)
+				setWireSnapPoint(null)
+			}
+		},
+		[
+			placementMode.active,
+			findNodeAtPosition,
+			findClosestWire,
+			getBoardCoordinates,
+		]
+	)
+
+	// Отмена размещения по клику правой кнопкой мыши - мемоизируем функцию
+	const handleRightClick = useCallback(
+		(e: React.MouseEvent) => {
+			e.preventDefault()
+			if (placementMode.active) {
+				cancelPlacement()
+				setHoverNodeId(null)
+				setTempNodePosition(null)
+				setWireSnapPoint(null)
 				setHoveredWireId(null)
 			}
-
-			// В обычном режиме не показываем temporary node
-			setHoverNodeId(null)
-			setTempNodePosition(null)
-			setWireSnapPoint(null)
-		}
-	}
-
-	// Отмена размещения по клику правой кнопкой мыши
-	const handleRightClick = (e: React.MouseEvent) => {
-		e.preventDefault()
-		if (placementMode.active) {
-			cancelPlacement()
-			setHoverNodeId(null)
-			setTempNodePosition(null)
-			setWireSnapPoint(null)
-			setHoveredWireId(null)
-		}
-	}
+		},
+		[placementMode.active, cancelPlacement]
+	)
 
 	// Получаем стартовый узел, если он существует
-	const startNode = placementMode.startNodeId
-		? nodes.find(node => node.id === placementMode.startNodeId)
-		: null
+	const startNode = useMemo(
+		() =>
+			placementMode.startNodeId
+				? nodes.find(node => node.id === placementMode.startNodeId)
+				: null,
+		[nodes, placementMode.startNodeId]
+	)
 
 	// Получаем конечный узел для отображения предпросмотра
-	const previewEndNode = hoverNodeId
-		? nodes.find(node => node.id === hoverNodeId)
-		: null
+	const previewEndNode = useMemo(
+		() => (hoverNodeId ? nodes.find(node => node.id === hoverNodeId) : null),
+		[nodes, hoverNodeId]
+	)
+
+	// Вычисляем позицию конечной точки для линии предпросмотра
+	const previewEndPosition = useMemo(() => {
+		if (previewEndNode) {
+			return previewEndNode.position
+		} else if (wireSnapPoint) {
+			return wireSnapPoint
+		} else if (tempNodePosition) {
+			return tempNodePosition
+		}
+		return null
+	}, [previewEndNode, wireSnapPoint, tempNodePosition])
 
 	// Текст статуса
-	const getStatusText = () => {
+	const statusText = useMemo(() => {
 		if (placementMode.active) {
 			if (placementMode.startNodeId) {
 				return 'Кликните для размещения конца элемента. Наведите курсор на узел или провод для соединения.'
@@ -266,7 +320,7 @@ const CircuitBoard: React.FC = () => {
 		} else {
 			return 'Используйте панель элементов слева для размещения компонентов. Del/Backspace для удаления выбранных элементов.'
 		}
-	}
+	}, [placementMode.active, placementMode.startNodeId])
 
 	// Обработка нажатий клавиш Delete и Backspace для удаления выбранных элементов
 	useEffect(() => {
@@ -287,38 +341,14 @@ const CircuitBoard: React.FC = () => {
 		}
 	}, [selectedElementId, removeElement])
 
-	// Рендерим узлы
-	const renderNodes = () => {
-		return nodes.map(node => {
-			const isSelected = selectedNodeId === node.id
-			const isHovered = hoverNodeId === node.id
-			const isPlacementStart =
-				placementMode.active && placementMode.startNodeId === node.id
-			const isHighlighted = highlightedNodeId === node.id
-
-			return (
-				<NodeComponent
-					key={node.id}
-					node={node}
-					isSelected={isSelected}
-					isHovered={isHovered}
-					isPlacementStart={isPlacementStart}
-					isHighlighted={isHighlighted}
-				/>
-			)
-		})
-	}
-
-	// Рендерим элементы схемы
-	const renderElements = () => {
-		return elements.map(element => (
-			<CircuitElement
-				key={element.id}
-				element={element}
-				isHighlighted={element.id === highlightedElementId}
-			/>
-		))
-	}
+	// Курсор в зависимости от режима
+	const cursor = useMemo(() => {
+		return placementMode.active
+			? placementMode.startNodeId
+				? 'crosshair'
+				: 'cell'
+			: 'default'
+	}, [placementMode.active, placementMode.startNodeId])
 
 	return (
 		<>
@@ -327,94 +357,36 @@ const CircuitBoard: React.FC = () => {
 				onClick={handleBoardClick}
 				onMouseMove={handleMouseMove}
 				onContextMenu={handleRightClick}
-				style={{
-					cursor: placementMode.active
-						? placementMode.startNodeId
-							? 'crosshair'
-							: 'cell'
-						: 'default',
-				}}
+				style={{ cursor }}
 			>
 				<SVGCanvas>
-					{/* Существующие элементы */}
-					{renderElements()}
+					{/* Используем мемоизированные компоненты */}
+					<ElementsRenderer
+						elements={elements}
+						highlightedElementId={highlightedElementId}
+					/>
 
-					{/* Отображение узлов */}
-					{renderNodes()}
+					<NodesRenderer
+						nodes={nodes}
+						selectedNodeId={selectedNodeId}
+						hoverNodeId={hoverNodeId}
+						placementStartNodeId={placementMode.startNodeId}
+						highlightedNodeId={highlightedNodeId}
+					/>
 
 					{/* Временный узел при размещении */}
-					{tempNodePosition && (
-						<>
-							<circle
-								cx={tempNodePosition.x}
-								cy={tempNodePosition.y}
-								r={6}
-								fill='var(--primary-light)'
-								stroke='var(--primary-color)'
-								strokeWidth={2}
-								opacity={0.9}
-							/>
-							<circle
-								cx={tempNodePosition.x}
-								cy={tempNodePosition.y}
-								r={10}
-								fill='none'
-								stroke='var(--primary-color)'
-								strokeWidth={1}
-								opacity={0.5}
-								strokeDasharray='2 2'
-							/>
-						</>
-					)}
+					<TempNode position={tempNodePosition} />
 
 					{/* Точка притяжения к проводу */}
-					{wireSnapPoint && (
-						<>
-							<circle
-								cx={wireSnapPoint.x}
-								cy={wireSnapPoint.y}
-								r={6}
-								fill='var(--accent-light)'
-								stroke='var(--accent-color)'
-								strokeWidth={2}
-								opacity={0.9}
-							/>
-							<circle
-								cx={wireSnapPoint.x}
-								cy={wireSnapPoint.y}
-								r={12}
-								fill='none'
-								stroke='var(--accent-color)'
-								strokeWidth={1}
-								opacity={0.6}
-								strokeDasharray='3 3'
-							/>
-						</>
-					)}
+					<WireSnapPoint position={wireSnapPoint} />
 
 					{/* Линия предпросмотра при размещении */}
-					{placementMode.active &&
-						startNode &&
-						(previewEndNode || tempNodePosition || wireSnapPoint) && (
-							<PlacementLine
-								x1={startNode.position.x}
-								y1={startNode.position.y}
-								x2={
-									previewEndNode
-										? previewEndNode.position.x
-										: wireSnapPoint
-										? wireSnapPoint.x
-										: tempNodePosition?.x || 0
-								}
-								y2={
-									previewEndNode
-										? previewEndNode.position.y
-										: wireSnapPoint
-										? wireSnapPoint.y
-										: tempNodePosition?.y || 0
-								}
-							/>
-						)}
+					{placementMode.active && (
+						<PlacementLineComponent
+							startNode={startNode}
+							endPosition={previewEndPosition}
+						/>
+					)}
 				</SVGCanvas>
 
 				{placementMode.active && (
@@ -425,7 +397,7 @@ const CircuitBoard: React.FC = () => {
 					</Tooltip>
 				)}
 			</BoardContainer>
-			<StatusBar>{getStatusText()}</StatusBar>
+			<StatusBar>{statusText}</StatusBar>
 		</>
 	)
 }

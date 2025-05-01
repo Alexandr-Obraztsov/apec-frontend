@@ -1,7 +1,9 @@
+import { memo } from 'react'
 import styled from 'styled-components'
 import CircuitBoard from './components/CircuitBoard'
 import Toolbox from './components/Toolbox'
 import PropertiesPanel from './components/PropertiesPanel'
+import ConnectionsPanel from './components/ConnectionsPanel'
 
 const AppContainer = styled.div`
 	display: flex;
@@ -50,6 +52,11 @@ const MainContent = styled.main`
 	overflow: hidden;
 `
 
+// Мемоизированные компоненты
+const MemoizedToolbox = memo(Toolbox)
+const MemoizedPropertiesPanel = memo(PropertiesPanel)
+const MemoizedConnectionsPanel = memo(ConnectionsPanel)
+
 function App() {
 	return (
 		<AppContainer>
@@ -82,8 +89,9 @@ function App() {
 			</Navbar>
 			<MainContent>
 				<CircuitBoard />
-				<Toolbox />
-				<PropertiesPanel />
+				<MemoizedToolbox />
+				<MemoizedPropertiesPanel />
+				<MemoizedConnectionsPanel />
 			</MainContent>
 		</AppContainer>
 	)
