@@ -65,4 +65,4 @@ export const ELEMENT_NAME_PREFIXES: Record<ElementType, string> = {
 }
 
 // Префикс для имен узлов
-export const NODE_NAME_PREFIX = 'N'
+export const NODE_NAME_PREFIX = ''

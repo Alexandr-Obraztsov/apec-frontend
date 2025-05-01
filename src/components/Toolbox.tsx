@@ -52,13 +52,13 @@ const ToolGrid = styled.div`
 	gap: 10px;
 `
 
-const ToolItem = styled.div<{ isActive: boolean }>`
+const ToolItem = styled.div<{ $isActive: boolean }>`
 	padding: 14px 10px;
 	background-color: ${props =>
-		props.isActive ? 'var(--primary-light)' : 'var(--surface-color)'};
+		props.$isActive ? 'var(--primary-light)' : 'var(--surface-color)'};
 	border: 1px solid
 		${props =>
-			props.isActive ? 'var(--primary-color)' : 'var(--border-color)'};
+			props.$isActive ? 'var(--primary-color)' : 'var(--border-color)'};
 	border-radius: var(--radius-sm);
 	cursor: pointer;
 	user-select: none;
@@ -68,15 +68,15 @@ const ToolItem = styled.div<{ isActive: boolean }>`
 	align-items: center;
 	justify-content: center;
 	color: ${props =>
-		props.isActive ? 'var(--primary-color)' : 'var(--text-primary)'};
+		props.$isActive ? 'var(--primary-color)' : 'var(--text-primary)'};
 	box-shadow: ${props =>
-		props.isActive ? '0 0 0 1px var(--primary-color)' : 'none'};
+		props.$isActive ? '0 0 0 1px var(--primary-color)' : 'none'};
 
 	&:hover {
 		background-color: ${props =>
-			props.isActive ? 'var(--primary-light)' : 'var(--bg-color)'};
+			props.$isActive ? 'var(--primary-light)' : 'var(--bg-color)'};
 		border-color: ${props =>
-			props.isActive ? 'var(--primary-color)' : 'var(--primary-light)'};
+			props.$isActive ? 'var(--primary-color)' : 'var(--primary-light)'};
 	}
 `
 
@@ -222,7 +222,7 @@ const ToolboxItem: React.FC<ToolItemProps> = ({
 	onClick,
 }) => {
 	return (
-		<ToolItem isActive={isActive} onClick={() => onClick(type)}>
+		<ToolItem $isActive={isActive} onClick={() => onClick(type)}>
 			<IconWrapper>{ELEMENT_ICONS[type]}</IconWrapper>
 			<Label>{label}</Label>
 		</ToolItem>

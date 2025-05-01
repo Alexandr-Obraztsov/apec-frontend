@@ -2,7 +2,6 @@ import styled from 'styled-components'
 import CircuitBoard from './components/CircuitBoard'
 import Toolbox from './components/Toolbox'
 import PropertiesPanel from './components/PropertiesPanel'
-import ConnectionsPanel from './components/ConnectionsPanel'
 
 const AppContainer = styled.div`
 	display: flex;
@@ -85,7 +84,6 @@ function App() {
 				<CircuitBoard />
 				<Toolbox />
 				<PropertiesPanel />
-				<ConnectionsPanel />
 			</MainContent>
 		</AppContainer>
 	)

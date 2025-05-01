@@ -1,6 +1,7 @@
 import React from 'react'
 import styled from 'styled-components'
 import { InductorElement, Node } from '../../types'
+import CircuitValue from '../CircuitValue'
 
 interface InductorProps {
 	element: InductorElement
@@ -22,22 +23,6 @@ const InductorPath = styled.path<{ selected: boolean }>`
 		selected ? 'var(--primary-color)' : 'var(--text-primary)'};
 	fill: none;
 	stroke-width: 2px;
-`
-
-const ValueText = styled.text`
-	font-family: var(--font-family);
-	font-size: 14px;
-	fill: var(--text-primary);
-	text-anchor: middle;
-	font-weight: 600;
-`
-
-const ValueBackground = styled.rect`
-	fill: white;
-	stroke: var(--border-color);
-	stroke-width: 1px;
-	rx: 4px;
-	opacity: 0.85;
 `
 
 const Inductor: React.FC<InductorProps> = ({
@@ -118,12 +103,7 @@ const Inductor: React.FC<InductorProps> = ({
 			/>
 
 			{/* Значение текстом с фоном */}
-			<g transform={`rotate(-${angle})`}>
-				<ValueBackground x='-30' y='10' width='60' height='20' />
-				<ValueText x='0' y='25'>
-					{valueText}
-				</ValueText>
-			</g>
+			<CircuitValue value={valueText} angle={angle} yOffset={10} />
 		</InductorContainer>
 	)
 }

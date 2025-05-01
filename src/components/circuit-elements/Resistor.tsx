@@ -1,6 +1,7 @@
 import React from 'react'
 import styled from 'styled-components'
 import { ResistorElement, Node } from '../../types'
+import CircuitValue from '../CircuitValue'
 
 interface ResistorProps {
 	element: ResistorElement
@@ -15,22 +16,6 @@ const ResistorContainer = styled.g<{ selected: boolean }>`
 	stroke-width: 2px;
 	fill: none;
 	transition: var(--transition);
-`
-
-const ValueText = styled.text`
-	font-family: var(--font-family);
-	font-size: 14px;
-	fill: var(--text-primary);
-	text-anchor: middle;
-	font-weight: 400;
-`
-
-const ValueBackground = styled.rect`
-	fill: white;
-	stroke: var(--border-color);
-	stroke-width: 1px;
-	rx: 4px;
-	opacity: 0.85;
 `
 
 const Resistor: React.FC<ResistorProps> = ({
@@ -100,12 +85,7 @@ const Resistor: React.FC<ResistorProps> = ({
 			/>
 
 			{/* Значение текстом с фоном */}
-			<g transform={`rotate(-${angle})`}>
-				<ValueBackground x='-30' y='15' width='60' height='20' />
-				<ValueText x='0' y='30'>
-					{valueText}
-				</ValueText>
-			</g>
+			<CircuitValue value={valueText} angle={angle} yOffset={15} />
 		</ResistorContainer>
 	)
 }

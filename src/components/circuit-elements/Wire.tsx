@@ -10,15 +10,15 @@ interface WireProps {
 	isHighlighted?: boolean
 }
 
-const StyledWire = styled.line<{ selected: boolean; isHighlighted?: boolean }>`
-	stroke: ${({ selected, isHighlighted }) =>
+const StyledWire = styled.line<{ selected: boolean; $isHighlighted?: boolean }>`
+	stroke: ${({ selected, $isHighlighted }) =>
 		selected
 			? 'var(--primary-color)'
-			: isHighlighted
+			: $isHighlighted
 			? 'var(--accent-color)'
 			: 'var(--text-primary)'};
-	stroke-width: ${({ selected, isHighlighted }) =>
-		selected ? '3px' : isHighlighted ? '3px' : '2px'};
+	stroke-width: ${({ selected, $isHighlighted }) =>
+		selected ? '3px' : $isHighlighted ? '3px' : '2px'};
 	transition: var(--transition);
 	stroke-linecap: round;
 `
@@ -37,7 +37,7 @@ const Wire: React.FC<WireProps> = ({
 				x2={endNode.position.x}
 				y2={endNode.position.y}
 				selected={selected}
-				isHighlighted={isHighlighted}
+				$isHighlighted={isHighlighted}
 			/>
 			{selected && (
 				<circle

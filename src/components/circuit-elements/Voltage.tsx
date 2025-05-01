@@ -1,6 +1,7 @@
 import React from 'react'
 import styled from 'styled-components'
 import { VoltageElement, Node } from '../../types'
+import CircuitValue from '../CircuitValue'
 
 interface VoltageProps {
 	element: VoltageElement
@@ -24,22 +25,6 @@ const VoltageCircle = styled.circle`
 const Arrow = styled.polygon`
 	fill: var(--text-primary);
 	stroke: none;
-`
-
-const ValueText = styled.text`
-	font-family: var(--font-family);
-	font-size: 14px;
-	fill: var(--text-primary);
-	text-anchor: middle;
-	font-weight: 600;
-`
-
-const ValueBackground = styled.rect`
-	fill: white;
-	stroke: var(--border-color);
-	stroke-width: 1px;
-	rx: 4px;
-	opacity: 0.85;
 `
 
 const Voltage: React.FC<VoltageProps> = ({
@@ -115,12 +100,7 @@ const Voltage: React.FC<VoltageProps> = ({
 			/>
 
 			{/* Значение текстом с фоном */}
-			<g transform={`rotate(-${angle})`}>
-				<ValueBackground x='-20' y='20' width='40' height='20' />
-				<ValueText x='0' y='35'>
-					{valueText}
-				</ValueText>
-			</g>
+			<CircuitValue value={valueText} angle={angle} yOffset={20} width={40} />
 		</VoltageContainer>
 	)
 }

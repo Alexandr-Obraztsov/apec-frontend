@@ -12,40 +12,45 @@ interface NodeComponentProps {
 }
 
 interface NodeCircleProps {
-	isSelected: boolean
-	isHovered: boolean
-	isPlacementStart: boolean
-	isHighlighted?: boolean
+	$isSelected: boolean
+	$isHovered: boolean
+	$isPlacementStart: boolean
+	$isHighlighted?: boolean
 }
 
 const NodeCircle = styled.circle<NodeCircleProps>`
-	fill: ${({ isSelected, isHovered, isPlacementStart, isHighlighted }) => {
-		if (isPlacementStart) return 'var(--primary-color)'
-		if (isSelected) return 'var(--accent-color)'
-		if (isHighlighted) return 'var(--accent-light)'
-		if (isHovered) return 'var(--primary-light)'
+	fill: ${({ $isSelected, $isHovered, $isPlacementStart, $isHighlighted }) => {
+		if ($isPlacementStart) return 'var(--primary-color)'
+		if ($isSelected) return 'var(--accent-color)'
+		if ($isHighlighted) return 'var(--accent-light)'
+		if ($isHovered) return 'var(--primary-light)'
 		return 'var(--surface-color)'
 	}};
 
-	stroke: ${({ isSelected, isHovered, isPlacementStart, isHighlighted }) => {
-		if (isPlacementStart) return 'var(--primary-dark)'
-		if (isSelected) return 'var(--accent-color)'
-		if (isHighlighted) return 'var(--accent-color)'
-		if (isHovered) return 'var(--primary-color)'
+	stroke: ${({
+		$isSelected,
+		$isHovered,
+		$isPlacementStart,
+		$isHighlighted,
+	}) => {
+		if ($isPlacementStart) return 'var(--primary-dark)'
+		if ($isSelected) return 'var(--accent-color)'
+		if ($isHighlighted) return 'var(--accent-color)'
+		if ($isHovered) return 'var(--primary-color)'
 		return 'var(--border-color)'
 	}};
 
-	stroke-width: ${({ isSelected, isPlacementStart, isHighlighted }) =>
-		isSelected || isPlacementStart || isHighlighted ? 2.5 : 1.5};
+	stroke-width: ${({ $isSelected, $isPlacementStart, $isHighlighted }) =>
+		$isSelected || $isPlacementStart || $isHighlighted ? 2.5 : 1.5};
 
 	cursor: pointer;
 	transition: var(--transition);
 
-	r: ${({ isSelected, isHovered, isPlacementStart, isHighlighted }) => {
-		if (isPlacementStart) return 8
-		if (isSelected) return 8
-		if (isHighlighted) return 8
-		if (isHovered) return 7
+	r: ${({ $isSelected, $isHovered, $isPlacementStart, $isHighlighted }) => {
+		if ($isPlacementStart) return 8
+		if ($isSelected) return 8
+		if ($isHighlighted) return 8
+		if ($isHovered) return 7
 		return 6
 	}};
 `
@@ -53,10 +58,10 @@ const NodeCircle = styled.circle<NodeCircleProps>`
 // Внешняя окружность для выделенных и активных узлов
 const NodeRing = styled.circle<NodeCircleProps>`
 	fill: none;
-	stroke: ${({ isSelected, isPlacementStart, isHighlighted }) => {
-		if (isPlacementStart) return 'var(--primary-color)'
-		if (isSelected) return 'var(--accent-color)'
-		if (isHighlighted) return 'var(--accent-light)'
+	stroke: ${({ $isSelected, $isPlacementStart, $isHighlighted }) => {
+		if ($isPlacementStart) return 'var(--primary-color)'
+		if ($isSelected) return 'var(--accent-color)'
+		if ($isHighlighted) return 'var(--accent-light)'
 		return 'transparent'
 	}};
 	stroke-width: 1;
@@ -183,20 +188,20 @@ const NodeComponent: React.FC<NodeComponentProps> = ({
 				<NodeRing
 					cx={node.position.x}
 					cy={node.position.y}
-					isSelected={isSelected}
-					isHovered={isHovered}
-					isPlacementStart={isPlacementStart}
-					isHighlighted={isHighlighted}
+					$isSelected={isSelected}
+					$isHovered={isHovered}
+					$isPlacementStart={isPlacementStart}
+					$isHighlighted={isHighlighted}
 				/>
 			)}
 			<NodeCircle
 				ref={nodeRef}
 				cx={node.position.x}
 				cy={node.position.y}
-				isSelected={isSelected}
-				isHovered={isHovered}
-				isPlacementStart={isPlacementStart}
-				isHighlighted={isHighlighted}
+				$isSelected={isSelected}
+				$isHovered={isHovered}
+				$isPlacementStart={isPlacementStart}
+				$isHighlighted={isHighlighted}
 				onClick={handleClick}
 				onMouseDown={handleMouseDown}
 				onMouseMove={handleMouseMove}
