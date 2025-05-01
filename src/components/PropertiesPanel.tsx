@@ -172,6 +172,60 @@ const ElementListItem = styled.li`
 	}
 `
 
+const SwitchLabel = styled.label`
+	display: flex;
+	align-items: center;
+	cursor: pointer;
+	margin-bottom: 16px;
+	user-select: none;
+`
+
+const SwitchInput = styled.input`
+	opacity: 0;
+	width: 0;
+	height: 0;
+	position: absolute;
+`
+
+const SwitchSlider = styled.span`
+	position: relative;
+	display: inline-block;
+	width: 44px;
+	height: 24px;
+	background-color: var(--bg-color);
+	border-radius: 24px;
+	border: 1px solid var(--border-color);
+	transition: var(--transition);
+	margin-right: 10px;
+
+	&:before {
+		position: absolute;
+		content: '';
+		height: 18px;
+		width: 18px;
+		left: 2px;
+		bottom: 2px;
+		background-color: white;
+		border-radius: 50%;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+		transition: var(--transition);
+	}
+
+	input:checked + & {
+		background-color: var(--success-color);
+		border-color: var(--success-color);
+	}
+
+	input:checked + &:before {
+		transform: translateX(20px);
+	}
+`
+
+const SwitchText = styled.span`
+	font-size: 0.9rem;
+	color: var(--text-primary);
+`
+
 // Component titles mapping
 const ELEMENT_TITLES: Record<ElementType, string> = {
 	wire: 'Провод',
@@ -179,6 +233,7 @@ const ELEMENT_TITLES: Record<ElementType, string> = {
 	capacitor: 'Конденсатор',
 	inductor: 'Катушка индуктивности',
 	voltage: 'Источник напряжения',
+	switch: 'Ключ',
 }
 
 // Иконки для типов элементов
@@ -188,6 +243,7 @@ const ELEMENT_ICON_CHARS: Record<ElementType, string> = {
 	capacitor: 'C',
 	inductor: 'L',
 	voltage: 'V',
+	switch: 'S',
 }
 
 const PropertiesPanel: React.FC = () => {
@@ -196,9 +252,11 @@ const PropertiesPanel: React.FC = () => {
 	const selectedElementId = useCircuitStore(state => state.selectedElementId)
 	const selectedNodeId = useCircuitStore(state => state.selectedNodeId)
 	const updateElementValue = useCircuitStore(state => state.updateElementValue)
+	const updateSwitchState = useCircuitStore(state => state.updateSwitchState)
 	const removeElement = useCircuitStore(state => state.removeElement)
 
 	const [currentValue, setCurrentValue] = useState<number>(0)
+	const [switchState, setSwitchState] = useState<boolean>(false)
 
 	// Найдем выбранный элемент и узел
 	const selectedElement = elements.find(
@@ -217,6 +275,11 @@ const PropertiesPanel: React.FC = () => {
 	useEffect(() => {
 		if (selectedElement) {
 			setCurrentValue(selectedElement.value)
+
+			// Устанавливаем состояние переключателя, если выбран ключ
+			if (selectedElement.type === 'switch') {
+				setSwitchState(!selectedElement.isOpen) // !isOpen потому что 1 = включен, 0 = выключен
+			}
 		}
 	}, [selectedElement])
 
@@ -292,6 +355,19 @@ const PropertiesPanel: React.FC = () => {
 		}
 	}
 
+	const handleSwitchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const newState = e.target.checked
+		setSwitchState(newState)
+
+		if (selectedElementId) {
+			// Передаем !newState потому что в isOpen: true = разомкнут (ВЫКЛ), false = замкнут (ВКЛ)
+			updateSwitchState(selectedElementId, !newState)
+
+			// Устанавливаем value в соответствии с состоянием: 1 для включен, 0 для выключен
+			updateElementValue(selectedElementId, newState ? 1 : 0)
+		}
+	}
+
 	const handleDelete = () => {
 		if (selectedElementId) {
 			removeElement(selectedElementId)
@@ -314,18 +390,33 @@ const PropertiesPanel: React.FC = () => {
 					</ElementTitle>
 				</ElementHeader>
 
-				{selectedElement?.type !== 'wire' && (
+				{selectedElement?.type === 'switch' && (
 					<FormGroup>
-						<Label>Значение ({selectedElement?.unit})</Label>
-						<Input
-							type='number'
-							min='0'
-							value={currentValue}
-							onChange={handleValueChange}
-							onBlur={handleValueBlur}
-						/>
+						<SwitchLabel>
+							<SwitchInput
+								type='checkbox'
+								checked={switchState}
+								onChange={handleSwitchChange}
+							/>
+							<SwitchSlider />
+							<SwitchText>{switchState ? 'Включен' : 'Выключен'}</SwitchText>
+						</SwitchLabel>
 					</FormGroup>
 				)}
+
+				{selectedElement?.type !== 'wire' &&
+					selectedElement?.type !== 'switch' && (
+						<FormGroup>
+							<Label>Значение ({selectedElement?.unit})</Label>
+							<Input
+								type='number'
+								min='0'
+								value={currentValue}
+								onChange={handleValueChange}
+								onBlur={handleValueBlur}
+							/>
+						</FormGroup>
+					)}
 
 				<Button onClick={handleDelete}>Удалить элемент</Button>
 			</PanelContent>

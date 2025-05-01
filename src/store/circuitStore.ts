@@ -112,7 +112,7 @@ const DEFAULT_VALUES = {
 	capacitor: { value: 10, unit: 'мкФ' },
 	inductor: { value: 1, unit: 'мГн' },
 	voltage: { value: 5, unit: 'В' },
-	switch: { value: 0, unit: '', isOpen: false },
+	switch: { value: 0, unit: '', isOpen: true },
 }
 
 // Функция для вычисления расстояния между двумя точками
@@ -341,7 +341,14 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 		set(state => ({
 			elements: state.elements.map(element =>
 				element.id === id && element.type === 'switch'
-					? { ...element, isOpen }
+					? {
+							...element,
+							isOpen,
+							// Устанавливаем value в соответствии с состоянием ключа:
+							// isOpen = true (разомкнут) -> value = 0 (выключен)
+							// isOpen = false (замкнут) -> value = 1 (включен)
+							value: isOpen ? 0 : 1,
+					  }
 					: element
 			),
 		})),
@@ -722,19 +729,17 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 					name: elementName,
 				}
 			} else if (elementType === 'switch') {
-				// Для ключей используем случайное значение для isOpen (имитация начального состояния)
-				// Можно заменить на более предсказуемую логику, если требуется
-				const isOpen = counter % 2 === 0 // чередование открытого/закрытого состояния
-
+				// Создаем ключ по умолчанию в выключенном состоянии
+				// isOpen = true (разомкнут) соответствует value = 0 (выключен)
 				newElement = {
 					type: 'switch',
 					startNodeId,
 					endNodeId,
 					rotation,
-					value: 0,
+					value: 0, // 0 - выключен
 					unit: '',
 					name: elementName,
-					isOpen: isOpen,
+					isOpen: true, // true = разомкнут (ВЫКЛ)
 				} as SwitchElement
 			} else {
 				newElement = {
