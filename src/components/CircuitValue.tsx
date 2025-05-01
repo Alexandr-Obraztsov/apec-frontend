@@ -34,7 +34,8 @@ const CircuitValue: React.FC<CircuitValueProps> = ({
 }) => {
 	// Убедимся, что angle - число и округлим его до 2 знаков после запятой
 	// для предотвращения проблем с точностью вычислений
-	const safeAngle = typeof angle === 'number' ? parseFloat(angle.toFixed(2)) : 0
+	const safeAngle =
+		typeof angle === 'number' ? -parseFloat(angle.toFixed(2)) : 0
 
 	return (
 		<g transform={`rotate(${safeAngle})`}>
