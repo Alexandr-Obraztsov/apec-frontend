@@ -117,6 +117,10 @@ const CircuitElement: React.FC<CircuitElementProps> = memo(
 					cursor: 'pointer',
 					pointerEvents: 'all',
 				}}
+				className='draggable-container'
+				data-element-id={element.id}
+				data-start-node-id={element.startNodeId}
+				data-end-node-id={element.endNodeId}
 			>
 				{renderElement()}
 			</g>

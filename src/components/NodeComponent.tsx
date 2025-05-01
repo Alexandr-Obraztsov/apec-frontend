@@ -136,6 +136,8 @@ const NodeComponent: React.FC<NodeComponentProps> = memo(
 					cursor: isDragging ? 'grabbing' : 'grab',
 					pointerEvents: 'all',
 				}}
+				className='draggable-container'
+				data-node-id={node.id}
 			>
 				{(isSelected || isPlacementStart || isHighlighted) && (
 					<NodeRing

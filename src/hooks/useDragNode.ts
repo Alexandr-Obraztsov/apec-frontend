@@ -14,204 +14,122 @@ interface UseDragNodeResult {
 	handleMouseUp: () => void
 }
 
-// Функция для ограничения частоты вызовов с использованием requestAnimationFrame
-const useThrottleRAF = <T extends unknown[]>(
-	callback: (...args: T) => void
-) => {
-	const requestRef = useRef<number | null>(null)
-	const previousTimeRef = useRef<number>(0)
-	const lastArgsRef = useRef<T | null>(null)
-
-	const animate = (time: number) => {
-		if (previousTimeRef.current === 0) {
-			previousTimeRef.current = time
-		}
-
-		const deltaTime = time - previousTimeRef.current
-		const targetFPS = 120 // Целевой FPS
-		const frameInterval = 1000 / targetFPS
-
-		if (deltaTime >= frameInterval && lastArgsRef.current) {
-			callback(...lastArgsRef.current)
-			previousTimeRef.current = time
-		}
-
-		requestRef.current = requestAnimationFrame(animate)
-	}
-
-	const throttledCallback = useCallback(
-		(...args: T) => {
-			lastArgsRef.current = args
-
-			if (requestRef.current === null) {
-				requestRef.current = requestAnimationFrame(animate)
-			}
-		},
-		[callback]
-	)
-
-	useEffect(() => {
-		return () => {
-			if (requestRef.current !== null) {
-				cancelAnimationFrame(requestRef.current)
-				requestRef.current = null
-				previousTimeRef.current = 0
-			}
-		}
-	}, [])
-
-	return throttledCallback
-}
-
 export const useDragNode = ({
 	node,
 	isInPlacementMode,
 }: UseDragNodeProps): UseDragNodeResult => {
 	const updateNodePosition = useCircuitStore(state => state.updateNodePosition)
 	const [isDragging, setIsDragging] = useState(false)
-	const [dragStartPosition, setDragStartPosition] = useState<Position>({
-		x: 0,
-		y: 0,
-	})
 
-	// Храним начальную позицию узла
-	const initialNodePosRef = useRef<Position>({ x: 0, y: 0 })
-	// Текущая абсолютная позиция курсора
-	const currentMousePosRef = useRef<Position>({ x: 0, y: 0 })
-	// Последнее обновление позиции
-	const lastUpdateRef = useRef<Position | null>(null)
-	// Признак необходимости обновления (для избежания лишних вызовов)
-	const needUpdateRef = useRef<boolean>(false)
+	// Храним абсолютное начальное положение мыши
+	const startMousePosRef = useRef<Position | null>(null)
+	// Храним начальное положение узла
+	const startNodePosRef = useRef<Position | null>(null)
 
-	// Функция обновления позиции узла
-	const updateNodePos = useCallback(() => {
-		if (!isDragging || !needUpdateRef.current) return
+	// Функция для обновления положения узла
+	const updatePosition = useCallback(
+		(mouseX: number, mouseY: number) => {
+			if (!startMousePosRef.current || !startNodePosRef.current) return
 
-		const currentPos = currentMousePosRef.current
+			// Вычисляем смещение от начальной позиции мыши
+			const deltaX = mouseX - startMousePosRef.current.x
+			const deltaY = mouseY - startMousePosRef.current.y
 
-		// Вычисляем смещение от начальной позиции курсора
-		const dx = currentPos.x - dragStartPosition.x
-		const dy = currentPos.y - dragStartPosition.y
+			// Вычисляем новую позицию узла относительно начальной позиции
+			const newX = startNodePosRef.current.x + deltaX
+			const newY = startNodePosRef.current.y + deltaY
 
-		// Обновляем позицию, используя начальную позицию узла плюс смещение курсора
-		updateNodePosition(node.id, {
-			x: initialNodePosRef.current.x + dx,
-			y: initialNodePosRef.current.y + dy,
-		})
+			// Обновляем позицию узла
+			updateNodePosition(node.id, { x: newX, y: newY })
+		},
+		[node.id, updateNodePosition]
+	)
 
-		// Сбрасываем флаг необходимости обновления
-		needUpdateRef.current = false
-	}, [
-		isDragging,
-		dragStartPosition.x,
-		dragStartPosition.y,
-		node.id,
-		updateNodePosition,
-	])
-
-	// Используем оптимизированный обработчик с requestAnimationFrame
-	const throttledUpdateNodePos = useThrottleRAF(updateNodePos)
-
-	// Начало перетаскивания
+	// Обработчик нажатия мыши
 	const handleMouseDown = useCallback(
 		(e: React.MouseEvent) => {
-			// Только левая кнопка мыши и не в режиме размещения
 			if (e.button !== 0 || isInPlacementMode) return
 
+			e.preventDefault()
 			e.stopPropagation()
+
+			// Сохраняем начальное положение мыши
+			startMousePosRef.current = { x: e.clientX, y: e.clientY }
+			// Сохраняем начальное положение узла
+			startNodePosRef.current = { ...node.position }
+
 			setIsDragging(true)
 
-			// Сохраняем начальную позицию курсора
-			const initialMousePos = { x: e.clientX, y: e.clientY }
-			setDragStartPosition(initialMousePos)
-			currentMousePosRef.current = initialMousePos
-
-			// Сохраняем начальную позицию узла
-			initialNodePosRef.current = { ...node.position }
-			lastUpdateRef.current = null
-
-			// Устанавливаем фокус на документ для обеспечения событий клавиатуры
-			document.body.focus()
+			// Добавляем класс для оптимизации при перетаскивании
+			document.body.classList.add('dragging')
+			// Меняем курсор
+			document.body.style.cursor = 'grabbing'
 		},
 		[isInPlacementMode, node.position]
 	)
 
-	// Перемещение при перетаскивании через React события (используется редко)
+	// Обработчик движения мыши
 	const handleMouseMove = useCallback(
 		(e: React.MouseEvent) => {
 			if (!isDragging) return
 
-			e.stopPropagation()
 			e.preventDefault()
+			e.stopPropagation()
 
-			currentMousePosRef.current = { x: e.clientX, y: e.clientY }
-			needUpdateRef.current = true
-
-			throttledUpdateNodePos()
+			// Вызываем функцию обновления с новыми координатами мыши
+			updatePosition(e.clientX, e.clientY)
 		},
-		[isDragging, throttledUpdateNodePos]
+		[isDragging, updatePosition]
 	)
 
-	// Завершение перетаскивания
-	const handleMouseUp = useCallback(() => {
-		if (isDragging) {
-			setIsDragging(false)
-			needUpdateRef.current = false
-		}
-	}, [isDragging])
-
-	// Глобальная версия handleMouseMove
-	const handleMouseMoveGlobal = useCallback(
+	// Глобальный обработчик движения мыши
+	const handleGlobalMouseMove = useCallback(
 		(e: MouseEvent) => {
 			if (!isDragging) return
 
-			// Сохраняем текущую позицию мыши
-			currentMousePosRef.current = { x: e.clientX, y: e.clientY }
+			// Предотвращаем действия по умолчанию
+			e.preventDefault()
 
-			// Проверяем существенность смещения
-			if (lastUpdateRef.current) {
-				const minMovement = 1 // Минимальное изменение для обновления
-				const dx = Math.abs(e.clientX - lastUpdateRef.current.x)
-				const dy = Math.abs(e.clientY - lastUpdateRef.current.y)
-
-				// Если смещение меньше минимального - не обновляем
-				if (dx < minMovement && dy < minMovement) {
-					return
-				}
-			}
-
-			// Помечаем необходимость обновления
-			needUpdateRef.current = true
-			lastUpdateRef.current = { x: e.clientX, y: e.clientY }
-
-			// Запускаем обновление через requestAnimationFrame
-			throttledUpdateNodePos()
+			// Обновляем позицию
+			updatePosition(e.clientX, e.clientY)
 		},
-		[isDragging, throttledUpdateNodePos]
+		[isDragging, updatePosition]
 	)
 
-	// Глобальные обработчики
+	// Обработчик отпускания кнопки мыши
+	const handleMouseUp = useCallback(() => {
+		if (!isDragging) return
+
+		// Сбрасываем состояние
+		setIsDragging(false)
+		startMousePosRef.current = null
+		startNodePosRef.current = null
+
+		// Удаляем класс и возвращаем стандартный курсор
+		document.body.classList.remove('dragging')
+		document.body.style.cursor = ''
+	}, [isDragging])
+
+	// Глобальные обработчики событий
 	useEffect(() => {
 		if (isDragging) {
-			document.addEventListener('mousemove', handleMouseMoveGlobal, {
-				passive: true,
-			})
+			// Добавляем обработчики на весь документ
+			document.addEventListener('mousemove', handleGlobalMouseMove)
 			document.addEventListener('mouseup', handleMouseUp)
-
-			// Добавляем стиль для курсора на весь документ
-			document.body.style.cursor = 'grabbing'
-			document.body.classList.add('dragging')
-		}
-
-		return () => {
-			document.removeEventListener('mousemove', handleMouseMoveGlobal)
+		} else {
+			// Удаляем обработчики
+			document.removeEventListener('mousemove', handleGlobalMouseMove)
 			document.removeEventListener('mouseup', handleMouseUp)
-
-			// Возвращаем стандартный курсор
-			document.body.style.cursor = ''
-			document.body.classList.remove('dragging')
 		}
-	}, [isDragging, handleMouseMoveGlobal, handleMouseUp])
+
+		// Очистка при размонтировании компонента
+		return () => {
+			document.removeEventListener('mousemove', handleGlobalMouseMove)
+			document.removeEventListener('mouseup', handleMouseUp)
+			document.body.classList.remove('dragging')
+			document.body.style.cursor = ''
+		}
+	}, [isDragging, handleGlobalMouseMove, handleMouseUp])
 
 	return {
 		isDragging,

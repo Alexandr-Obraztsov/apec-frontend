@@ -587,27 +587,21 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 
 	updateNodePosition: (id, position) =>
 		set(state => {
-			// Проверяем, изменилась ли позиция
+			// Проверяем, изменилась ли позиция существенно
 			const currentNode = state.nodes.find(node => node.id === id)
 
-			// Если позиция не изменилась, не обновляем состояние
-			if (
-				currentNode &&
-				Math.abs(currentNode.position.x - position.x) < 0.5 &&
-				Math.abs(currentNode.position.y - position.y) < 0.5
-			) {
-				return state
-			}
+			// Проверяем наличие узла
+			if (!currentNode) return state
 
-			// Округляем координаты для уменьшения числа ненужных обновлений
-			const roundedPosition = {
-				x: Math.round(position.x * 10) / 10,
-				y: Math.round(position.y * 10) / 10,
+			// Создаем копию позиции для предотвращения мутации
+			const newPosition = {
+				x: position.x,
+				y: position.y,
 			}
 
 			// Обновляем позицию узла
 			const updatedNodes = state.nodes.map(node =>
-				node.id === id ? { ...node, position: roundedPosition } : node
+				node.id === id ? { ...node, position: newPosition } : node
 			)
 
 			return { nodes: updatedNodes }

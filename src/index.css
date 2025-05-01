@@ -164,15 +164,17 @@ textarea:focus {
 }
 
 body.dragging {
-	/* Отключаем сложные визуальные эффекты и анимации во время перетаскивания */
+	/* Устанавливаем только курсор, без изменения pointer-events */
 	cursor: grabbing !important;
-	pointer-events: none;
+}
+
+body.dragging .draggable-container {
+	/* Оптимизация для GPU */
+	will-change: transform;
 }
 
 body.dragging * {
-	/* Отключаем все transitions во время перетаскивания для максимальной производительности */
-	transition: none !important;
+	/* Отключаем transitions только для анимаций и визуальных эффектов */
+	transition-property: none !important;
 	animation: none !important;
-	/* Оптимизация для GPU */
-	will-change: transform;
 }
