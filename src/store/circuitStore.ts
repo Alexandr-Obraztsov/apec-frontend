@@ -5,6 +5,7 @@ import {
 	Node,
 	Position,
 	WireElement,
+	SwitchElement,
 	ELEMENT_NAME_PREFIXES,
 	NODE_NAME_PREFIX,
 } from '../types'
@@ -46,6 +47,7 @@ interface CircuitState {
 	removeSelectedElements: () => void
 	updateElementValue: (id: string, value: number) => void
 	updateElementRotation: (id: string, rotation: number) => void
+	updateSwitchState: (id: string, isOpen: boolean) => void
 	selectElement: (id: string | null) => void
 	selectNode: (id: string | null) => void
 	toggleElementSelection: (id: string) => void
@@ -110,6 +112,7 @@ const DEFAULT_VALUES = {
 	capacitor: { value: 10, unit: 'мкФ' },
 	inductor: { value: 1, unit: 'мГн' },
 	voltage: { value: 5, unit: 'В' },
+	switch: { value: 0, unit: '', isOpen: false },
 }
 
 // Функция для вычисления расстояния между двумя точками
@@ -178,6 +181,7 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 			capacitor: 0,
 			inductor: 0,
 			voltage: 0,
+			switch: 0,
 		},
 		nodes: 0,
 	},
@@ -330,6 +334,15 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 		set(state => ({
 			elements: state.elements.map(element =>
 				element.id === id ? { ...element, rotation } : element
+			),
+		})),
+
+	updateSwitchState: (id, isOpen) =>
+		set(state => ({
+			elements: state.elements.map(element =>
+				element.id === id && element.type === 'switch'
+					? { ...element, isOpen }
+					: element
 			),
 		})),
 
@@ -708,6 +721,21 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 					unit: DEFAULT_VALUES[elementType].unit,
 					name: elementName,
 				}
+			} else if (elementType === 'switch') {
+				// Для ключей используем случайное значение для isOpen (имитация начального состояния)
+				// Можно заменить на более предсказуемую логику, если требуется
+				const isOpen = counter % 2 === 0 // чередование открытого/закрытого состояния
+
+				newElement = {
+					type: 'switch',
+					startNodeId,
+					endNodeId,
+					rotation,
+					value: 0,
+					unit: '',
+					name: elementName,
+					isOpen: isOpen,
+				} as SwitchElement
 			} else {
 				newElement = {
 					type: 'voltage',

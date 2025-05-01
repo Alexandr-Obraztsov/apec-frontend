@@ -4,6 +4,7 @@ export type ElementType =
 	| 'capacitor'
 	| 'inductor'
 	| 'voltage'
+	| 'switch'
 
 export interface Position {
 	x: number
@@ -48,12 +49,18 @@ export interface VoltageElement extends CircuitElement {
 	type: 'voltage'
 }
 
+export interface SwitchElement extends CircuitElement {
+	type: 'switch'
+	isOpen: boolean
+}
+
 export type AnyCircuitElement =
 	| WireElement
 	| ResistorElement
 	| CapacitorElement
 	| InductorElement
 	| VoltageElement
+	| SwitchElement
 
 // Префиксы имен для различных типов элементов
 export const ELEMENT_NAME_PREFIXES: Record<ElementType, string> = {
@@ -62,6 +69,7 @@ export const ELEMENT_NAME_PREFIXES: Record<ElementType, string> = {
 	capacitor: 'C',
 	inductor: 'L',
 	voltage: 'V',
+	switch: 'SW',
 }
 
 // Префикс для имен узлов

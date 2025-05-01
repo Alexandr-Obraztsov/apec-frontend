@@ -10,6 +10,7 @@ const ELEMENT_LABELS: Record<ElementType, string> = {
 	capacitor: 'Конденсатор (C)',
 	inductor: 'Катушка (L)',
 	voltage: 'Источник напряжения (V)',
+	switch: 'Ключ (SW)',
 }
 
 const ToolboxContainer = styled.div`
@@ -199,6 +200,51 @@ const VoltageIcon = () => (
 	</svg>
 )
 
+const SwitchIcon = () => (
+	<svg
+		width='28'
+		height='28'
+		viewBox='0 0 24 24'
+		fill='none'
+		xmlns='http://www.w3.org/2000/svg'
+	>
+		<path
+			d='M2 12H5'
+			stroke='currentColor'
+			strokeWidth='2'
+			strokeLinecap='round'
+		/>
+		<path
+			d='M19 12H22'
+			stroke='currentColor'
+			strokeWidth='2'
+			strokeLinecap='round'
+		/>
+		<circle
+			cx='5'
+			cy='12'
+			r='2.5'
+			stroke='currentColor'
+			strokeWidth='2'
+			fill='white'
+		/>
+		<circle
+			cx='19'
+			cy='12'
+			r='2.5'
+			stroke='currentColor'
+			strokeWidth='2'
+			fill='white'
+		/>
+		<path
+			d='M7 12L18 7'
+			stroke='currentColor'
+			strokeWidth='2.5'
+			strokeLinecap='round'
+		/>
+	</svg>
+)
+
 // Карта иконок для типов элементов
 const ELEMENT_ICONS: Record<ElementType, React.ReactNode> = {
 	wire: <WireIcon />,
@@ -206,6 +252,7 @@ const ELEMENT_ICONS: Record<ElementType, React.ReactNode> = {
 	capacitor: <CapacitorIcon />,
 	inductor: <InductorIcon />,
 	voltage: <VoltageIcon />,
+	switch: <SwitchIcon />,
 }
 
 interface ToolItemProps {
