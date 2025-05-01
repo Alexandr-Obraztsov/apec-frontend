@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import styled from 'styled-components'
 import { InductorElement, Node } from '../../types'
 import CircuitValue from '../CircuitValue'
@@ -25,61 +25,93 @@ const InductorPath = styled.path<{ selected: boolean }>`
 	stroke-width: 2px;
 `
 
-const Inductor: React.FC<InductorProps> = ({
+// Форматирование значения индуктора
+const formatValue = (value: number, unit: string) => {
+	if (unit === 'мГн') {
+		if (value >= 1000) {
+			return `${(value / 1000).toFixed(1)} Гн`
+		} else if (value < 1) {
+			return `${(value * 1000).toFixed(0)} мкГн`
+		}
+	}
+	return `${value} ${unit}`
+}
+
+const InductorComponent = ({
 	element,
 	startNode,
 	endNode,
 	selected,
-}) => {
-	// Вычисляем угол между узлами
-	const dx = endNode.position.x - startNode.position.x
-	const dy = endNode.position.y - startNode.position.y
-	const angle = (Math.atan2(dy, dx) * 180) / Math.PI
+}: InductorProps) => {
+	// Мемоизируем все вычисления
+	const {
+		angle,
+		wireLength,
+		inductorBodySize,
+		transform,
+		inductorPath,
+		valueText,
+	} = useMemo(() => {
+		// Вычисляем угол между узлами
+		const dx = endNode.position.x - startNode.position.x
+		const dy = endNode.position.y - startNode.position.y
+		// Округляем угол до 2 знаков после запятой
+		const angle = parseFloat(((Math.atan2(dy, dx) * 180) / Math.PI).toFixed(2))
 
-	// Вычисляем центр для размещения катушки
-	const centerX = (startNode.position.x + endNode.position.x) / 2
-	const centerY = (startNode.position.y + endNode.position.y) / 2
+		// Вычисляем центр для размещения индуктора (округляем для стабильности)
+		const centerX = parseFloat(
+			((startNode.position.x + endNode.position.x) / 2).toFixed(1)
+		)
+		const centerY = parseFloat(
+			((startNode.position.y + endNode.position.y) / 2).toFixed(1)
+		)
 
-	// Расчет длины линии (расстояние между узлами)
-	const length = Math.sqrt(dx * dx + dy * dy)
+		// Расчет длины линии (расстояние между узлами)
+		const length = Math.sqrt(dx * dx + dy * dy)
 
-	// Размер тела катушки индуктивности
-	const inductorBodySize = 40
+		// Размер тела катушки индуктивности
+		const inductorBodySize = 40
 
-	// Вычисляем длину проводов по обе стороны от тела катушки
-	const wireLength = (length - inductorBodySize) / 2
+		// Вычисляем длину проводов по обе стороны от тела катушки
+		const wireLength = parseFloat(((length - inductorBodySize) / 2).toFixed(1))
 
-	// Создаем трансформацию для поворота компонента
-	const transform = `translate(${centerX}, ${centerY}) rotate(${angle})`
+		// Создаем трансформацию для поворота компонента
+		const transform = `translate(${centerX}, ${centerY}) rotate(${angle})`
 
-	// Создаем более гладкую кривую для катушки
-	const arcRadius = 6
-	const inductorPath = `
-		M${-inductorBodySize / 2},0 
-		C${-inductorBodySize / 2 + arcRadius},-8 ${
-		-inductorBodySize / 2 + arcRadius * 2
-	},8 ${-inductorBodySize / 2 + arcRadius * 3},0
-		C${-inductorBodySize / 2 + arcRadius * 4},-8 ${
-		-inductorBodySize / 2 + arcRadius * 5
-	},8 ${-inductorBodySize / 2 + arcRadius * 6},0
-		C${-inductorBodySize / 2 + arcRadius * 7},-8 ${
-		-inductorBodySize / 2 + arcRadius * 8
-	},8 ${-inductorBodySize / 2 + arcRadius * 9},0
-	`
+		// Создаем более гладкую кривую для катушки
+		const arcRadius = 6
+		const inductorPath = `
+			M${-inductorBodySize / 2},0 
+			C${-inductorBodySize / 2 + arcRadius},-8 ${
+			-inductorBodySize / 2 + arcRadius * 2
+		},8 ${-inductorBodySize / 2 + arcRadius * 3},0
+			C${-inductorBodySize / 2 + arcRadius * 4},-8 ${
+			-inductorBodySize / 2 + arcRadius * 5
+		},8 ${-inductorBodySize / 2 + arcRadius * 6},0
+			C${-inductorBodySize / 2 + arcRadius * 7},-8 ${
+			-inductorBodySize / 2 + arcRadius * 8
+		},8 ${-inductorBodySize / 2 + arcRadius * 9},0
+		`
 
-	// Форматирование значения
-	const formatValue = (value: number, unit: string) => {
-		if (unit === 'мГн') {
-			if (value >= 1000) {
-				return `${(value / 1000).toFixed(1)} Гн`
-			} else if (value < 1) {
-				return `${(value * 1000).toFixed(0)} мкГн`
-			}
+		// Форматированное значение
+		const valueText = formatValue(element.value, element.unit)
+
+		return {
+			angle,
+			wireLength,
+			inductorBodySize,
+			transform,
+			inductorPath,
+			valueText,
 		}
-		return `${value} ${unit}`
-	}
-
-	const valueText = formatValue(element.value, element.unit)
+	}, [
+		startNode.position.x,
+		startNode.position.y,
+		endNode.position.x,
+		endNode.position.y,
+		element.value,
+		element.unit,
+	])
 
 	return (
 		<InductorContainer selected={selected} transform={transform}>
@@ -107,5 +139,8 @@ const Inductor: React.FC<InductorProps> = ({
 		</InductorContainer>
 	)
 }
+
+// Применяем мемоизацию к компоненту
+const Inductor = React.memo(InductorComponent)
 
 export default Inductor

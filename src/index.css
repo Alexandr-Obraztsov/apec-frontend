@@ -171,10 +171,25 @@ body.dragging {
 body.dragging .draggable-container {
 	/* Оптимизация для GPU */
 	will-change: transform;
+	transform: translateZ(0);
+	backface-visibility: hidden;
+	perspective: 1000px;
 }
 
 body.dragging * {
 	/* Отключаем transitions только для анимаций и визуальных эффектов */
 	transition-property: none !important;
 	animation: none !important;
+}
+
+/* Добавляем более оптимизированные стили для перетаскивания */
+.draggable-container {
+	touch-action: none; /* Отключаем жесты для более гладкого перетаскивания */
+}
+
+/* Оптимизация отрисовки SVG элементов */
+svg {
+	transform: translateZ(0);
+	backface-visibility: hidden;
+	contain: layout style size;
 }

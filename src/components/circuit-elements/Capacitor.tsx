@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import styled from 'styled-components'
 import { CapacitorElement, Node } from '../../types'
 import CircuitValue from '../CircuitValue'
@@ -25,46 +25,75 @@ const CapacitorPlate = styled.line<{ selected: boolean }>`
 	stroke-linecap: round;
 `
 
-const Capacitor: React.FC<CapacitorProps> = ({
+// Форматирование значения конденсатора
+const formatValue = (value: number, unit: string) => {
+	if (unit === 'мкФ') {
+		if (value >= 1000) {
+			return `${(value / 1000).toFixed(1)} мФ`
+		} else if (value < 1) {
+			return `${(value * 1000).toFixed(0)} нФ`
+		}
+	}
+	return `${value} ${unit}`
+}
+
+const CapacitorComponent = ({
 	element,
 	startNode,
 	endNode,
 	selected,
-}) => {
-	// Вычисляем угол между узлами
-	const dx = endNode.position.x - startNode.position.x
-	const dy = endNode.position.y - startNode.position.y
-	const angle = (Math.atan2(dy, dx) * 180) / Math.PI
+}: CapacitorProps) => {
+	// Мемоизируем все вычисления
+	const { angle, wireLength, capacitorBodySize, transform, valueText } =
+		useMemo(() => {
+			// Вычисляем угол между узлами
+			const dx = endNode.position.x - startNode.position.x
+			const dy = endNode.position.y - startNode.position.y
+			// Округляем угол до 2 знаков после запятой
+			const angle = parseFloat(
+				((Math.atan2(dy, dx) * 180) / Math.PI).toFixed(2)
+			)
 
-	// Вычисляем центр для размещения конденсатора
-	const centerX = (startNode.position.x + endNode.position.x) / 2
-	const centerY = (startNode.position.y + endNode.position.y) / 2
+			// Вычисляем центр для размещения конденсатора (округляем для стабильности)
+			const centerX = parseFloat(
+				((startNode.position.x + endNode.position.x) / 2).toFixed(1)
+			)
+			const centerY = parseFloat(
+				((startNode.position.y + endNode.position.y) / 2).toFixed(1)
+			)
 
-	// Расчет длины линии (расстояние между узлами)
-	const length = Math.sqrt(dx * dx + dy * dy)
+			// Расчет длины линии (расстояние между узлами)
+			const length = Math.sqrt(dx * dx + dy * dy)
 
-	// Размер тела конденсатора
-	const capacitorBodySize = 10
+			// Размер тела конденсатора
+			const capacitorBodySize = 10
 
-	// Вычисляем длину проводов по обе стороны от тела конденсатора
-	const wireLength = (length - capacitorBodySize) / 2
+			// Вычисляем длину проводов по обе стороны от тела конденсатора
+			const wireLength = parseFloat(
+				((length - capacitorBodySize) / 2).toFixed(1)
+			)
 
-	// Создаем трансформацию для поворота компонента
-	const transform = `translate(${centerX}, ${centerY}) rotate(${angle})`
+			// Создаем трансформацию для поворота компонента
+			const transform = `translate(${centerX}, ${centerY}) rotate(${angle})`
 
-	// Форматирование значения
-	const formatValue = (value: number, unit: string) => {
-		if (unit === 'мкФ') {
-			if (value >= 1000) {
-				return `${(value / 1000).toFixed(1)} мФ`
-			} else if (value < 1) {
-				return `${(value * 1000).toFixed(0)} нФ`
+			// Форматированное значение
+			const valueText = formatValue(element.value, element.unit)
+
+			return {
+				angle,
+				wireLength,
+				capacitorBodySize,
+				transform,
+				valueText,
 			}
-		}
-		return `${value} ${unit}`
-	}
-
-	const valueText = formatValue(element.value, element.unit)
+		}, [
+			startNode.position.x,
+			startNode.position.y,
+			endNode.position.x,
+			endNode.position.y,
+			element.value,
+			element.unit,
+		])
 
 	return (
 		<CapacitorContainer selected={selected} transform={transform}>
@@ -105,5 +134,8 @@ const Capacitor: React.FC<CapacitorProps> = ({
 		</CapacitorContainer>
 	)
 }
+
+// Применяем мемоизацию к компоненту
+const Capacitor = React.memo(CapacitorComponent)
 
 export default Capacitor

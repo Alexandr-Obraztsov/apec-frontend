@@ -25,24 +25,68 @@ export const useDragNode = ({
 	const startMousePosRef = useRef<Position | null>(null)
 	// Храним начальное положение узла
 	const startNodePosRef = useRef<Position | null>(null)
+	// Храним текущую позицию мыши
+	const currentMousePosRef = useRef<Position | null>(null)
+	// Храним идентификатор requestAnimationFrame
+	const rafIdRef = useRef<number | null>(null)
+	// Флаг для отслеживания, запрашивали ли мы уже кадр анимации
+	const isAnimationPendingRef = useRef<boolean>(false)
+	// Для оптимизации - храним последнюю обновленную позицию
+	const lastUpdatedPosRef = useRef<Position | null>(null)
 
-	// Функция для обновления положения узла
-	const updatePosition = useCallback(
-		(mouseX: number, mouseY: number) => {
-			if (!startMousePosRef.current || !startNodePosRef.current) return
+	// Функция обновления в цикле requestAnimationFrame
+	const animateNodeMovement = useCallback(() => {
+		if (
+			!isDragging ||
+			!startMousePosRef.current ||
+			!startNodePosRef.current ||
+			!currentMousePosRef.current
+		) {
+			isAnimationPendingRef.current = false
+			return
+		}
 
-			// Вычисляем смещение от начальной позиции мыши
-			const deltaX = mouseX - startMousePosRef.current.x
-			const deltaY = mouseY - startMousePosRef.current.y
+		// Вычисляем смещение от начальной позиции мыши
+		const deltaX = currentMousePosRef.current.x - startMousePosRef.current.x
+		const deltaY = currentMousePosRef.current.y - startMousePosRef.current.y
 
-			// Вычисляем новую позицию узла относительно начальной позиции
-			const newX = startNodePosRef.current.x + deltaX
-			const newY = startNodePosRef.current.y + deltaY
+		// Вычисляем новую позицию узла относительно начальной позиции
+		// Округляем до целых значений для снижения нагрузки и предотвращения мерцания
+		const newX = Math.round(startNodePosRef.current.x + deltaX)
+		const newY = Math.round(startNodePosRef.current.y + deltaY)
+
+		// Проверяем, изменилась ли позиция с последнего обновления
+		if (
+			!lastUpdatedPosRef.current ||
+			newX !== lastUpdatedPosRef.current.x ||
+			newY !== lastUpdatedPosRef.current.y
+		) {
+			// Запоминаем последнюю обновленную позицию
+			lastUpdatedPosRef.current = { x: newX, y: newY }
 
 			// Обновляем позицию узла
 			updateNodePosition(node.id, { x: newX, y: newY })
+		}
+
+		// Запрашиваем следующий кадр анимации
+		rafIdRef.current = requestAnimationFrame(animateNodeMovement)
+	}, [isDragging, node.id, updateNodePosition])
+
+	// Функция для запуска анимации, если она еще не запущена
+	const startAnimation = useCallback(() => {
+		if (!isAnimationPendingRef.current && isDragging) {
+			isAnimationPendingRef.current = true
+			rafIdRef.current = requestAnimationFrame(animateNodeMovement)
+		}
+	}, [isDragging, animateNodeMovement])
+
+	// Функция для обновления текущей позиции мыши
+	const updateMousePosition = useCallback(
+		(x: number, y: number) => {
+			currentMousePosRef.current = { x, y }
+			startAnimation()
 		},
-		[node.id, updateNodePosition]
+		[startAnimation]
 	)
 
 	// Обработчик нажатия мыши
@@ -55,8 +99,12 @@ export const useDragNode = ({
 
 			// Сохраняем начальное положение мыши
 			startMousePosRef.current = { x: e.clientX, y: e.clientY }
+			// Сохраняем текущее положение мыши
+			currentMousePosRef.current = { x: e.clientX, y: e.clientY }
 			// Сохраняем начальное положение узла
 			startNodePosRef.current = { ...node.position }
+			// Сбрасываем последнюю обновленную позицию
+			lastUpdatedPosRef.current = null
 
 			setIsDragging(true)
 
@@ -64,8 +112,11 @@ export const useDragNode = ({
 			document.body.classList.add('dragging')
 			// Меняем курсор
 			document.body.style.cursor = 'grabbing'
+
+			// Начинаем анимацию
+			startAnimation()
 		},
-		[isInPlacementMode, node.position]
+		[isInPlacementMode, node.position, startAnimation]
 	)
 
 	// Обработчик движения мыши
@@ -76,13 +127,13 @@ export const useDragNode = ({
 			e.preventDefault()
 			e.stopPropagation()
 
-			// Вызываем функцию обновления с новыми координатами мыши
-			updatePosition(e.clientX, e.clientY)
+			// Обновляем позицию мыши
+			updateMousePosition(e.clientX, e.clientY)
 		},
-		[isDragging, updatePosition]
+		[isDragging, updateMousePosition]
 	)
 
-	// Глобальный обработчик движения мыши
+	// Глобальный обработчик движения мыши - с passive: false для лучшей производительности
 	const handleGlobalMouseMove = useCallback(
 		(e: MouseEvent) => {
 			if (!isDragging) return
@@ -90,20 +141,29 @@ export const useDragNode = ({
 			// Предотвращаем действия по умолчанию
 			e.preventDefault()
 
-			// Обновляем позицию
-			updatePosition(e.clientX, e.clientY)
+			// Обновляем позицию мыши
+			updateMousePosition(e.clientX, e.clientY)
 		},
-		[isDragging, updatePosition]
+		[isDragging, updateMousePosition]
 	)
 
 	// Обработчик отпускания кнопки мыши
 	const handleMouseUp = useCallback(() => {
 		if (!isDragging) return
 
+		// Отменяем все запланированные анимации
+		if (rafIdRef.current) {
+			cancelAnimationFrame(rafIdRef.current)
+			rafIdRef.current = null
+		}
+
 		// Сбрасываем состояние
 		setIsDragging(false)
 		startMousePosRef.current = null
 		startNodePosRef.current = null
+		currentMousePosRef.current = null
+		lastUpdatedPosRef.current = null
+		isAnimationPendingRef.current = false
 
 		// Удаляем класс и возвращаем стандартный курсор
 		document.body.classList.remove('dragging')
@@ -114,12 +174,23 @@ export const useDragNode = ({
 	useEffect(() => {
 		if (isDragging) {
 			// Добавляем обработчики на весь документ
-			document.addEventListener('mousemove', handleGlobalMouseMove)
+			document.addEventListener('mousemove', handleGlobalMouseMove, {
+				passive: false,
+			})
 			document.addEventListener('mouseup', handleMouseUp)
+
+			// Начинаем анимацию если еще не начали
+			startAnimation()
 		} else {
 			// Удаляем обработчики
 			document.removeEventListener('mousemove', handleGlobalMouseMove)
 			document.removeEventListener('mouseup', handleMouseUp)
+
+			// Отменяем все запланированные анимации
+			if (rafIdRef.current) {
+				cancelAnimationFrame(rafIdRef.current)
+				rafIdRef.current = null
+			}
 		}
 
 		// Очистка при размонтировании компонента
@@ -128,8 +199,13 @@ export const useDragNode = ({
 			document.removeEventListener('mouseup', handleMouseUp)
 			document.body.classList.remove('dragging')
 			document.body.style.cursor = ''
+
+			if (rafIdRef.current) {
+				cancelAnimationFrame(rafIdRef.current)
+				rafIdRef.current = null
+			}
 		}
-	}, [isDragging, handleGlobalMouseMove, handleMouseUp])
+	}, [isDragging, handleGlobalMouseMove, handleMouseUp, startAnimation])
 
 	return {
 		isDragging,
