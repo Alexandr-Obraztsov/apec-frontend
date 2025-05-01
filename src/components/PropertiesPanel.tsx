@@ -238,7 +238,7 @@ const PropertiesPanel: React.FC = () => {
 			<PanelContainer>
 				<PanelHeader>
 					<Title>
-						Узел <TitleInfo>#{selectedNode.id.substring(0, 6)}</TitleInfo>
+						Узел <TitleInfo>{selectedNode.name}</TitleInfo>
 					</Title>
 				</PanelHeader>
 				<PanelContent>
@@ -261,9 +261,7 @@ const PropertiesPanel: React.FC = () => {
 							<ElementList>
 								{connectedElements.map((element, index) => (
 									<ElementListItem key={index}>
-										<div className='icon'>
-											{element && ELEMENT_ICON_CHARS[element.type]}
-										</div>
+										<div className='icon'>{element && element.name}</div>
 										<div className='details'>
 											<span>{element && ELEMENT_TITLES[element.type]}</span>
 											<span className='value'>

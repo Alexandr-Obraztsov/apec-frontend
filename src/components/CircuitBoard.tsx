@@ -31,13 +31,6 @@ const SVGCanvas = styled.svg`
 	height: 100%;
 `
 
-// Компонент для отображения линии при размещении
-const PlacementLine = styled.line`
-	stroke: var(--primary-color);
-	stroke-width: 2px;
-	stroke-dasharray: 5, 5;
-`
-
 const StatusBar = styled.div`
 	position: fixed;
 	bottom: 0;
@@ -91,7 +84,6 @@ const CircuitBoard: React.FC = () => {
 	const findNodeAtPosition = useCircuitStore(state => state.findNodeAtPosition)
 	const findClosestWire = useCircuitStore(state => state.findClosestWire)
 	const addNodeOnWire = useCircuitStore(state => state.addNodeOnWire)
-	const getNodeById = useCircuitStore(state => state.getNodeById)
 	const selectElement = useCircuitStore(state => state.selectElement)
 	const selectNode = useCircuitStore(state => state.selectNode)
 	const removeElement = useCircuitStore(state => state.removeElement)
