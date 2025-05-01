@@ -10,17 +10,17 @@ interface WireProps {
 	isHighlighted?: boolean
 }
 
-const StyledWire = styled.line<{ selected: boolean; $isHighlighted?: boolean }>`
-	stroke: ${({ selected, $isHighlighted }) =>
-		selected
-			? 'var(--primary-color)'
-			: $isHighlighted
-			? 'var(--accent-color)'
-			: 'var(--text-primary)'};
-	stroke-width: ${({ selected, $isHighlighted }) =>
-		selected ? '3px' : $isHighlighted ? '3px' : '2px'};
-	transition: var(--transition);
+const WirePath = styled.path<{ selected: boolean; highlighted: boolean }>`
+	stroke: ${({ selected, highlighted }) => {
+		if (selected) return 'var(--primary-color)'
+		if (highlighted) return 'var(--accent-color)'
+		return 'var(--text-primary)'
+	}};
+	stroke-width: ${({ selected, highlighted }) =>
+		selected || highlighted ? 2.5 : 2};
+	fill: none;
 	stroke-linecap: round;
+	transition: stroke 0.1s ease, stroke-width 0.1s ease;
 `
 
 const Wire: React.FC<WireProps> = ({
@@ -31,13 +31,10 @@ const Wire: React.FC<WireProps> = ({
 }) => {
 	return (
 		<>
-			<StyledWire
-				x1={startNode.position.x}
-				y1={startNode.position.y}
-				x2={endNode.position.x}
-				y2={endNode.position.y}
+			<WirePath
+				d={`M ${startNode.position.x} ${startNode.position.y} L ${endNode.position.x} ${endNode.position.y}`}
 				selected={selected}
-				$isHighlighted={isHighlighted}
+				highlighted={isHighlighted}
 			/>
 			{selected && (
 				<circle

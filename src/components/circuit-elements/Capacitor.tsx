@@ -15,7 +15,7 @@ const CapacitorContainer = styled.g<{ selected: boolean }>`
 		selected ? 'var(--primary-color)' : 'var(--text-primary)'};
 	stroke-width: 2px;
 	fill: none;
-	transition: var(--transition);
+	transition: stroke 0.1s ease, stroke-width 0.1s ease, fill 0.1s ease;
 `
 
 const CapacitorPlate = styled.line<{ selected: boolean }>`

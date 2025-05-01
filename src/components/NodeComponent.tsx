@@ -45,7 +45,9 @@ const NodeCircle = styled.circle<NodeCircleProps>`
 		$isSelected || $isPlacementStart || $isHighlighted ? 2.5 : 1.5};
 
 	cursor: pointer;
-	transition: var(--transition);
+	transition-property: stroke, stroke-width, fill, r;
+	transition-duration: 0.1s;
+	transition-timing-function: ease;
 
 	r: ${({ $isSelected, $isHovered, $isPlacementStart, $isHighlighted }) => {
 		if ($isPlacementStart) return 8

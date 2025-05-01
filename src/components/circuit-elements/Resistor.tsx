@@ -15,8 +15,16 @@ const ResistorContainer = styled.g<{ selected: boolean }>`
 		selected ? 'var(--primary-color)' : 'var(--text-primary)'};
 	stroke-width: 2px;
 	fill: none;
-	transition: var(--transition);
+	transition: stroke 0.1s ease, stroke-width 0.1s ease, fill 0.1s ease;
 `
+
+// Форматирование значения (например, 1000 Ом -> 1 кОм)
+const formatValue = (value: number, unit: string) => {
+	if (unit === 'Ом' && value >= 1000) {
+		return `${(value / 1000).toFixed(0)} кОм`
+	}
+	return `${value} ${unit}`
+}
 
 const Resistor: React.FC<ResistorProps> = memo(
 	({ element, startNode, endNode, selected }) => {
@@ -25,11 +33,19 @@ const Resistor: React.FC<ResistorProps> = memo(
 			// Вычисляем угол между узлами
 			const dx = endNode.position.x - startNode.position.x
 			const dy = endNode.position.y - startNode.position.y
-			const angle = (Math.atan2(dy, dx) * 180) / Math.PI
 
-			// Вычисляем центр для размещения резистора
-			const centerX = (startNode.position.x + endNode.position.x) / 2
-			const centerY = (startNode.position.y + endNode.position.y) / 2
+			// Округляем угол до 2 знаков после запятой
+			const angle = parseFloat(
+				((Math.atan2(dy, dx) * 180) / Math.PI).toFixed(2)
+			)
+
+			// Вычисляем центр для размещения резистора (округляем для стабильности)
+			const centerX = parseFloat(
+				((startNode.position.x + endNode.position.x) / 2).toFixed(1)
+			)
+			const centerY = parseFloat(
+				((startNode.position.y + endNode.position.y) / 2).toFixed(1)
+			)
 
 			// Расчет длины линии (расстояние между узлами)
 			const length = Math.sqrt(dx * dx + dy * dy)
@@ -37,36 +53,34 @@ const Resistor: React.FC<ResistorProps> = memo(
 			// Размер тела резистора
 			const resistorBodySize = 30
 
-			// Вычисляем длину проводов по обе стороны от тела резистора
-			const wireLength = (length - resistorBodySize) / 2
+			// Вычисляем длину проводов по обе стороны от тела резистора (с округлением)
+			const wireLength = parseFloat(
+				((length - resistorBodySize) / 2).toFixed(1)
+			)
 
 			// Создаем трансформацию для поворота компонента
 			const transform = `translate(${centerX}, ${centerY}) rotate(${angle})`
 
-			// Форматирование значения (например, 1000 Ом -> 1 кОм)
-			const valueText = formatValue(element.value, element.unit)
-
 			return {
-				dx,
-				dy,
 				angle,
 				centerX,
 				centerY,
-				length,
 				resistorBodySize,
 				wireLength,
 				transform,
-				valueText,
 			}
-		}, [startNode.position, endNode.position, element.value, element.unit])
+		}, [
+			startNode.position.x,
+			startNode.position.y,
+			endNode.position.x,
+			endNode.position.y,
+		])
 
-		// Форматирование значения (например, 1000 Ом -> 1 кОм)
-		const formatValue = (value: number, unit: string) => {
-			if (unit === 'Ом' && value >= 1000) {
-				return `${(value / 1000).toFixed(0)} кОм`
-			}
-			return `${value} ${unit}`
-		}
+		// Мемоизируем форматированное значение
+		const valueText = useMemo(
+			() => formatValue(element.value, element.unit),
+			[element.value, element.unit]
+		)
 
 		return (
 			<ResistorContainer selected={selected} transform={elementProps.transform}>
@@ -99,7 +113,7 @@ const Resistor: React.FC<ResistorProps> = memo(
 
 				{/* Значение текстом с фоном */}
 				<CircuitValue
-					value={elementProps.valueText}
+					value={valueText}
 					angle={elementProps.angle}
 					yOffset={15}
 				/>

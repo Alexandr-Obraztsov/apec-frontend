@@ -162,3 +162,17 @@ textarea:focus {
 		background-color: #242424;
 	}
 }
+
+body.dragging {
+	/* Отключаем сложные визуальные эффекты и анимации во время перетаскивания */
+	cursor: grabbing !important;
+	pointer-events: none;
+}
+
+body.dragging * {
+	/* Отключаем все transitions во время перетаскивания для максимальной производительности */
+	transition: none !important;
+	animation: none !important;
+	/* Оптимизация для GPU */
+	will-change: transform;
+}

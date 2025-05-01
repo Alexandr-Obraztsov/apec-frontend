@@ -96,7 +96,11 @@ const calculateAngle = (
 
 	const dx = endNode.position.x - startNode.position.x
 	const dy = endNode.position.y - startNode.position.y
-	return (Math.atan2(dy, dx) * 180) / Math.PI
+
+	// Округляем значение до 2-х знаков, чтобы избежать проблем с точностью вычислений
+	// и предотвратить ошибки при отрисовке с атрибутом transform
+	const angle = parseFloat(((Math.atan2(dy, dx) * 180) / Math.PI).toFixed(2))
+	return angle
 }
 
 // Дефолтные значения для компонентов
@@ -583,9 +587,27 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 
 	updateNodePosition: (id, position) =>
 		set(state => {
+			// Проверяем, изменилась ли позиция
+			const currentNode = state.nodes.find(node => node.id === id)
+
+			// Если позиция не изменилась, не обновляем состояние
+			if (
+				currentNode &&
+				Math.abs(currentNode.position.x - position.x) < 0.5 &&
+				Math.abs(currentNode.position.y - position.y) < 0.5
+			) {
+				return state
+			}
+
+			// Округляем координаты для уменьшения числа ненужных обновлений
+			const roundedPosition = {
+				x: Math.round(position.x * 10) / 10,
+				y: Math.round(position.y * 10) / 10,
+			}
+
 			// Обновляем позицию узла
 			const updatedNodes = state.nodes.map(node =>
-				node.id === id ? { ...node, position } : node
+				node.id === id ? { ...node, position: roundedPosition } : node
 			)
 
 			return { nodes: updatedNodes }

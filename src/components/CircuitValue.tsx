@@ -32,8 +32,12 @@ const CircuitValue: React.FC<CircuitValueProps> = ({
 	width = 60,
 	height = 20,
 }) => {
+	// Убедимся, что angle - число и округлим его до 2 знаков после запятой
+	// для предотвращения проблем с точностью вычислений
+	const safeAngle = typeof angle === 'number' ? parseFloat(angle.toFixed(2)) : 0
+
 	return (
-		<g transform={`rotate(-${angle})`}>
+		<g transform={`rotate(${safeAngle})`}>
 			<ValueBackground
 				x={-width / 2}
 				y={yOffset}
