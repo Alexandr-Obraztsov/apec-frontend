@@ -166,6 +166,11 @@ const CircuitSolver: React.FC = () => {
 	// Обработчик закрытия попапа
 	const handleClosePopup = () => {
 		setIsPopupOpen(false)
+		// Сбрасываем флаг загрузки при закрытии попапа,
+		// чтобы кнопка становилась доступной
+		if (isLoading) {
+			setIsLoading(false)
+		}
 	}
 
 	// Если нет узлов вообще, не отображаем ничего
