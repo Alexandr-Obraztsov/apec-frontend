@@ -180,7 +180,7 @@ const EquationValue = styled.div`
 	/* Стили для формул KaTeX */
 	.katex {
 		color: #000000;
-		font-size: 1.3em;
+		font-size: 1.5em;
 	}
 
 	.katex-display {

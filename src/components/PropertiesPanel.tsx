@@ -385,8 +385,8 @@ const PropertiesPanel: React.FC = () => {
 						{selectedElement && ELEMENT_ICON_CHARS[selectedElement.type]}
 					</ElementIcon>
 					<ElementTitle>
-						<h4>{selectedElement && ELEMENT_TITLES[selectedElement.type]}</h4>
-						<p>ID: #{selectedElementId?.substring(0, 6)}</p>
+						<h4>{selectedElement && selectedElement.name}</h4>
+						<p>{selectedElement && ELEMENT_TITLES[selectedElement.type]}</p>
 					</ElementTitle>
 				</ElementHeader>
 
