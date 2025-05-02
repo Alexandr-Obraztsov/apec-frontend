@@ -23,9 +23,9 @@ const PopupContent = styled.div`
 	padding: 0;
 	border-radius: 12px;
 	box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
-	width: 550px;
-	max-width: 90%;
-	max-height: 80vh;
+	width: 650px;
+	max-width: 95%;
+	max-height: 90vh;
 	display: flex;
 	flex-direction: column;
 	overflow: hidden;
@@ -140,7 +140,7 @@ const LoadingSpinner = styled.div`
 
 // Стили для отображения формул
 const EquationCard = styled.div`
-	margin-bottom: 16px;
+	margin-bottom: 20px;
 	border: 1px solid #e0e0e0;
 	border-radius: 8px;
 	overflow: hidden;
@@ -162,14 +162,16 @@ const EquationBody = styled.div`
 
 const EquationRow = styled.div`
 	display: flex;
-	margin-bottom: 12px;
-	align-items: center;
+	margin-bottom: 16px;
+	align-items: flex-start;
+	padding: 4px 0;
 `
 
 const EquationLabel = styled.div`
-	width: 100px;
+	width: 120px;
 	font-weight: 500;
 	color: #333;
+	padding-top: 8px;
 `
 
 const EquationValue = styled.div`
@@ -181,7 +183,8 @@ const EquationValue = styled.div`
 		font-size: 1.5em;
 		color: #000000;
 		margin: 0.5em 0;
-		overflow-x: auto;
+		overflow-x: visible;
+		max-width: none !important;
 	}
 `
 
@@ -196,6 +199,9 @@ const mathJaxConfig = {
 	svg: {
 		fontCache: 'global',
 		scale: 1.3,
+		minScale: 1.0,
+		matchFontHeight: false,
+		mtextInheritFont: false,
 	},
 }
 
@@ -277,7 +283,7 @@ const prettifyEquation = (equation: string): string => {
 		texEquation = texEquation
 			// Случай: 5/2 - 5\cdot e^{-\frac{20t}{3}}/18
 			.replace(
-				/(\\frac\{\d+\}\{\d+\})\s*\-\s*(\d+)\\cdot\s*e\^\{([^}]+)\}\/(\d+)/g,
+				/(\\frac\{\d+\}\{\d+\})\s*-\s*(\d+)\\cdot\s*e\^\{([^}]+)\}\/(\d+)/g,
 				'$1 - \\frac{$2 \\cdot e^{$3}}{$4}'
 			)
 			// Случай: 5/2 + 5\cdot e^{-\frac{20t}{3}}/18
@@ -292,8 +298,8 @@ const prettifyEquation = (equation: string): string => {
 
 	// Шаг 10: Добавляем пробелы вокруг операторов
 	texEquation = texEquation
-		.replace(/([0-9])([+\-])/g, '$1 $2')
-		.replace(/([+\-])([0-9])/g, '$1 $2')
+		.replace(/([0-9])([+\u002D])/g, '$1 $2')
+		.replace(/([+\u002D])([0-9])/g, '$1 $2')
 
 	// Финальные корректировки
 	texEquation = texEquation
