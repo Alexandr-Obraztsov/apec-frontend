@@ -83,6 +83,9 @@ interface CircuitState {
 	// Добавляем методы для управления подсветкой
 	setHighlightedElement: (id: string | null) => void
 	setHighlightedNode: (id: string | null) => void
+
+	// Функция для переименования узлов по порядку, начиная с 0
+	renameNodes: () => void
 }
 
 // Функция для расчета угла между двумя узлами
@@ -183,7 +186,7 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 			voltage: 0,
 			switch: 0,
 		},
-		nodes: 0,
+		nodes: -1,
 	},
 	// Состояние для подсветки элементов в панели связей
 	highlightedElementId: null,
@@ -257,7 +260,7 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 				node => node.connectedElements.length > 0
 			)
 
-			return {
+			const updatedState = {
 				elements: state.elements.filter(element => element.id !== id),
 				nodes: nodesToKeep,
 				// Если удаляемый элемент был выбран, снимаем выделение
@@ -267,6 +270,11 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 					elementId => elementId !== id
 				),
 			}
+
+			// После удаления элемента и связанных узлов, переименовываем оставшиеся узлы
+			setTimeout(() => get().renameNodes(), 0)
+
+			return updatedState
 		}),
 
 	removeSelectedElements: () =>
@@ -314,6 +322,9 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 			const nodesToKeep = updatedNodes.filter(
 				node => node.connectedElements.length > 0
 			)
+
+			// После удаления элементов и связанных узлов, переименовываем оставшиеся узлы
+			setTimeout(() => get().renameNodes(), 0)
 
 			return {
 				elements: updatedElements,
@@ -445,7 +456,7 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 		set(state => {
 			// Увеличиваем счетчик узлов
 			const counter = state.nameCounters.nodes + 1
-			// Создаем имя для узла
+			// Создаем имя для узла (теперь начиная с 0)
 			const nodeName = `${NODE_NAME_PREFIX}${counter}`
 
 			return {
@@ -465,6 +476,9 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 			}
 		})
 
+		// После добавления узла, убедимся что нумерация корректна
+		setTimeout(() => get().renameNodes(), 0)
+
 		return nodeId
 	},
 
@@ -482,7 +496,7 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 
 		// Увеличиваем счетчик узлов
 		const nodeCounter = state.nameCounters.nodes + 1
-		// Создаем имя для узла
+		// Создаем имя для узла (теперь начиная с 0)
 		const nodeName = `${NODE_NAME_PREFIX}${nodeCounter}`
 
 		// Создаем новый узел
@@ -582,8 +596,8 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 				.concat([wire1, wire2])
 
 			return {
-				nodes: [...updatedNodes, newNode],
 				elements: updatedElements,
+				nodes: [...updatedNodes, newNode],
 				// Выделяем новый узел, если мы находимся в режиме размещения элементов
 				selectedElementId:
 					state.selectedElementId === wireId ? null : state.selectedElementId,
@@ -601,6 +615,9 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 				},
 			}
 		})
+
+		// После создания узла на проводе, переименовываем узлы для корректной нумерации
+		setTimeout(() => get().renameNodes(), 0)
 
 		return nodeId
 	},
@@ -848,4 +865,32 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 		set({ highlightedElementId: id }),
 
 	setHighlightedNode: (id: string | null) => set({ highlightedNodeId: id }),
+
+	// Функция для переименования узлов по порядку, начиная с 0
+	renameNodes: () => {
+		const state = get()
+		const updatedNodes = [...state.nodes]
+
+		// Сортируем узлы по имени для поддержания последовательности
+		updatedNodes.sort((a, b) => {
+			const nameA = parseInt(a.name) || Infinity
+			const nameB = parseInt(b.name) || Infinity
+			return nameA - nameB
+		})
+
+		// Переименовываем узлы по порядку
+		const renamedNodes = updatedNodes.map((node, index) => ({
+			...node,
+			name: `${index}`,
+		}))
+
+		// Обновляем счетчик узлов
+		set({
+			nodes: renamedNodes,
+			nameCounters: {
+				...state.nameCounters,
+				nodes: renamedNodes.length > 0 ? renamedNodes.length - 1 : -1,
+			},
+		})
+	},
 }))

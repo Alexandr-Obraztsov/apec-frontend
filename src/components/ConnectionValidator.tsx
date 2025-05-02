@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react'
 import styled from 'styled-components'
 import { useCircuitStore } from '../store/circuitStore'
 import { Node } from '../types'
+import { circuitApi, SolutionItem } from '../services/api'
+import { formatCircuitToString } from '../services/api'
 
 // Стили для уведомления
 const AlertContainer = styled.div`
@@ -117,15 +119,71 @@ const PopupCloseButton = styled.button`
 	}
 `
 
+const ResultTable = styled.table`
+	width: 100%;
+	border-collapse: collapse;
+	margin-top: 15px;
+`
+
+const ResultRow = styled.tr`
+	&:nth-child(odd) {
+		background-color: rgba(0, 128, 0, 0.05);
+	}
+`
+
+const ResultCell = styled.td`
+	padding: 8px;
+	border: 1px solid #ddd;
+`
+
+const ResultHeader = styled.th`
+	padding: 10px;
+	background-color: rgba(0, 128, 0, 0.1);
+	color: #006400;
+	font-weight: 500;
+	text-align: left;
+	border: 1px solid #ddd;
+`
+
+const LoadingSpinner = styled.div`
+	display: inline-block;
+	width: 20px;
+	height: 20px;
+	margin-right: 10px;
+	border: 2px solid rgba(0, 128, 0, 0.1);
+	border-top: 2px solid #008000;
+	border-radius: 50%;
+	animation: spin 1s linear infinite;
+
+	@keyframes spin {
+		0% {
+			transform: rotate(0deg);
+		}
+		100% {
+			transform: rotate(360deg);
+		}
+	}
+`
+
 const ConnectionValidator: React.FC = () => {
 	// Получаем узлы из хранилища
 	const nodes = useCircuitStore(state => state.nodes)
+	const elements = useCircuitStore(state => state.elements)
 
 	// Состояние для неподключенных узлов
 	const [unconnectedNodes, setUnconnectedNodes] = useState<Node[]>([])
 
 	// Состояние для попапа
 	const [isPopupOpen, setIsPopupOpen] = useState(false)
+
+	// Состояния для результата решения и загрузки
+	const [solutionResult, setSolutionResult] = useState<string | null>(null)
+	const [formattedResult, setFormattedResult] = useState<SolutionItem[]>([])
+	const [isLoading, setIsLoading] = useState(false)
+	const [error, setError] = useState<string | null>(null)
+
+	// Состояние для отладочной информации
+	const [debugInfo, setDebugInfo] = useState<string | null>(null)
 
 	// Проверяем узлы на наличие соединений
 	useEffect(() => {
@@ -137,11 +195,47 @@ const ConnectionValidator: React.FC = () => {
 	// Обработчик открытия попапа
 	const handleOpenPopup = () => {
 		setIsPopupOpen(true)
+		setError(null)
+		setSolutionResult(null)
 	}
 
 	// Обработчик закрытия попапа
 	const handleClosePopup = () => {
 		setIsPopupOpen(false)
+	}
+
+	// Функция отправки схемы на сервер для решения
+	const solveCircuit = async () => {
+		setIsLoading(true)
+		setError(null)
+		setDebugInfo(null)
+
+		try {
+			// Подготовка данных схемы для отправки
+			const circuitData = {
+				nodes: nodes,
+				elements: elements,
+			}
+
+			// Получаем отладочную информацию - строковое представление схемы
+			const circuitString = formatCircuitToString(nodes, elements)
+			setDebugInfo(circuitString)
+
+			// Используем API-сервис для отправки данных
+			const response = await circuitApi.solveCircuit(circuitData)
+
+			// Устанавливаем результаты
+			setSolutionResult(response.solution)
+			setFormattedResult(response.formattedSolution || [])
+		} catch (err) {
+			// Обработка ошибок
+			console.error('Ошибка при решении схемы:', err)
+			setError(
+				'Произошла ошибка при попытке решить схему. Пожалуйста, попробуйте позже.'
+			)
+		} finally {
+			setIsLoading(false)
+		}
 	}
 
 	// Если нет узлов вообще, не отображаем ничего
@@ -198,8 +292,70 @@ const ConnectionValidator: React.FC = () => {
 							<PopupCloseButton onClick={handleClosePopup}>×</PopupCloseButton>
 						</PopupHeader>
 						<div>
-							{/* Здесь будет содержимое попапа */}
-							<p>Решение задачи будет реализовано в следующих версиях.</p>
+							{isLoading ? (
+								<p>
+									<LoadingSpinner /> Выполняется расчет схемы...
+								</p>
+							) : error ? (
+								<p style={{ color: 'red' }}>{error}</p>
+							) : solutionResult ? (
+								<div>
+									<p>Результаты расчета:</p>
+									{formattedResult.length > 0 ? (
+										<ResultTable>
+											<thead>
+												<tr>
+													<ResultHeader>Элемент</ResultHeader>
+													<ResultHeader>Значение</ResultHeader>
+													<ResultHeader>Единица измерения</ResultHeader>
+												</tr>
+											</thead>
+											<tbody>
+												{formattedResult.map((item, index) => (
+													<ResultRow key={item.id || item.name || index}>
+														<ResultCell>{item.name}</ResultCell>
+														<ResultCell>{item.value}</ResultCell>
+														<ResultCell>{item.unit}</ResultCell>
+													</ResultRow>
+												))}
+											</tbody>
+										</ResultTable>
+									) : (
+										<pre>{solutionResult}</pre>
+									)}
+
+									{/* Отладочная информация */}
+									{debugInfo && (
+										<div
+											style={{
+												marginTop: '20px',
+												borderTop: '1px solid #ddd',
+												paddingTop: '10px',
+											}}
+										>
+											<details>
+												<summary>Отладочная информация</summary>
+												<pre
+													style={{
+														backgroundColor: '#f5f5f5',
+														padding: '10px',
+														borderRadius: '4px',
+														fontSize: '12px',
+														overflowX: 'auto',
+													}}
+												>
+													{debugInfo}
+												</pre>
+											</details>
+										</div>
+									)}
+								</div>
+							) : (
+								<div>
+									<p>Для расчета параметров схемы нажмите кнопку ниже:</p>
+									<SolveButton onClick={solveCircuit}>Рассчитать</SolveButton>
+								</div>
+							)}
 						</div>
 					</PopupContent>
 				</PopupOverlay>

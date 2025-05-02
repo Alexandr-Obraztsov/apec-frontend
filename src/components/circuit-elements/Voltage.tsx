@@ -87,7 +87,7 @@ const Voltage: React.FC<VoltageProps> = ({
 			{/* Стрелка внутри источника напряжения */}
 			<line x1='-10' y1='0' x2='10' y2='0' strokeWidth='1.5' />
 			<Arrow
-				points='0,-6 8,0 0,6'
+				points='8,-6 0,0 8,6'
 				style={{
 					fill: selected ? 'var(--primary-color)' : 'var(--text-primary)',
 				}}
