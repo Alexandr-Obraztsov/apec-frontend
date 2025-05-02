@@ -4,6 +4,7 @@ import CircuitBoard from './components/CircuitBoard'
 import Toolbox from './components/Toolbox'
 import PropertiesPanel from './components/PropertiesPanel'
 import ConnectionsPanel from './components/ConnectionsPanel'
+import ConnectionValidator from './components/ConnectionValidator'
 
 const AppContainer = styled.div`
 	display: flex;
@@ -92,6 +93,7 @@ function App() {
 				<MemoizedToolbox />
 				<MemoizedPropertiesPanel />
 				<MemoizedConnectionsPanel />
+				<ConnectionValidator />
 			</MainContent>
 		</AppContainer>
 	)

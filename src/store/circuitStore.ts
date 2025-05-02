@@ -105,12 +105,12 @@ const calculateAngle = (
 	return angle
 }
 
-// Дефолтные значения для компонентов
+// Дефолтные значения для компонентов в единицах СИ
 const DEFAULT_VALUES = {
-	wire: { value: 10, unit: 'см' },
+	wire: { value: 0.1, unit: 'м' },
 	resistor: { value: 1000, unit: 'Ом' },
-	capacitor: { value: 10, unit: 'мкФ' },
-	inductor: { value: 1, unit: 'мГн' },
+	capacitor: { value: 0.00001, unit: 'Ф' },
+	inductor: { value: 0.001, unit: 'Гн' },
 	voltage: { value: 5, unit: 'В' },
 	switch: { value: 0, unit: '', isOpen: true },
 }

@@ -25,13 +25,19 @@ const CapacitorPlate = styled.line<{ selected: boolean }>`
 	stroke-linecap: round;
 `
 
-// Форматирование значения конденсатора
+// Форматирование значения конденсатора в единицах СИ (Ф)
 const formatValue = (value: number, unit: string) => {
-	if (unit === 'мкФ') {
-		if (value >= 1000) {
-			return `${(value / 1000).toFixed(1)} мФ`
-		} else if (value < 1) {
-			return `${(value * 1000).toFixed(0)} нФ`
+	if (unit === 'Ф') {
+		if (value >= 1) {
+			return `${value.toFixed(0)} Ф`
+		} else if (value >= 0.001) {
+			return `${(value * 1000).toFixed(0)} мФ`
+		} else if (value >= 0.000001) {
+			return `${(value * 1000000).toFixed(0)} мкФ`
+		} else if (value >= 0.000000001) {
+			return `${(value * 1000000000).toFixed(0)} нФ`
+		} else {
+			return `${(value * 1000000000000).toFixed(0)} пФ`
 		}
 	}
 	return `${value} ${unit}`

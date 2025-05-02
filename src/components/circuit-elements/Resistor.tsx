@@ -18,10 +18,14 @@ const ResistorContainer = styled.g<{ selected: boolean }>`
 	transition: stroke 0.1s ease, stroke-width 0.1s ease, fill 0.1s ease;
 `
 
-// Форматирование значения (например, 1000 Ом -> 1 кОм)
+// Форматирование значения в единицах СИ (Ом)
 const formatValue = (value: number, unit: string) => {
-	if (unit === 'Ом' && value >= 1000) {
-		return `${(value / 1000).toFixed(0)} кОм`
+	if (unit === 'Ом') {
+		if (value >= 1000000) {
+			return `${(value / 1000000).toFixed(1)} МОм`
+		} else if (value >= 1000) {
+			return `${(value / 1000).toFixed(1)} кОм`
+		}
 	}
 	return `${value} ${unit}`
 }

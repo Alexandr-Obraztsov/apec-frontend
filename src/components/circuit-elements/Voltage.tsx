@@ -55,13 +55,15 @@ const Voltage: React.FC<VoltageProps> = ({
 	// Создаем трансформацию для поворота компонента
 	const transform = `translate(${centerX}, ${centerY}) rotate(${angle})`
 
-	// Форматирование значения
+	// Форматирование значения напряжения в единицах СИ (В)
 	const formatValue = (value: number, unit: string) => {
 		if (unit === 'В') {
 			if (value >= 1000) {
 				return `${(value / 1000).toFixed(1)} кВ`
-			} else if (value < 1) {
+			} else if (value < 1 && value >= 0.001) {
 				return `${(value * 1000).toFixed(0)} мВ`
+			} else if (value < 0.001) {
+				return `${(value * 1000000).toFixed(0)} мкВ`
 			}
 		}
 		return `${value} ${unit}`

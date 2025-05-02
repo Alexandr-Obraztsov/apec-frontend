@@ -2,29 +2,67 @@ import React, { useState } from 'react'
 import styled from 'styled-components'
 import { useCircuitStore } from '../store/circuitStore'
 
-const PanelContainer = styled.div`
+interface PanelContainerProps {
+	collapsed: boolean
+}
+
+const PanelContainer = styled.div<PanelContainerProps>`
 	position: fixed;
-	bottom: 20px;
+	bottom: 50px;
 	right: 20px;
 	width: 280px;
-	max-height: 300px;
+	height: ${props => (props.collapsed ? '46px' : '300px')};
 	background-color: var(--surface-color);
 	border-radius: 8px;
 	padding: 12px;
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 	z-index: 1000;
-	overflow-y: auto;
+	overflow-y: ${props => (props.collapsed ? 'hidden' : 'auto')};
 	border: 1px solid var(--border-color);
 	font-size: 13px;
+	transition: height 0.3s ease, max-height 0.3s ease;
 `
 
-const Title = styled.div`
+const TitleContainer = styled.div`
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
 	font-weight: 600;
 	font-size: 14px;
 	margin-bottom: 10px;
 	padding-bottom: 8px;
 	border-bottom: 1px solid var(--border-color);
 	color: var(--text-primary);
+`
+
+const Title = styled.div`
+	font-weight: 600;
+	font-size: 14px;
+	color: var(--text-primary);
+`
+
+const CollapseButton = styled.button`
+	background: none;
+	border: none;
+	cursor: pointer;
+	color: var(--text-secondary);
+	font-size: 16px;
+	padding: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 24px;
+	height: 24px;
+	transition: transform 0.3s ease;
+	outline: none;
+
+	&:hover {
+		color: var(--text-primary);
+	}
+
+	&:focus {
+		outline: none;
+	}
 `
 
 const ElementItem = styled.div`
@@ -94,10 +132,17 @@ const SimpleConnectionItem = styled.div`
 const ConnectionsPanel: React.FC = () => {
 	// Состояние для переключения вкладок
 	const [activeTab, setActiveTab] = useState<'detailed' | 'simple'>('detailed')
+	// Состояние для сворачивания панели
+	const [collapsed, setCollapsed] = useState(false)
 
 	// Минимизируем получение данных из хранилища
 	const elements = useCircuitStore(state => state.elements)
 	const nodes = useCircuitStore(state => state.nodes)
+
+	// Переключение состояния сворачивания
+	const toggleCollapse = () => {
+		setCollapsed(!collapsed)
+	}
 
 	// Получаем имя узла по ID - базовая функция без зависимостей от хранилища
 	const getNodeNameById = (nodeId: string): string => {
@@ -144,25 +189,34 @@ const ConnectionsPanel: React.FC = () => {
 	)
 
 	return (
-		<PanelContainer>
-			<Title>Соединения элементов</Title>
+		<PanelContainer collapsed={collapsed}>
+			<TitleContainer>
+				<Title>Соединения элементов</Title>
+				<CollapseButton onClick={toggleCollapse}>
+					{collapsed ? '▲' : '▼'}
+				</CollapseButton>
+			</TitleContainer>
 
-			<TabsContainer>
-				<Tab
-					active={activeTab === 'detailed'}
-					onClick={() => setActiveTab('detailed')}
-				>
-					Детальные
-				</Tab>
-				<Tab
-					active={activeTab === 'simple'}
-					onClick={() => setActiveTab('simple')}
-				>
-					Простые
-				</Tab>
-			</TabsContainer>
+			{!collapsed && (
+				<>
+					<TabsContainer>
+						<Tab
+							active={activeTab === 'detailed'}
+							onClick={() => setActiveTab('detailed')}
+						>
+							Детальные
+						</Tab>
+						<Tab
+							active={activeTab === 'simple'}
+							onClick={() => setActiveTab('simple')}
+						>
+							Простые
+						</Tab>
+					</TabsContainer>
 
-			{activeTab === 'detailed' ? renderDetailedTab() : renderSimpleTab()}
+					{activeTab === 'detailed' ? renderDetailedTab() : renderSimpleTab()}
+				</>
+			)}
 		</PanelContainer>
 	)
 }
