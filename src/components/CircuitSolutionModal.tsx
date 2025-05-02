@@ -212,29 +212,58 @@ const formatEquation = (equation: string): string => {
 	// Заменяем входные паттерны на корректный LaTeX
 	let texEquation = equation.trim()
 
-	// Исправляем особые случаи в данных, которые видны на скриншоте
-	if (texEquation.includes('\\cdot e^{\\frac{')) {
-		// Формат вида "5\\cdot e^{\\frac{ - 20000t}{3}}/3"
-		texEquation = texEquation.replace(
-			/(\d+)\s*\+\s*(\d+)\\cdot e\^\{\\frac\{\s*-\s*(\d+)t\}\{(\d+)\}\}\/(\d+)/g,
-			'$1 + \\frac{$2e^{-\\frac{$3t}{$4}}}{$5}'
+	// Преобразуем запись exp в правильный формат e^{...}
+	texEquation = texEquation
+		// Преобразуем базовый формат exp(-число * t/число)
+		.replace(
+			/exp\(\s*-\s*(\d+)\s*\*\s*t\s*\/\s*(\d+)\s*\)/g,
+			'e^{-\\frac{$1t}{$2}}'
+		)
+		// Преобразуем умножение на exp с последующим делением: 5 * exp(...)/6
+		.replace(
+			/(\d+)\s*\*\s*exp\(\s*-\s*(\d+)\s*\*\s*t\s*\/\s*(\d+)\s*\)\s*\/\s*(\d+)/g,
+			'\\frac{$1 e^{-\\frac{$2t}{$3}}}{$4}'
+		)
+		// Преобразуем просто умножение на exp: 5 * exp(...)
+		.replace(
+			/(\d+)\s*\*\s*exp\(\s*-\s*(\d+)\s*\*\s*t\s*\/\s*(\d+)\s*\)/g,
+			'$1 e^{-\\frac{$2t}{$3}}'
+		)
+		// Общий случай для сложения с exp: 5 + 5 * exp(...)/6
+		.replace(
+			/(\d+)\s*\+\s*(\d+)\s*\*\s*exp\(\s*-\s*(\d+)\s*\*\s*t\s*\/\s*(\d+)\s*\)\s*\/\s*(\d+)/g,
+			'$1 + \\frac{$2 e^{-\\frac{$3t}{$4}}}{$5}'
+		)
+		// Общий случай для вычитания с exp: 5 - 5 * exp(...)/6
+		.replace(
+			/(\d+)\s*-\s*(\d+)\s*\*\s*exp\(\s*-\s*(\d+)\s*\*\s*t\s*\/\s*(\d+)\s*\)\s*\/\s*(\d+)/g,
+			'$1 - \\frac{$2 e^{-\\frac{$3t}{$4}}}{$5}'
 		)
 
-		texEquation = texEquation.replace(
-			/(\d+)\\cdot e\^\{\\frac\{\s*-\s*(\d+)t\}\{(\d+)\}\}\/(\d+)/g,
-			'\\frac{$1e^{-\\frac{$2t}{$3}}}{$4}'
-		)
-
-		texEquation = texEquation.replace(
-			/-(\d+)\s*\+\s*(\d+)\\cdot e\^\{\\frac\{\s*-\s*(\d+)t\}\{(\d+)\}\}\/(\d+)/g,
-			'-$1 + \\frac{$2e^{-\\frac{$3t}{$4}}}{$5}'
-		)
-
-		texEquation = texEquation.replace(
-			/(\d+)\s*[+-]\s*(\d+)\\cdot e\^\{\\frac\{\s*-\s*(\d+)t\}\{(\d+)\}\}/g,
-			'$1 $2e^{-\\frac{$3t}{$4}}'
-		)
+	// Исправляем особые случаи в данных, которые могли прийти в уже частично обработанном формате
+	if (texEquation.includes('\\cdot') || texEquation.includes('e^{\\frac{')) {
+		texEquation = texEquation
+			// Формат вида "5\\cdot e^{\\frac{ - 20000t}{3}}/3"
+			.replace(
+				/(\d+)\s*\+\s*(\d+)\\cdot e\^\{\\frac\{\s*-\s*(\d+)t\}\{(\d+)\}\}\/(\d+)/g,
+				'$1 + \\frac{$2e^{-\\frac{$3t}{$4}}}{$5}'
+			)
+			.replace(
+				/(\d+)\\cdot e\^\{\\frac\{\s*-\s*(\d+)t\}\{(\d+)\}\}\/(\d+)/g,
+				'\\frac{$1e^{-\\frac{$2t}{$3}}}{$4}'
+			)
+			.replace(
+				/-(\d+)\s*\+\s*(\d+)\\cdot e\^\{\\frac\{\s*-\s*(\d+)t\}\{(\d+)\}\}\/(\d+)/g,
+				'-$1 + \\frac{$2e^{-\\frac{$3t}{$4}}}{$5}'
+			)
+			.replace(
+				/(\d+)\s*[+-]\s*(\d+)\\cdot e\^\{\\frac\{\s*-\s*(\d+)t\}\{(\d+)\}\}/g,
+				'$1 $2e^{-\\frac{$3t}{$4}}'
+			)
 	}
+
+	// Заменяем оператор * на \cdot
+	texEquation = texEquation.replace(/(\d+)\s*\*\s*(\d+)/g, '$1 \\cdot $2')
 
 	// Убираем неправильные экранирования и добавляем корректные пробелы
 	texEquation = texEquation
