@@ -476,9 +476,6 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 			}
 		})
 
-		// После добавления узла, убедимся что нумерация корректна
-		setTimeout(() => get().renameNodes(), 0)
-
 		return nodeId
 	},
 
@@ -615,9 +612,6 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 				},
 			}
 		})
-
-		// После создания узла на проводе, переименовываем узлы для корректной нумерации
-		setTimeout(() => get().renameNodes(), 0)
 
 		return nodeId
 	},
@@ -869,28 +863,69 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 	// Функция для переименования узлов по порядку, начиная с 0
 	renameNodes: () => {
 		const state = get()
-		const updatedNodes = [...state.nodes]
+		const nodes = [...state.nodes]
 
-		// Сортируем узлы по имени для поддержания последовательности
-		updatedNodes.sort((a, b) => {
-			const nameA = parseInt(a.name) || Infinity
-			const nameB = parseInt(b.name) || Infinity
-			return nameA - nameB
-		})
+		// Если узлов нет, ничего не делаем
+		if (nodes.length === 0) return
 
-		// Переименовываем узлы по порядку
-		const renamedNodes = updatedNodes.map((node, index) => ({
-			...node,
-			name: `${index}`,
-		}))
+		// Получаем текущие имена узлов как числа
+		const nodeNumbers = nodes.map(node => parseInt(node.name) || 0)
 
-		// Обновляем счетчик узлов
-		set({
-			nodes: renamedNodes,
-			nameCounters: {
-				...state.nameCounters,
-				nodes: renamedNodes.length > 0 ? renamedNodes.length - 1 : -1,
-			},
-		})
+		// Проверяем, есть ли узел с номером 0
+		const hasZeroNode = nodeNumbers.includes(0)
+
+		// Находим пропущенные номера в последовательности
+		const sortedNodeNumbers = [...nodeNumbers].sort((a, b) => a - b)
+		const maxNodeNumber = sortedNodeNumbers[sortedNodeNumbers.length - 1]
+
+		// Создаем массив всех номеров, которые должны быть
+		const expectedNumbers = Array.from(
+			{ length: maxNodeNumber + 1 },
+			(_, i) => i
+		)
+
+		// Находим отсутствующие номера
+		const missingNumbers = expectedNumbers.filter(
+			num => !nodeNumbers.includes(num)
+		)
+
+		// Если нет узла с номером 0 или есть пропуски в последовательности
+		if (!hasZeroNode || missingNumbers.length > 0) {
+			// Получаем узлы, которые нужно переименовать (с наибольшими номерами)
+			const nodesToRename = [...nodes]
+				.sort((a, b) => {
+					const numA = parseInt(a.name) || 0
+					const numB = parseInt(b.name) || 0
+					return numB - numA // Сортируем в порядке убывания номеров
+				})
+				.slice(0, missingNumbers.length)
+
+			// Создаем карту переименований
+			const renameMap: Record<string, string> = {}
+
+			// Заполняем пропуски, начиная с наименьшего пропущенного номера
+			missingNumbers.sort((a, b) => a - b)
+
+			nodesToRename.forEach((node, index) => {
+				if (index < missingNumbers.length) {
+					renameMap[node.id] = `${missingNumbers[index]}`
+				}
+			})
+
+			// Применяем переименования
+			const renamedNodes = nodes.map(node => ({
+				...node,
+				name: renameMap[node.id] !== undefined ? renameMap[node.id] : node.name,
+			}))
+
+			// Обновляем счетчик узлов на максимальный номер
+			set({
+				nodes: renamedNodes,
+				nameCounters: {
+					...state.nameCounters,
+					nodes: maxNodeNumber,
+				},
+			})
+		}
 	},
 }))
