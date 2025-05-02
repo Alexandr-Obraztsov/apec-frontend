@@ -86,6 +86,9 @@ interface CircuitState {
 
 	// Функция для переименования узлов по порядку, начиная с 0
 	renameNodes: () => void
+
+	// Функция для переименования элементов каждого типа по порядку, начиная с 1
+	renameElements: () => void
 }
 
 // Функция для расчета угла между двумя узлами
@@ -192,7 +195,7 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 	highlightedElementId: null,
 	highlightedNodeId: null,
 
-	addElement: element =>
+	addElement: element => {
 		set(state => {
 			// Увеличиваем счетчик для типа элемента
 			const counter = state.nameCounters.elements[element.type] + 1
@@ -231,7 +234,11 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 				nodes: updatedNodes,
 				nameCounters: updatedCounters,
 			}
-		}),
+		})
+
+		// После добавления элемента, переименовываем элементы
+		setTimeout(() => get().renameElements(), 0)
+	},
 
 	removeElement: id =>
 		set(state => {
@@ -271,8 +278,11 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 				),
 			}
 
-			// После удаления элемента и связанных узлов, переименовываем оставшиеся узлы
-			setTimeout(() => get().renameNodes(), 0)
+			// После удаления элемента и связанных узлов, переименовываем оставшиеся узлы и элементы
+			setTimeout(() => {
+				get().renameNodes()
+				get().renameElements()
+			}, 0)
 
 			return updatedState
 		}),
@@ -323,8 +333,11 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 				node => node.connectedElements.length > 0
 			)
 
-			// После удаления элементов и связанных узлов, переименовываем оставшиеся узлы
-			setTimeout(() => get().renameNodes(), 0)
+			// После удаления элементов и связанных узлов, переименовываем оставшиеся узлы и элементы
+			setTimeout(() => {
+				get().renameNodes()
+				get().renameElements()
+			}, 0)
 
 			return {
 				elements: updatedElements,
@@ -617,7 +630,10 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 		})
 
 		// Вызываем переименование узлов после каждого добавления узла
-		setTimeout(() => get().renameNodes(), 0)
+		setTimeout(() => {
+			get().renameNodes()
+			get().renameElements()
+		}, 0)
 
 		return nodeId
 	},
@@ -675,7 +691,7 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 			},
 		})),
 
-	placeElement: endNodeId =>
+	placeElement: endNodeId => {
 		set(state => {
 			if (
 				!state.placementMode.active ||
@@ -804,7 +820,11 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 				},
 				nameCounters: updatedCounters,
 			}
-		}),
+		})
+
+		// После добавления элемента, переименовываем элементы
+		setTimeout(() => get().renameElements(), 0)
+	},
 
 	findNodeAtPosition: (position, threshold = 15) => {
 		const nodes = get().nodes
@@ -933,5 +953,77 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 				},
 			})
 		}
+	},
+
+	// Функция для переименования элементов каждого типа по порядку, начиная с 1
+	renameElements: () => {
+		const state = get()
+		const elements = [...state.elements]
+
+		// Если элементов нет, ничего не делаем
+		if (elements.length === 0) return
+
+		// Группируем элементы по типу
+		const elementsByType: Record<ElementType, AnyCircuitElement[]> = {
+			wire: [],
+			resistor: [],
+			capacitor: [],
+			inductor: [],
+			voltage: [],
+			switch: [],
+		}
+
+		// Заполняем группы
+		elements.forEach(element => {
+			elementsByType[element.type].push(element)
+		})
+
+		// Обрабатываем каждый тип элементов
+		let updatedElements: AnyCircuitElement[] = []
+		const updatedCounters = { ...state.nameCounters.elements }
+
+		// Обрабатываем каждый тип элементов
+		Object.keys(elementsByType).forEach(type => {
+			const elementsOfType = elementsByType[type as ElementType]
+
+			// Если нет элементов этого типа, пропускаем
+			if (elementsOfType.length === 0) {
+				updatedCounters[type as ElementType] = 0
+				return
+			}
+
+			// Сортируем элементы по текущим именам/номерам (извлекаем номер из имени)
+			const sortedElements = [...elementsOfType].sort((a, b) => {
+				const numA =
+					parseInt(a.name.replace(ELEMENT_NAME_PREFIXES[a.type], '')) || 0
+				const numB =
+					parseInt(b.name.replace(ELEMENT_NAME_PREFIXES[b.type], '')) || 0
+				return numA - numB
+			})
+
+			// Переименовываем элементы в порядке от 1 до N
+			const renamedElements = sortedElements.map((element, index) => {
+				const newNumber = index + 1 // Начинаем с 1
+				return {
+					...element,
+					name: `${ELEMENT_NAME_PREFIXES[element.type]}${newNumber}`,
+				}
+			})
+
+			// Обновляем счетчик для этого типа элементов
+			updatedCounters[type as ElementType] = renamedElements.length
+
+			// Добавляем переименованные элементы к результату
+			updatedElements = [...updatedElements, ...renamedElements]
+		})
+
+		// Обновляем состояние с переименованными элементами и обновленными счетчиками
+		set({
+			elements: updatedElements,
+			nameCounters: {
+				...state.nameCounters,
+				elements: updatedCounters,
+			},
+		})
 	},
 }))
