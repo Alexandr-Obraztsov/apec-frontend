@@ -255,7 +255,7 @@ const PropertiesPanel: React.FC = () => {
 	const updateSwitchState = useCircuitStore(state => state.updateSwitchState)
 	const removeElement = useCircuitStore(state => state.removeElement)
 
-	const [currentValue, setCurrentValue] = useState<number | string>(0)
+	const [currentValue, setCurrentValue] = useState<string>('')
 	const [switchState, setSwitchState] = useState<boolean>(false)
 
 	// Найдем выбранный элемент и узел
@@ -274,7 +274,8 @@ const PropertiesPanel: React.FC = () => {
 	// Обновляем локальное состояние при изменении выбранного элемента
 	useEffect(() => {
 		if (selectedElement) {
-			setCurrentValue(selectedElement.value)
+			// Преобразуем любое значение (число или строку) в строку
+			setCurrentValue(String(selectedElement.value))
 
 			// Устанавливаем состояние переключателя, если выбран ключ
 			if (selectedElement.type === 'switch') {
@@ -350,15 +351,8 @@ const PropertiesPanel: React.FC = () => {
 
 	// Если выбран элемент
 	const handleValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const value = e.target.value
-
-		// Если значение можно преобразовать в число и оно не пустое - преобразуем,
-		// иначе оставляем как есть (строка)
-		if (value && !isNaN(parseFloat(value))) {
-			setCurrentValue(parseFloat(value))
-		} else {
-			setCurrentValue(value)
-		}
+		// Всегда сохраняем введенное значение как строку, без попыток преобразования в число
+		setCurrentValue(e.target.value)
 	}
 
 	const handleValueBlur = () => {
@@ -376,7 +370,7 @@ const PropertiesPanel: React.FC = () => {
 			updateSwitchState(selectedElementId, !newState)
 
 			// Устанавливаем value в соответствии с состоянием: 1 для включен, 0 для выключен
-			updateElementValue(selectedElementId, newState ? 1 : 0)
+			updateElementValue(selectedElementId, newState ? '1' : '0')
 		}
 	}
 
