@@ -220,88 +220,105 @@ const prettifyEquation = (equation: string): string => {
 		return equation.trim()
 	}
 
-	// Шаг 1: Исправляем известные шаблоны выражений
-	let texEquation = equation.trim()
+	// Базовая нормализация
+	let texEquation = equation
+		.trim()
+		.replace(/\s+/g, ' ') // Нормализуем пробелы
+		.replace(/\\\\/g, '\\') // Убираем двойные экранирования
 
-	// Шаг 2: Заменяем простые дроби на \frac{}{} формат
-	// Например: 1/400 -> \frac{1}{400}
-	texEquation = texEquation.replace(/(\d+)\/(\d+)/g, '\\frac{$1}{$2}')
+	// БАЗОВЫЕ МАТЕМАТИЧЕСКИЕ ПРЕОБРАЗОВАНИЯ
 
-	// Шаг 3: Заменяем выражения вида n - k * x на n - k \cdot x
+	// 1. Преобразование экспоненты: exp(x) -> e^{x}
+	texEquation = texEquation
+		.replace(/exp\(\s*([^)]+)\s*\)/g, 'e^{$1}')
+		// Специальный случай для отрицательных аргументов
+		.replace(/exp\(\s*-\s*([^)]+)\s*\)/g, 'e^{-$1}')
+
+	// 2. Преобразование корней: sqrt(x) -> \sqrt{x}
+	texEquation = texEquation.replace(/sqrt\(\s*([^)]+)\s*\)/g, '\\sqrt{$1}')
+
+	// 3. Преобразование дробей: a/b -> \frac{a}{b}
+	// Сначала обрабатываем простые дроби с числами
+	texEquation = texEquation.replace(/(\d+)\s*\/\s*(\d+)/g, '\\frac{$1}{$2}')
+
+	// 4. Преобразование сложных дробей с выражениями
+	// Находим и преобразуем выражения вида (a+b)/(c+d)
 	texEquation = texEquation.replace(
-		/(\d+)\s*-\s*(\d+)\s*\*\s*([a-zA-Z])/g,
-		'$1 - $2 \\cdot $3'
+		/\(([^()]+)\)\s*\/\s*\(([^()]+)\)/g,
+		'\\frac{$1}{$2}'
 	)
 
-	// Шаг 4: Заменяем выражения вида n + k * x на n + k \cdot x
+	// 5. Преобразование умножения: a*b -> a \cdot b
 	texEquation = texEquation.replace(
-		/(\d+)\s*\+\s*(\d+)\s*\*\s*([a-zA-Z])/g,
-		'$1 + $2 \\cdot $3'
+		/(\d+|[a-zA-Z])\s*\*\s*(\d+|[a-zA-Z])/g,
+		'$1 \\cdot $2'
 	)
 
-	// Шаг 5: Исправляем запись экспонент
-	// Формат: e^(-kt/n) или exp(-kt/n)
-	texEquation = texEquation
-		// Преобразуем exp(-число * t/число) в красивую экспоненту
-		.replace(
-			/exp\(\s*-\s*(\d+)\s*\*\s*t\s*\/\s*(\d+)\s*\)/g,
-			'e^{-\\frac{$1t}{$2}}'
-		)
-		// Преобразуем exp(-число t/число) в красивую экспоненту (без *)
-		.replace(/exp\(\s*-\s*(\d+)\s*t\s*\/\s*(\d+)\s*\)/g, 'e^{-\\frac{$1t}{$2}}')
-		// Преобразуем e^-число*t/число в правильный формат
-		.replace(/e\^\s*-\s*(\d+)\s*\*\s*t\s*\/\s*(\d+)/g, 'e^{-\\frac{$1t}{$2}}')
+	// 6. Преобразование степеней: a^b -> a^{b} для многосимвольных степеней
+	texEquation = texEquation.replace(
+		/([a-zA-Z0-9])\^([a-zA-Z0-9][a-zA-Z0-9+\-*/]+)/g,
+		'$1^{$2}'
+	)
 
-	// Шаг 6: Исправляем выражения с дробями внутри экспонент
-	texEquation = texEquation
-		// Например: 5 * e^(-20t/3) / 18
-		.replace(
-			/(\d+)\s*\*\s*e\^\{\s*-\\frac\{(\d+)t\}\{(\d+)\}\s*\}\s*\/\s*(\d+)/g,
-			'\\frac{$1 \\cdot e^{-\\frac{$2t}{$3}}}{$4}'
-		)
-		// Например: e^(-20t/3) / 18
-		.replace(
-			/e\^\{\s*-\\frac\{(\d+)t\}\{(\d+)\}\s*\}\s*\/\s*(\d+)/g,
-			'\\frac{e^{-\\frac{$1t}{$2}}}{$3}'
-		)
+	// 7. Правильное форматирование отрицательных величин в дробях
+	texEquation = texEquation.replace(/-\\frac/g, '-\\frac')
 
-	// Шаг 7: Исправляем смешанные выражения
-	texEquation = texEquation
-		// Например: 5/2 - 5 * e^(-20t/3) / 18
-		.replace(
-			/(\\frac\{\d+\}\{\d+\})\s*-\s*(\d+)\s*\*\s*e\^\{([^}]+)\}\s*\/\s*(\d+)/g,
-			'$1 - \\frac{$2 \\cdot e^{$3}}{$4}'
-		)
-		// Например: 5/2 + 5 * e^(-20t/3) / 18
-		.replace(
-			/(\\frac\{\d+\}\{\d+\})\s*\+\s*(\d+)\s*\*\s*e\^\{([^}]+)\}\s*\/\s*(\d+)/g,
-			'$1 + \\frac{$2 \\cdot e^{$3}}{$4}'
-		)
+	// СПЕЦИАЛЬНЫЕ ПРЕОБРАЗОВАНИЯ ДЛЯ СЛОЖНЫХ ВЫРАЖЕНИЙ
 
-	// Шаг 8: Обрабатываем уже частично форматированные выражения
-	if (texEquation.includes('\\cdot') || texEquation.includes('e^{\\frac{')) {
-		texEquation = texEquation
-			// Случай: 5/2 - 5\cdot e^{-\frac{20t}{3}}/18
-			.replace(
-				/(\\frac\{\d+\}\{\d+\})\s*-\s*(\d+)\\cdot\s*e\^\{([^}]+)\}\/(\d+)/g,
-				'$1 - \\frac{$2 \\cdot e^{$3}}{$4}'
-			)
-			// Случай: 5/2 + 5\cdot e^{-\frac{20t}{3}}/18
-			.replace(
-				/(\\frac\{\d+\}\{\d+\})\s*\+\s*(\d+)\\cdot\s*e\^\{([^}]+)\}\/(\d+)/g,
-				'$1 + \\frac{$2 \\cdot e^{$3}}{$4}'
-			)
+	// 8. Обработка комплексных выражений с дробями и экспонентами
+
+	// 8.1 Преобразование для выражений вида e^{x}/y
+	texEquation = texEquation.replace(
+		/e\^{([^}]+)}\s*\/\s*(\d+|\([^)]+\))/g,
+		'\\frac{e^{$1}}{$2}'
+	)
+
+	// 8.2 Преобразование для a * e^{x}/b
+	texEquation = texEquation.replace(
+		/(\d+)\s*\\cdot\s*e\^{([^}]+)}\s*\/\s*(\d+)/g,
+		'\\frac{$1 \\cdot e^{$2}}{$3}'
+	)
+
+	// 8.3 Преобразование для \frac{a}{b} +/- \frac{c*e^{x}}{d}
+	texEquation = texEquation
+		.replace(/(\\frac{[^}]+}{[^}]+})\s*\+\s*(\\frac{[^}]+}{[^}]+})/g, '$1 + $2')
+		.replace(/(\\frac{[^}]+}{[^}]+})\s*-\s*(\\frac{[^}]+}{[^}]+})/g, '$1 - $2')
+
+	// 9. Преобразование trig(x) -> \trig{x} для тригонометрических функций
+	const trigFunctions = [
+		'sin',
+		'cos',
+		'tan',
+		'cot',
+		'sec',
+		'csc',
+		'arcsin',
+		'arccos',
+		'arctan',
+	]
+	trigFunctions.forEach(func => {
+		const pattern = new RegExp(`${func}\\(([^)]+)\\)`, 'g')
+		texEquation = texEquation.replace(pattern, `\\${func}{$1}`)
+	})
+
+	// 10. Проверяем дроби внутри дробей и корректируем их
+	if (texEquation.includes('\\frac') && texEquation.includes('}{')) {
+		// Находим вложенные дроби и делаем их правильными
+		texEquation = texEquation.replace(
+			/\\frac{([^{}]*?)\\frac{([^{}]+)}{([^{}]+)}([^{}]*?)}{([^{}]+)}/g,
+			'\\frac{$1\\frac{$2}{$3}$4}{$5}'
+		)
 	}
 
-	// Шаг 9: Заменяем оператор * на \cdot
-	texEquation = texEquation.replace(/(\d+)\s*\*\s*(\d+|\w+)/g, '$1 \\cdot $2')
+	// 11. Улучшаем вид чисел с умножением на t в экспонентах (например, 20t -> 20 \cdot t)
+	texEquation = texEquation.replace(/(\d+)t/g, '$1 \\cdot t')
 
-	// Шаг 10: Добавляем пробелы вокруг операторов
+	// 12. Добавляем пробелы вокруг операторов для улучшения читаемости
 	texEquation = texEquation
 		.replace(/([0-9])([+\u002D])/g, '$1 $2')
 		.replace(/([+\u002D])([0-9])/g, '$1 $2')
 
-	// Финальные корректировки
+	// Финальная очистка и форматирование
 	texEquation = texEquation
 		.replace(/\s+/g, ' ') // Нормализация пробелов
 		.trim()
