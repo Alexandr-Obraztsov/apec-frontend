@@ -24,7 +24,7 @@ export interface ElementEquations {
 	'U(t)': string
 	[key: string]: string
 }
- 
+
 // Интерфейс для результата решения с уравнениями
 export interface CircuitSolutionResult {
 	[elementName: string]: ElementEquations
@@ -36,6 +36,13 @@ export interface SolutionResponse {
 	result?: CircuitSolutionResult
 	solution?: string
 	formattedSolution?: SolutionItem[]
+}
+
+// Функция для проверки, содержит ли строка только число
+const isNumericString = (str: string): boolean => {
+	// Регулярное выражение для проверки, что строка содержит только число (целое или десятичное)
+	// Допускает отрицательные числа и экспоненциальную запись
+	return /^-?\d+(\.\d+)?([eE][-+]?\d+)?$/.test(str)
 }
 
 // Функция для преобразования элементов схемы в текстовый формат
@@ -55,8 +62,23 @@ export const formatCircuitToString = (
 		if (!startNode || !endNode) return
 
 		let lineValue: string
+		// Проверяем значение и определяем, нужно ли заключать его в фигурные скобки
+		let valueStr: string
+
+		if (typeof element.value === 'number') {
+			// Если значение - число, просто преобразуем его в строку
+			valueStr = element.value.toString()
+		} else {
+			// Если значение - строка, проверяем её содержимое
+			const stringValue = element.value.toString().trim()
+
+			// Если строка содержит только число, используем её как есть
+			// Иначе оборачиваем в фигурные скобки
+			valueStr = isNumericString(stringValue) ? stringValue : `{${stringValue}}`
+		}
+
 		if (element.type === 'voltage') {
-			lineValue = `${element.name} ${endNode.name} ${startNode.name} ${element.value};`
+			lineValue = `${element.name} ${endNode.name} ${startNode.name} ${valueStr};`
 		} else if (element.type === 'switch') {
 			lineValue = `${element.name} ${startNode.name} ${endNode.name} ${
 				element.isOpen ? 'no 0' : 'nc 0'
@@ -64,7 +86,7 @@ export const formatCircuitToString = (
 		} else if (element.type === 'wire') {
 			lineValue = `W ${startNode.name} ${endNode.name};`
 		} else {
-			lineValue = `${element.name} ${startNode.name} ${endNode.name} ${element.value};`
+			lineValue = `${element.name} ${startNode.name} ${endNode.name} ${valueStr};`
 		}
 
 		circuitLines.push(lineValue)
