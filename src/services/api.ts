@@ -24,7 +24,7 @@ export interface ElementEquations {
 	'U(t)': string
 	[key: string]: string
 }
-
+ 
 // Интерфейс для результата решения с уравнениями
 export interface CircuitSolutionResult {
 	[elementName: string]: ElementEquations

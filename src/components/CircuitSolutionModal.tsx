@@ -11,61 +11,71 @@ const PopupOverlay = styled.div`
 	left: 0;
 	right: 0;
 	bottom: 0;
-	background-color: rgba(0, 0, 0, 0.5);
+	background-color: rgba(0, 0, 0, 0.65);
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	z-index: 2000;
+	backdrop-filter: blur(2px);
 `
 
 const PopupContent = styled.div`
 	background-color: white;
-	padding: 20px;
-	border-radius: 8px;
-	box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+	padding: 0;
+	border-radius: 12px;
+	box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
 	width: 550px;
 	max-width: 90%;
 	max-height: 80vh;
 	display: flex;
 	flex-direction: column;
 	overflow: hidden;
+	animation: fadeIn 0.3s ease-out;
+
+	@keyframes fadeIn {
+		from {
+			opacity: 0;
+			transform: translateY(-20px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
 `
 
 const PopupHeader = styled.div`
 	font-size: 18px;
 	font-weight: 600;
-	margin-bottom: 15px;
-	padding-bottom: 10px;
-	border-bottom: 1px solid #eaeaea;
+	padding: 18px 20px;
+	background: linear-gradient(135deg, #3a8040 0%, #4daf53 100%);
+	color: white;
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 `
 
 const PopupBody = styled.div`
 	overflow-y: auto;
-	padding-right: 5px;
+	padding: 20px;
 	flex: 1;
 `
 
 const PopupCloseButton = styled.button`
-	background: none;
+	background: transparent;
 	border: none;
 	font-size: 18px;
-	width: 28px;
-	height: 28px;
+	padding: 0;
+	width: 30px;
+	height: 30px;
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	cursor: pointer;
-	color: #666;
+	color: white;
 	border-radius: 50%;
 	transition: all 0.2s;
-
-	&:hover {
-		background-color: #f0f0f0;
-		color: #333;
-	}
 `
 
 const ResultTable = styled.table`
@@ -94,15 +104,30 @@ const ResultHeader = styled.th`
 	border: 1px solid #ddd;
 `
 
+const LoadingContainer = styled.div`
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 50px 0;
+	color: #333;
+	text-align: center;
+`
+
+const LoadingText = styled.p`
+	margin-top: 20px;
+	font-size: 16px;
+	color: #555;
+`
+
 const LoadingSpinner = styled.div`
 	display: inline-block;
-	width: 20px;
-	height: 20px;
-	margin-right: 10px;
-	border: 2px solid rgba(0, 128, 0, 0.1);
-	border-top: 2px solid #008000;
+	width: 50px;
+	height: 50px;
+	border: 4px solid rgba(75, 175, 80, 0.1);
+	border-top: 4px solid #4baf50;
 	border-radius: 50%;
-	animation: spin 1s linear infinite;
+	animation: spin 1.2s cubic-bezier(0.5, 0.1, 0.5, 0.9) infinite;
 
 	@keyframes spin {
 		0% {
@@ -275,14 +300,17 @@ const CircuitSolutionModal: React.FC<CircuitSolutionModalProps> = ({
 		<PopupOverlay>
 			<PopupContent>
 				<PopupHeader>
-					<div>Результаты расчета</div>
+					<div>{isLoading ? 'Расчет схемы' : 'Результаты расчета'}</div>
 					<PopupCloseButton onClick={onClose}>×</PopupCloseButton>
 				</PopupHeader>
 				<PopupBody>
 					{isLoading ? (
-						<p style={{ textAlign: 'center', padding: '30px 0' }}>
-							<LoadingSpinner /> Выполняется расчет схемы...
-						</p>
+						<LoadingContainer>
+							<LoadingSpinner />
+							<LoadingText>
+								Выполняется расчет электрической схемы...
+							</LoadingText>
+						</LoadingContainer>
 					) : error ? (
 						<p style={{ color: 'red' }}>{error}</p>
 					) : solutionEquations ? (
