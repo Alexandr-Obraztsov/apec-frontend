@@ -2,8 +2,14 @@ import React, { useEffect, useState } from 'react'
 import styled from 'styled-components'
 import { useCircuitStore } from '../store/circuitStore'
 import { Node } from '../types'
-import { circuitApi, SolutionItem } from '../services/api'
+import {
+	circuitApi,
+	SolutionItem,
+	CircuitSolutionResult,
+} from '../services/api'
 import { formatCircuitToString } from '../services/api'
+import 'katex/dist/katex.min.css'
+import { BlockMath } from 'react-katex'
 
 // Стили для уведомления
 const AlertContainer = styled.div`
@@ -165,6 +171,79 @@ const LoadingSpinner = styled.div`
 	}
 `
 
+// Стили для отображения формул
+const EquationCard = styled.div`
+	margin-bottom: 16px;
+	border: 1px solid #e0e0e0;
+	border-radius: 8px;
+	overflow: hidden;
+`
+
+const EquationHeader = styled.div`
+	background-color: rgba(0, 128, 0, 0.1);
+	padding: 10px 16px;
+	font-weight: 600;
+	border-bottom: 1px solid #e0e0e0;
+`
+
+const EquationBody = styled.div`
+	padding: 16px;
+	background-color: white;
+`
+
+const EquationRow = styled.div`
+	display: flex;
+	margin-bottom: 12px;
+	align-items: center;
+`
+
+const EquationLabel = styled.div`
+	width: 80px;
+	font-weight: 500;
+	color: #333;
+`
+
+const EquationValue = styled.div`
+	flex: 1;
+	padding-left: 16px;
+`
+
+// Компонент для отображения уравнений
+const EquationDisplay = ({ tex }: { tex: string }) => {
+	return <BlockMath math={tex} />
+}
+
+// Функция для преобразования уравнения в формат LaTeX
+const formatEquation = (equation: string): string => {
+	// Создаем копию уравнения для обработки
+	let texEquation = equation.trim()
+
+	// Заменяем дроби
+	// Находим шаблоны вида "X/Y"
+	texEquation = texEquation.replace(
+		/(\w+|\d+)\s*\/\s*(\w+|\d+)/g,
+		(match, numerator, denominator) => {
+			return `\\frac{${numerator}}{${denominator}}`
+		}
+	)
+
+	// Заменяем экспоненту
+	texEquation = texEquation.replace(
+		/exp\(\s*(-?\d+)\s*\*\s*t\s*\/\s*(\d+)\s*\)/g,
+		(match, num, denom) => {
+			return `\\exp\\left(\\frac{${num}t}{${denom}}\\right)`
+		}
+	)
+
+	// Заменяем остальные математические операторы
+	texEquation = texEquation
+		.replace(/\*/g, '\\cdot ')
+		.replace(/\+/g, '+')
+		.replace(/-/g, '-')
+
+	return texEquation
+}
+
 const ConnectionValidator: React.FC = () => {
 	// Получаем узлы из хранилища
 	const nodes = useCircuitStore(state => state.nodes)
@@ -184,6 +263,10 @@ const ConnectionValidator: React.FC = () => {
 
 	// Состояние для отладочной информации
 	const [debugInfo, setDebugInfo] = useState<string | null>(null)
+
+	// Добавляем состояние для результатов с уравнениями
+	const [solutionEquations, setSolutionEquations] =
+		useState<CircuitSolutionResult | null>(null)
 
 	// Проверяем узлы на наличие соединений
 	useEffect(() => {
@@ -209,6 +292,7 @@ const ConnectionValidator: React.FC = () => {
 		setIsLoading(true)
 		setError(null)
 		setDebugInfo(null)
+		setSolutionEquations(null)
 
 		try {
 			// Подготовка данных схемы для отправки
@@ -225,7 +309,10 @@ const ConnectionValidator: React.FC = () => {
 			const response = await circuitApi.solveCircuit(circuitData)
 
 			// Устанавливаем результаты
-			setSolutionResult(response.solution)
+			if (response.status === 'success' && response.result) {
+				setSolutionEquations(response.result)
+			}
+			setSolutionResult(response.solution || null)
 			setFormattedResult(response.formattedSolution || [])
 		} catch (err) {
 			// Обработка ошибок
@@ -236,6 +323,34 @@ const ConnectionValidator: React.FC = () => {
 		} finally {
 			setIsLoading(false)
 		}
+	}
+
+	// Рендеринг результатов с уравнениями
+	const renderEquations = () => {
+		if (!solutionEquations) return null
+
+		return (
+			<div>
+				<h3>Результаты расчета:</h3>
+				{Object.entries(solutionEquations).map(([elementName, equations]) => (
+					<EquationCard key={elementName}>
+						<EquationHeader>Элемент: {elementName}</EquationHeader>
+						<EquationBody>
+							{Object.entries(equations).map(([eqName, eqValue]) => (
+								<EquationRow key={eqName}>
+									<EquationLabel>
+										{eqName === 'i(t)' ? 'Ток:' : 'Напряжение:'}
+									</EquationLabel>
+									<EquationValue>
+										<EquationDisplay tex={formatEquation(eqValue)} />
+									</EquationValue>
+								</EquationRow>
+							))}
+						</EquationBody>
+					</EquationCard>
+				))}
+			</div>
+		)
 	}
 
 	// Если нет узлов вообще, не отображаем ничего
@@ -298,6 +413,8 @@ const ConnectionValidator: React.FC = () => {
 								</p>
 							) : error ? (
 								<p style={{ color: 'red' }}>{error}</p>
+							) : solutionEquations ? (
+								renderEquations()
 							) : solutionResult ? (
 								<div>
 									<p>Результаты расчета:</p>
@@ -323,37 +440,37 @@ const ConnectionValidator: React.FC = () => {
 									) : (
 										<pre>{solutionResult}</pre>
 									)}
-
-									{/* Отладочная информация */}
-									{debugInfo && (
-										<div
-											style={{
-												marginTop: '20px',
-												borderTop: '1px solid #ddd',
-												paddingTop: '10px',
-											}}
-										>
-											<details>
-												<summary>Отладочная информация</summary>
-												<pre
-													style={{
-														backgroundColor: '#f5f5f5',
-														padding: '10px',
-														borderRadius: '4px',
-														fontSize: '12px',
-														overflowX: 'auto',
-													}}
-												>
-													{debugInfo}
-												</pre>
-											</details>
-										</div>
-									)}
 								</div>
 							) : (
 								<div>
 									<p>Для расчета параметров схемы нажмите кнопку ниже:</p>
 									<SolveButton onClick={solveCircuit}>Рассчитать</SolveButton>
+								</div>
+							)}
+
+							{/* Отладочная информация */}
+							{debugInfo && (
+								<div
+									style={{
+										marginTop: '20px',
+										borderTop: '1px solid #ddd',
+										paddingTop: '10px',
+									}}
+								>
+									<details>
+										<summary>Отладочная информация</summary>
+										<pre
+											style={{
+												backgroundColor: '#f5f5f5',
+												padding: '10px',
+												borderRadius: '4px',
+												fontSize: '12px',
+												overflowX: 'auto',
+											}}
+										>
+											{debugInfo}
+										</pre>
+									</details>
 								</div>
 							)}
 						</div>

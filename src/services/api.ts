@@ -18,9 +18,23 @@ export interface SolutionItem {
 	id?: string
 }
 
+// Интерфейс для уравнений элемента
+export interface ElementEquations {
+	'i(t)': string
+	'U(t)': string
+	[key: string]: string
+}
+
+// Интерфейс для результата решения с уравнениями
+export interface CircuitSolutionResult {
+	[elementName: string]: ElementEquations
+}
+
 // Интерфейс для ответа с решением
 export interface SolutionResponse {
-	solution: string
+	status?: string
+	result?: CircuitSolutionResult
+	solution?: string
 	formattedSolution?: SolutionItem[]
 }
 
@@ -41,12 +55,14 @@ export const formatCircuitToString = (
 		if (!startNode || !endNode) return
 
 		let lineValue: string
-		if (element.type === 'switch') {
+		if (element.type === 'voltage') {
+			lineValue = `${element.name} ${endNode.name} ${startNode.name} ${element.value};`
+		} else if (element.type === 'switch') {
 			lineValue = `${element.name} ${startNode.name} ${endNode.name} ${
 				element.isOpen ? 'no 0' : 'nc 0'
 			};`
 		} else if (element.type === 'wire') {
-			lineValue = `${element.name} ${startNode.name} ${endNode.name};`
+			lineValue = `W ${startNode.name} ${endNode.name};`
 		} else {
 			lineValue = `${element.name} ${startNode.name} ${endNode.name} ${element.value};`
 		}
