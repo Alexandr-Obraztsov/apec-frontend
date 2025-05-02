@@ -52,11 +52,13 @@ const Wire: React.FC<WireProps> = ({
 		const dy = endNode.position.y - startNode.position.y
 		const angle = parseFloat(((Math.atan2(dy, dx) * 180) / Math.PI).toFixed(2))
 
-		// Получаем форматированное значение
-		const formattedValue = formatValue(element.value, element.unit)
+		// Получаем форматированное значение с именем
+		const formattedValue = `${formatValue(element.value, element.unit)} ${
+			element.name
+		}`
 
 		return { formattedValue, angle }
-	}, [startNode, endNode, element.value, element.unit])
+	}, [startNode, endNode, element.value, element.unit, element.name])
 
 	return (
 		<>

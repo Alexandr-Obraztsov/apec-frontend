@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react'
 import styled from 'styled-components'
 import { SwitchElement, Node } from '../../types'
+import CircuitValue from '../CircuitValue'
 
 interface SwitchProps {
 	element: SwitchElement
@@ -39,49 +40,55 @@ const SwitchComponent: React.FC<SwitchProps> = ({
 	selected,
 }) => {
 	// Мемоизация вычислений для предотвращения повторных расчетов
-	const { wireLength, switchLength, transform, leverRotation } = useMemo(() => {
-		// Вычисляем угол между узлами
-		const dx = endNode.position.x - startNode.position.x
-		const dy = endNode.position.y - startNode.position.y
-		const angle = parseFloat(((Math.atan2(dy, dx) * 180) / Math.PI).toFixed(2))
+	const { wireLength, switchLength, transform, leverRotation, angle } =
+		useMemo(() => {
+			// Вычисляем угол между узлами
+			const dx = endNode.position.x - startNode.position.x
+			const dy = endNode.position.y - startNode.position.y
+			const angle = parseFloat(
+				((Math.atan2(dy, dx) * 180) / Math.PI).toFixed(2)
+			)
 
-		// Вычисляем центр для размещения ключа (округляем для стабильности)
-		const centerX = parseFloat(
-			((startNode.position.x + endNode.position.x) / 2).toFixed(1)
-		)
-		const centerY = parseFloat(
-			((startNode.position.y + endNode.position.y) / 2).toFixed(1)
-		)
+			// Вычисляем центр для размещения ключа (округляем для стабильности)
+			const centerX = parseFloat(
+				((startNode.position.x + endNode.position.x) / 2).toFixed(1)
+			)
+			const centerY = parseFloat(
+				((startNode.position.y + endNode.position.y) / 2).toFixed(1)
+			)
 
-		// Расчет длины линии (расстояние между узлами)
-		const length = Math.sqrt(dx * dx + dy * dy)
+			// Расчет длины линии (расстояние между узлами)
+			const length = Math.sqrt(dx * dx + dy * dy)
 
-		// Размер основной части ключа (увеличен)
-		const switchLength = 30
+			// Размер основной части ключа (увеличен)
+			const switchLength = 30
 
-		// Вычисляем длину проводов по обе стороны от ключа
-		const wireLength = parseFloat(((length - switchLength) / 2).toFixed(1))
+			// Вычисляем длину проводов по обе стороны от ключа
+			const wireLength = parseFloat(((length - switchLength) / 2).toFixed(1))
 
-		// Создаем трансформацию для поворота компонента
-		const transform = `translate(${centerX}, ${centerY}) rotate(${angle})`
+			// Создаем трансформацию для поворота компонента
+			const transform = `translate(${centerX}, ${centerY}) rotate(${angle})`
 
-		// Угол для рычага ключа (в зависимости от состояния)
-		const leverRotation = element.isOpen ? -45 : 0
+			// Угол для рычага ключа (в зависимости от состояния)
+			const leverRotation = element.isOpen ? -45 : 0
 
-		return {
-			angle,
-			wireLength,
-			switchLength,
-			transform,
-			leverRotation,
-		}
-	}, [
-		startNode.position.x,
-		startNode.position.y,
-		endNode.position.x,
-		endNode.position.y,
-		element.isOpen,
-	])
+			return {
+				angle,
+				wireLength,
+				switchLength,
+				transform,
+				leverRotation,
+			}
+		}, [
+			startNode.position.x,
+			startNode.position.y,
+			endNode.position.x,
+			endNode.position.y,
+			element.isOpen,
+		])
+
+	// Форматированное название элемента
+	const valueText = element.name
 
 	return (
 		<SwitchContainer selected={selected} transform={transform}>
@@ -117,6 +124,9 @@ const SwitchComponent: React.FC<SwitchProps> = ({
 				x2={switchLength / 2 + wireLength}
 				y2='0'
 			/>
+
+			{/* Имя элемента текстом с фоном */}
+			<CircuitValue value={valueText} angle={angle} yOffset={20} />
 		</SwitchContainer>
 	)
 }

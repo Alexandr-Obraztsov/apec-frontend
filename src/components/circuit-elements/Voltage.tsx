@@ -69,7 +69,9 @@ const Voltage: React.FC<VoltageProps> = ({
 		return `${value} ${unit}`
 	}
 
-	const valueText = formatValue(element.value, element.unit)
+	const valueText = `${formatValue(element.value, element.unit)} ${
+		element.name
+	}`
 
 	return (
 		<VoltageContainer selected={selected} transform={transform}>

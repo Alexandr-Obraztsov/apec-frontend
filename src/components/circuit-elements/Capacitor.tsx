@@ -83,7 +83,9 @@ const CapacitorComponent = ({
 			const transform = `translate(${centerX}, ${centerY}) rotate(${angle})`
 
 			// Форматированное значение
-			const valueText = formatValue(element.value, element.unit)
+			const valueText = `${formatValue(element.value, element.unit)} ${
+				element.name
+			}`
 
 			return {
 				angle,
@@ -99,6 +101,7 @@ const CapacitorComponent = ({
 			endNode.position.y,
 			element.value,
 			element.unit,
+			element.name,
 		])
 
 	return (
