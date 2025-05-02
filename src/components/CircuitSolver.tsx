@@ -87,26 +87,6 @@ const SolveButton = styled.button`
 	}
 `
 
-const ButtonSpinner = styled.div`
-	display: inline-block;
-	width: 16px;
-	height: 16px;
-	margin-right: 8px;
-	border: 2px solid rgba(255, 255, 255, 0.3);
-	border-top: 2px solid white;
-	border-radius: 50%;
-	animation: spin 1s linear infinite;
-
-	@keyframes spin {
-		0% {
-			transform: rotate(0deg);
-		}
-		100% {
-			transform: rotate(360deg);
-		}
-	}
-`
-
 const CircuitSolver: React.FC = () => {
 	// Получаем узлы из хранилища
 	const nodes = useCircuitStore(state => state.nodes)
@@ -140,11 +120,16 @@ const CircuitSolver: React.FC = () => {
 
 	// Обработчик нажатия на кнопку "Решить задачу"
 	const handleSolveButtonClick = async () => {
-		// Начинаем расчет сразу
-		setIsLoading(true)
+		// Сбрасываем предыдущие результаты и ошибки
 		setError(null)
 		setDebugInfo(null)
 		setSolutionEquations(null)
+		setSolutionResult(null)
+		setFormattedResult([])
+
+		// Сначала открываем попап и показываем в нем загрузку
+		setIsLoading(true)
+		setIsPopupOpen(true)
 
 		try {
 			// Подготовка данных схемы для отправки
@@ -166,18 +151,14 @@ const CircuitSolver: React.FC = () => {
 			}
 			setSolutionResult(response.solution || null)
 			setFormattedResult(response.formattedSolution || [])
-
-			// Открываем попап только после успешного расчета
-			setIsPopupOpen(true)
 		} catch (err) {
 			// Обработка ошибок
 			console.error('Ошибка при решении схемы:', err)
 			setError(
 				'Произошла ошибка при попытке решить схему. Пожалуйста, попробуйте позже.'
 			)
-			// Открываем попап с ошибкой
-			setIsPopupOpen(true)
 		} finally {
+			// Скрываем индикатор загрузки
 			setIsLoading(false)
 		}
 	}
@@ -231,14 +212,14 @@ const CircuitSolver: React.FC = () => {
 					<span>Схема корректна</span>
 				</AlertTitle>
 				<SolveButton onClick={handleSolveButtonClick} disabled={isLoading}>
-					{isLoading && <ButtonSpinner />}
-					{isLoading ? 'Расчет...' : 'Решить задачу'}
+					Решить задачу
 				</SolveButton>
 			</SolveContainer>
 
 			<CircuitSolutionModal
 				isOpen={isPopupOpen}
 				onClose={handleClosePopup}
+				isLoading={isLoading}
 				error={error}
 				solutionEquations={solutionEquations}
 				solutionResult={solutionResult}

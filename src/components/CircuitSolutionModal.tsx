@@ -94,6 +94,26 @@ const ResultHeader = styled.th`
 	border: 1px solid #ddd;
 `
 
+const LoadingSpinner = styled.div`
+	display: inline-block;
+	width: 20px;
+	height: 20px;
+	margin-right: 10px;
+	border: 2px solid rgba(0, 128, 0, 0.1);
+	border-top: 2px solid #008000;
+	border-radius: 50%;
+	animation: spin 1s linear infinite;
+
+	@keyframes spin {
+		0% {
+			transform: rotate(0deg);
+		}
+		100% {
+			transform: rotate(360deg);
+		}
+	}
+`
+
 // Стили для отображения формул
 const EquationCard = styled.div`
 	margin-bottom: 16px;
@@ -203,18 +223,18 @@ const formatEquation = (equation: string): string => {
 interface CircuitSolutionModalProps {
 	isOpen: boolean
 	onClose: () => void
+	isLoading: boolean
 	error: string | null
 	solutionEquations: CircuitSolutionResult | null
 	solutionResult: string | null
 	formattedResult: SolutionItem[]
 	debugInfo: string | null
-	isLoading?: boolean // Оставляем для совместимости, но не будем использовать
-	onSolveClick?: () => void // Оставляем для совместимости, но не будем использовать
 }
 
 const CircuitSolutionModal: React.FC<CircuitSolutionModalProps> = ({
 	isOpen,
 	onClose,
+	isLoading,
 	error,
 	solutionEquations,
 	solutionResult,
@@ -259,7 +279,11 @@ const CircuitSolutionModal: React.FC<CircuitSolutionModalProps> = ({
 					<PopupCloseButton onClick={onClose}>×</PopupCloseButton>
 				</PopupHeader>
 				<PopupBody>
-					{error ? (
+					{isLoading ? (
+						<p style={{ textAlign: 'center', padding: '30px 0' }}>
+							<LoadingSpinner /> Выполняется расчет схемы...
+						</p>
+					) : error ? (
 						<p style={{ color: 'red' }}>{error}</p>
 					) : solutionEquations ? (
 						renderEquations()
@@ -294,7 +318,7 @@ const CircuitSolutionModal: React.FC<CircuitSolutionModalProps> = ({
 					)}
 
 					{/* Отладочная информация */}
-					{debugInfo && (
+					{!isLoading && debugInfo && (
 						<div
 							style={{
 								marginTop: '20px',
