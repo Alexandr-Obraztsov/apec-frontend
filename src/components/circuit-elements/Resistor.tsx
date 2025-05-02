@@ -82,8 +82,8 @@ const Resistor: React.FC<ResistorProps> = memo(
 
 		// Мемоизируем форматированное значение
 		const valueText = useMemo(
-			() => formatValue(element.value, element.unit),
-			[element.value, element.unit]
+			() => `${formatValue(element.value, element.unit)} ${element.name}`,
+			[element.name, element.value, element.unit]
 		)
 
 		return (
