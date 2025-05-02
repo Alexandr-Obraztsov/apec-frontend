@@ -317,8 +317,20 @@ const CircuitBoard: React.FC = () => {
 	// Обработка нажатий клавиш Delete и Backspace для удаления выбранных элементов
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
-			// Удаление выбранного элемента по клавишам Delete или Backspace
-			if ((e.key === 'Delete' || e.key === 'Backspace') && selectedElementId) {
+			// Проверяем, не находится ли фокус на элементе ввода (input, textarea)
+			const target = e.target as HTMLElement
+			const isInputField =
+				target.tagName === 'INPUT' ||
+				target.tagName === 'TEXTAREA' ||
+				target.isContentEditable
+
+			// Удаление выбранного элемента по клавишам Delete или Backspace,
+			// только если фокус не находится на поле ввода
+			if (
+				(e.key === 'Delete' || e.key === 'Backspace') &&
+				selectedElementId &&
+				!isInputField
+			) {
 				e.preventDefault() // Предотвращаем действие браузера по умолчанию
 				removeElement(selectedElementId)
 			}
