@@ -1,7 +1,6 @@
 import React from 'react'
 import styled from 'styled-components'
-import { BlockMath } from 'react-katex'
-import 'katex/dist/katex.min.css'
+import { MathJaxContext, MathJax } from 'better-react-mathjax'
 import { CircuitSolutionResult, SolutionItem } from '../services/api'
 
 // Стили для попапа
@@ -177,18 +176,28 @@ const EquationValue = styled.div`
 	flex: 1;
 	padding-left: 16px;
 
-	/* Стили для формул KaTeX */
-	.katex {
-		color: #000000;
+	/* Стили для MathJax формул */
+	mjx-container {
 		font-size: 1.5em;
-	}
-
-	.katex-display {
+		color: #000000;
 		margin: 0.5em 0;
 		overflow-x: auto;
-		padding: 5px 0;
 	}
 `
+
+// Настройка MathJax для корректного отображения формул
+const mathJaxConfig = {
+	tex: {
+		inlineMath: [['$', '$']],
+		displayMath: [['$$', '$$']],
+		processEscapes: true,
+		tags: 'ams',
+	},
+	svg: {
+		fontCache: 'global',
+		scale: 1.3,
+	},
+}
 
 // Компонент для отображения уравнений
 const EquationDisplay = ({ tex }: { tex: string }) => {
@@ -199,7 +208,7 @@ const EquationDisplay = ({ tex }: { tex: string }) => {
 	console.log('Исходная формула:', tex)
 	console.log('Обработанная формула:', processedTex)
 
-	return <BlockMath math={processedTex} />
+	return <MathJax dynamic>{`$$${processedTex}$$`}</MathJax>
 }
 
 // Функция для преобразования уравнения в формат LaTeX
@@ -326,82 +335,84 @@ const CircuitSolutionModal: React.FC<CircuitSolutionModalProps> = ({
 	}
 
 	return (
-		<PopupOverlay>
-			<PopupContent>
-				<PopupHeader>
-					<div>{isLoading ? 'Расчет схемы' : 'Результаты расчета'}</div>
-					<PopupCloseButton onClick={onClose}>×</PopupCloseButton>
-				</PopupHeader>
-				<PopupBody>
-					{isLoading ? (
-						<LoadingContainer>
-							<LoadingSpinner />
-							<LoadingText>
-								Выполняется расчет электрической схемы...
-							</LoadingText>
-						</LoadingContainer>
-					) : error ? (
-						<p style={{ color: 'red' }}>{error}</p>
-					) : solutionEquations ? (
-						renderEquations()
-					) : solutionResult ? (
-						<div>
-							<p>Результаты расчета:</p>
-							{formattedResult.length > 0 ? (
-								<ResultTable>
-									<thead>
-										<tr>
-											<ResultHeader>Элемент</ResultHeader>
-											<ResultHeader>Значение</ResultHeader>
-											<ResultHeader>Единица измерения</ResultHeader>
-										</tr>
-									</thead>
-									<tbody>
-										{formattedResult.map((item, index) => (
-											<ResultRow key={item.id || item.name || index}>
-												<ResultCell>{item.name}</ResultCell>
-												<ResultCell>{item.value}</ResultCell>
-												<ResultCell>{item.unit}</ResultCell>
-											</ResultRow>
-										))}
-									</tbody>
-								</ResultTable>
-							) : (
-								<pre>{solutionResult}</pre>
-							)}
-						</div>
-					) : (
-						<p>Нет данных для отображения.</p>
-					)}
+		<MathJaxContext config={mathJaxConfig}>
+			<PopupOverlay>
+				<PopupContent>
+					<PopupHeader>
+						<div>{isLoading ? 'Расчет схемы' : 'Результаты расчета'}</div>
+						<PopupCloseButton onClick={onClose}>×</PopupCloseButton>
+					</PopupHeader>
+					<PopupBody>
+						{isLoading ? (
+							<LoadingContainer>
+								<LoadingSpinner />
+								<LoadingText>
+									Выполняется расчет электрической схемы...
+								</LoadingText>
+							</LoadingContainer>
+						) : error ? (
+							<p style={{ color: 'red' }}>{error}</p>
+						) : solutionEquations ? (
+							renderEquations()
+						) : solutionResult ? (
+							<div>
+								<p>Результаты расчета:</p>
+								{formattedResult.length > 0 ? (
+									<ResultTable>
+										<thead>
+											<tr>
+												<ResultHeader>Элемент</ResultHeader>
+												<ResultHeader>Значение</ResultHeader>
+												<ResultHeader>Единица измерения</ResultHeader>
+											</tr>
+										</thead>
+										<tbody>
+											{formattedResult.map((item, index) => (
+												<ResultRow key={item.id || item.name || index}>
+													<ResultCell>{item.name}</ResultCell>
+													<ResultCell>{item.value}</ResultCell>
+													<ResultCell>{item.unit}</ResultCell>
+												</ResultRow>
+											))}
+										</tbody>
+									</ResultTable>
+								) : (
+									<pre>{solutionResult}</pre>
+								)}
+							</div>
+						) : (
+							<p>Нет данных для отображения.</p>
+						)}
 
-					{/* Отладочная информация */}
-					{!isLoading && debugInfo && (
-						<div
-							style={{
-								marginTop: '20px',
-								borderTop: '1px solid #ddd',
-								paddingTop: '10px',
-							}}
-						>
-							<details>
-								<summary>Отладочная информация</summary>
-								<pre
-									style={{
-										backgroundColor: '#f5f5f5',
-										padding: '10px',
-										borderRadius: '4px',
-										fontSize: '12px',
-										overflowX: 'auto',
-									}}
-								>
-									{debugInfo}
-								</pre>
-							</details>
-						</div>
-					)}
-				</PopupBody>
-			</PopupContent>
-		</PopupOverlay>
+						{/* Отладочная информация */}
+						{!isLoading && debugInfo && (
+							<div
+								style={{
+									marginTop: '20px',
+									borderTop: '1px solid #ddd',
+									paddingTop: '10px',
+								}}
+							>
+								<details>
+									<summary>Отладочная информация</summary>
+									<pre
+										style={{
+											backgroundColor: '#f5f5f5',
+											padding: '10px',
+											borderRadius: '4px',
+											fontSize: '12px',
+											overflowX: 'auto',
+										}}
+									>
+										{debugInfo}
+									</pre>
+								</details>
+							</div>
+						)}
+					</PopupBody>
+				</PopupContent>
+			</PopupOverlay>
+		</MathJaxContext>
 	)
 }
 
