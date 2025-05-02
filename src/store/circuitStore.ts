@@ -476,11 +476,8 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 			}
 		})
 
-		// Если это первый узел, вызываем renameNodes
-		const state = get()
-		if (state.nodes.length === 1) {
-			setTimeout(() => get().renameNodes(), 0)
-		}
+		// Вызываем переименование узлов после каждого добавления узла
+		setTimeout(() => get().renameNodes(), 0)
 
 		return nodeId
 	},
@@ -619,11 +616,8 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 			}
 		})
 
-		// Если это первый узел (у нас сейчас только этот новый узел), вызываем renameNodes
-		const updatedState = get()
-		if (updatedState.nodes.length === 1) {
-			setTimeout(() => get().renameNodes(), 0)
-		}
+		// Вызываем переименование узлов после каждого добавления узла
+		setTimeout(() => get().renameNodes(), 0)
 
 		return nodeId
 	},
