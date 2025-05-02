@@ -45,7 +45,7 @@ interface CircuitState {
 	) => void
 	removeElement: (id: string) => void
 	removeSelectedElements: () => void
-	updateElementValue: (id: string, value: number) => void
+	updateElementValue: (id: string, value: number | string) => void
 	updateElementRotation: (id: string, rotation: number) => void
 	updateSwitchState: (id: string, isOpen: boolean) => void
 	selectElement: (id: string | null) => void
@@ -347,7 +347,7 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 			}
 		}),
 
-	updateElementValue: (id, value) =>
+	updateElementValue: (id: string, value: number | string) =>
 		set(state => ({
 			elements: state.elements.map(element =>
 				element.id === id ? { ...element, value } : element

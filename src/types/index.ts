@@ -23,7 +23,7 @@ export interface CircuitElement {
 	type: ElementType
 	startNodeId: string
 	endNodeId: string
-	value: number
+	value: number | string
 	unit: string
 	rotation: number
 	name: string // Имя элемента, например "R1", "C2", и т.д.

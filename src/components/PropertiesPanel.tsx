@@ -255,7 +255,7 @@ const PropertiesPanel: React.FC = () => {
 	const updateSwitchState = useCircuitStore(state => state.updateSwitchState)
 	const removeElement = useCircuitStore(state => state.removeElement)
 
-	const [currentValue, setCurrentValue] = useState<number>(0)
+	const [currentValue, setCurrentValue] = useState<number | string>(0)
 	const [switchState, setSwitchState] = useState<boolean>(false)
 
 	// Найдем выбранный элемент и узел
@@ -278,7 +278,12 @@ const PropertiesPanel: React.FC = () => {
 
 			// Устанавливаем состояние переключателя, если выбран ключ
 			if (selectedElement.type === 'switch') {
-				setSwitchState(!selectedElement.isOpen) // !isOpen потому что 1 = включен, 0 = выключен
+				// !isOpen потому что 1 = включен, 0 = выключен
+				setSwitchState(
+					typeof selectedElement.isOpen === 'boolean'
+						? !selectedElement.isOpen
+						: false
+				)
 			}
 		}
 	}, [selectedElement])
@@ -345,8 +350,15 @@ const PropertiesPanel: React.FC = () => {
 
 	// Если выбран элемент
 	const handleValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const value = parseFloat(e.target.value)
-		setCurrentValue(value)
+		const value = e.target.value
+
+		// Если значение можно преобразовать в число и оно не пустое - преобразуем,
+		// иначе оставляем как есть (строка)
+		if (value && !isNaN(parseFloat(value))) {
+			setCurrentValue(parseFloat(value))
+		} else {
+			setCurrentValue(value)
+		}
 	}
 
 	const handleValueBlur = () => {
@@ -409,11 +421,11 @@ const PropertiesPanel: React.FC = () => {
 						<FormGroup>
 							<Label>Значение ({selectedElement?.unit})</Label>
 							<Input
-								type='number'
-								min='0'
+								type='text'
 								value={currentValue}
 								onChange={handleValueChange}
 								onBlur={handleValueBlur}
+								placeholder='Введите число или выражение (например, sin, j)'
 							/>
 						</FormGroup>
 					)}
