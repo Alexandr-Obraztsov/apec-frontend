@@ -9,12 +9,15 @@ interface CircuitValueProps {
 	height?: number
 }
 
-const ValueText = styled.text`
+const ValueText = styled.span`
 	font-family: var(--font-family);
-	font-size: 12px;
-	text-anchor: middle;
-	font-weight: 300;
-	letter-spacing: 3px;
+	font-size: 14px;
+	font-weight: 500;
+	color: #333333;
+	position: absolute;
+	left: 50%;
+	transform: translateX(-50%);
+	white-space: nowrap;
 `
 
 const ValueBackground = styled.rect`
@@ -45,9 +48,15 @@ const CircuitValue: React.FC<CircuitValueProps> = ({
 				width={width}
 				height={height}
 			/>
-			<ValueText x='0' y={yOffset + height / 2 + 5}>
-				{value}
-			</ValueText>
+			<foreignObject
+				x={-width / 2}
+				y={yOffset}
+				width={width}
+				height={height}
+				style={{ overflow: 'visible' }}
+			>
+				<ValueText>{value}</ValueText>
+			</foreignObject>
 		</g>
 	)
 }
