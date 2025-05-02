@@ -201,87 +201,114 @@ const mathJaxConfig = {
 
 // Компонент для отображения уравнений
 const EquationDisplay = ({ tex }: { tex: string }) => {
-	// Обрабатываем формулу здесь
-	const processedTex = formatEquation(tex)
-
-	// Для отладки
-	console.log('Исходная формула:', tex)
-	console.log('Обработанная формула:', processedTex)
+	// Преобразуем формулу в красивый LaTeX формат
+	const processedTex = prettifyEquation(tex)
 
 	return <MathJax dynamic>{`$$${processedTex}$$`}</MathJax>
 }
 
-// Функция для преобразования уравнения в формат LaTeX
-const formatEquation = (equation: string): string => {
+// Функция для преобразования уравнения в красивый формат LaTeX
+const prettifyEquation = (equation: string): string => {
 	// Если это просто число, вернем его без изменений
 	if (/^-?\d+(\.\d+)?$/.test(equation.trim())) {
 		return equation.trim()
 	}
 
-	// Заменяем входные паттерны на корректный LaTeX
+	// Шаг 1: Исправляем известные шаблоны выражений
 	let texEquation = equation.trim()
 
-	// Преобразуем запись exp в правильный формат e^{...}
+	// Шаг 2: Заменяем простые дроби на \frac{}{} формат
+	// Например: 1/400 -> \frac{1}{400}
+	texEquation = texEquation.replace(/(\d+)\/(\d+)/g, '\\frac{$1}{$2}')
+
+	// Шаг 3: Заменяем выражения вида n - k * x на n - k \cdot x
+	texEquation = texEquation.replace(
+		/(\d+)\s*-\s*(\d+)\s*\*\s*([a-zA-Z])/g,
+		'$1 - $2 \\cdot $3'
+	)
+
+	// Шаг 4: Заменяем выражения вида n + k * x на n + k \cdot x
+	texEquation = texEquation.replace(
+		/(\d+)\s*\+\s*(\d+)\s*\*\s*([a-zA-Z])/g,
+		'$1 + $2 \\cdot $3'
+	)
+
+	// Шаг 5: Исправляем запись экспонент
+	// Формат: e^(-kt/n) или exp(-kt/n)
 	texEquation = texEquation
-		// Преобразуем базовый формат exp(-число * t/число)
+		// Преобразуем exp(-число * t/число) в красивую экспоненту
 		.replace(
 			/exp\(\s*-\s*(\d+)\s*\*\s*t\s*\/\s*(\d+)\s*\)/g,
 			'e^{-\\frac{$1t}{$2}}'
 		)
-		// Преобразуем умножение на exp с последующим делением: 5 * exp(...)/6
+		// Преобразуем exp(-число t/число) в красивую экспоненту (без *)
+		.replace(/exp\(\s*-\s*(\d+)\s*t\s*\/\s*(\d+)\s*\)/g, 'e^{-\\frac{$1t}{$2}}')
+		// Преобразуем e^-число*t/число в правильный формат
+		.replace(/e\^\s*-\s*(\d+)\s*\*\s*t\s*\/\s*(\d+)/g, 'e^{-\\frac{$1t}{$2}}')
+
+	// Шаг 6: Исправляем выражения с дробями внутри экспонент
+	texEquation = texEquation
+		// Например: 5 * e^(-20t/3) / 18
 		.replace(
-			/(\d+)\s*\*\s*exp\(\s*-\s*(\d+)\s*\*\s*t\s*\/\s*(\d+)\s*\)\s*\/\s*(\d+)/g,
-			'\\frac{$1 e^{-\\frac{$2t}{$3}}}{$4}'
+			/(\d+)\s*\*\s*e\^\{\s*-\\frac\{(\d+)t\}\{(\d+)\}\s*\}\s*\/\s*(\d+)/g,
+			'\\frac{$1 \\cdot e^{-\\frac{$2t}{$3}}}{$4}'
 		)
-		// Преобразуем просто умножение на exp: 5 * exp(...)
+		// Например: e^(-20t/3) / 18
 		.replace(
-			/(\d+)\s*\*\s*exp\(\s*-\s*(\d+)\s*\*\s*t\s*\/\s*(\d+)\s*\)/g,
-			'$1 e^{-\\frac{$2t}{$3}}'
-		)
-		// Общий случай для сложения с exp: 5 + 5 * exp(...)/6
-		.replace(
-			/(\d+)\s*\+\s*(\d+)\s*\*\s*exp\(\s*-\s*(\d+)\s*\*\s*t\s*\/\s*(\d+)\s*\)\s*\/\s*(\d+)/g,
-			'$1 + \\frac{$2 e^{-\\frac{$3t}{$4}}}{$5}'
-		)
-		// Общий случай для вычитания с exp: 5 - 5 * exp(...)/6
-		.replace(
-			/(\d+)\s*-\s*(\d+)\s*\*\s*exp\(\s*-\s*(\d+)\s*\*\s*t\s*\/\s*(\d+)\s*\)\s*\/\s*(\d+)/g,
-			'$1 - \\frac{$2 e^{-\\frac{$3t}{$4}}}{$5}'
+			/e\^\{\s*-\\frac\{(\d+)t\}\{(\d+)\}\s*\}\s*\/\s*(\d+)/g,
+			'\\frac{e^{-\\frac{$1t}{$2}}}{$3}'
 		)
 
-	// Исправляем особые случаи в данных, которые могли прийти в уже частично обработанном формате
+	// Шаг 7: Исправляем смешанные выражения
+	texEquation = texEquation
+		// Например: 5/2 - 5 * e^(-20t/3) / 18
+		.replace(
+			/(\\frac\{\d+\}\{\d+\})\s*-\s*(\d+)\s*\*\s*e\^\{([^}]+)\}\s*\/\s*(\d+)/g,
+			'$1 - \\frac{$2 \\cdot e^{$3}}{$4}'
+		)
+		// Например: 5/2 + 5 * e^(-20t/3) / 18
+		.replace(
+			/(\\frac\{\d+\}\{\d+\})\s*\+\s*(\d+)\s*\*\s*e\^\{([^}]+)\}\s*\/\s*(\d+)/g,
+			'$1 + \\frac{$2 \\cdot e^{$3}}{$4}'
+		)
+
+	// Шаг 8: Обрабатываем уже частично форматированные выражения
 	if (texEquation.includes('\\cdot') || texEquation.includes('e^{\\frac{')) {
 		texEquation = texEquation
-			// Формат вида "5\\cdot e^{\\frac{ - 20000t}{3}}/3"
+			// Случай: 5/2 - 5\cdot e^{-\frac{20t}{3}}/18
 			.replace(
-				/(\d+)\s*\+\s*(\d+)\\cdot e\^\{\\frac\{\s*-\s*(\d+)t\}\{(\d+)\}\}\/(\d+)/g,
-				'$1 + \\frac{$2e^{-\\frac{$3t}{$4}}}{$5}'
+				/(\\frac\{\d+\}\{\d+\})\s*\-\s*(\d+)\\cdot\s*e\^\{([^}]+)\}\/(\d+)/g,
+				'$1 - \\frac{$2 \\cdot e^{$3}}{$4}'
 			)
+			// Случай: 5/2 + 5\cdot e^{-\frac{20t}{3}}/18
 			.replace(
-				/(\d+)\\cdot e\^\{\\frac\{\s*-\s*(\d+)t\}\{(\d+)\}\}\/(\d+)/g,
-				'\\frac{$1e^{-\\frac{$2t}{$3}}}{$4}'
-			)
-			.replace(
-				/-(\d+)\s*\+\s*(\d+)\\cdot e\^\{\\frac\{\s*-\s*(\d+)t\}\{(\d+)\}\}\/(\d+)/g,
-				'-$1 + \\frac{$2e^{-\\frac{$3t}{$4}}}{$5}'
-			)
-			.replace(
-				/(\d+)\s*[+-]\s*(\d+)\\cdot e\^\{\\frac\{\s*-\s*(\d+)t\}\{(\d+)\}\}/g,
-				'$1 $2e^{-\\frac{$3t}{$4}}'
+				/(\\frac\{\d+\}\{\d+\})\s*\+\s*(\d+)\\cdot\s*e\^\{([^}]+)\}\/(\d+)/g,
+				'$1 + \\frac{$2 \\cdot e^{$3}}{$4}'
 			)
 	}
 
-	// Заменяем оператор * на \cdot
-	texEquation = texEquation.replace(/(\d+)\s*\*\s*(\d+)/g, '$1 \\cdot $2')
+	// Шаг 9: Заменяем оператор * на \cdot
+	texEquation = texEquation.replace(/(\d+)\s*\*\s*(\d+|\w+)/g, '$1 \\cdot $2')
 
-	// Убираем неправильные экранирования и добавляем корректные пробелы
+	// Шаг 10: Добавляем пробелы вокруг операторов
 	texEquation = texEquation
-		.replace(/\\\\/g, '\\') // Исправляем двойные экранирования
-		.replace(/\s+/g, ' ') // Нормализуем пробелы
+		.replace(/([0-9])([+\-])/g, '$1 $2')
+		.replace(/([+\-])([0-9])/g, '$1 $2')
+
+	// Финальные корректировки
+	texEquation = texEquation
+		.replace(/\s+/g, ' ') // Нормализация пробелов
 		.trim()
 
 	return texEquation
 }
+
+/**
+ * Функция форматирования для обратной совместимости
+ * @type {(equation: string) => string}
+ */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const formatEquation = prettifyEquation
 
 interface CircuitSolutionModalProps {
 	isOpen: boolean
