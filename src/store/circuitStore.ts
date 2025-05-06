@@ -118,6 +118,7 @@ const DEFAULT_VALUES = {
 	capacitor: { value: 0.00001, unit: 'Ф' },
 	inductor: { value: 0.001, unit: 'Гн' },
 	voltage: { value: 5, unit: 'В' },
+	current: { value: 0.01, unit: 'А' }, // Источник тока, 10 мА по умолчанию
 	switch: { value: 0, unit: '', isOpen: true },
 }
 
@@ -187,6 +188,7 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 			capacitor: 0,
 			inductor: 0,
 			voltage: 0,
+			current: 0,
 			switch: 0,
 		},
 		nodes: -1,
@@ -970,6 +972,7 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 			capacitor: [],
 			inductor: [],
 			voltage: [],
+			current: [],
 			switch: [],
 		}
 

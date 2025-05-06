@@ -7,7 +7,7 @@ const API_BASE_URL = 'http://localhost:8000/api'
 // Интерфейс для данных схемы
 export interface CircuitData {
 	nodes: Node[]
-	elements: any[]
+	elements: AnyCircuitElement[]
 }
 
 // Интерфейс для результата решения
@@ -77,7 +77,8 @@ export const formatCircuitToString = (
 			valueStr = isNumericString(stringValue) ? stringValue : `{${stringValue}}`
 		}
 
-		if (element.type === 'voltage') {
+		if (element.type === 'voltage' || element.type === 'current') {
+			// Для источников напряжения и тока переворачиваем порядок узлов
 			lineValue = `${element.name} ${endNode.name} ${startNode.name} ${valueStr};`
 		} else if (element.type === 'switch') {
 			lineValue = `${element.name} ${startNode.name} ${endNode.name} ${
