@@ -11,6 +11,9 @@ import {
 } from '../types'
 import { v4 as uuidv4 } from 'uuid'
 
+// Импортируем интерфейс с параметрами для генерации цепи
+import { ChainOptions } from '../components/GenerateChainModal'
+
 interface CircuitState {
 	elements: AnyCircuitElement[]
 	nodes: Node[]
@@ -89,6 +92,9 @@ interface CircuitState {
 
 	// Функция для переименования элементов каждого типа по порядку, начиная с 1
 	renameElements: () => void
+
+	// Функция для генерации цепи
+	generateChain: (options: ChainOptions) => void
 }
 
 // Функция для расчета угла между двумя узлами
@@ -776,6 +782,16 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 					name: elementName,
 					isOpen: true, // true = разомкнут (ВЫКЛ)
 				} as SwitchElement
+			} else if (elementType === 'current') {
+				newElement = {
+					type: 'current',
+					startNodeId,
+					endNodeId,
+					rotation,
+					value: DEFAULT_VALUES[elementType].value,
+					unit: DEFAULT_VALUES[elementType].unit,
+					name: elementName,
+				}
 			} else {
 				newElement = {
 					type: 'voltage',
@@ -1028,5 +1044,168 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 				elements: updatedCounters,
 			},
 		})
+	},
+
+	// Функция для генерации цепи
+	generateChain: (options: ChainOptions) => {
+		// Очищаем текущую схему
+		const { nodes, elements } = get()
+
+		// Удаляем все существующие элементы
+		elements.forEach(element => get().removeElement(element.id))
+
+		// Удаляем все существующие узлы, кроме начального и конечного
+		nodes.forEach(node => {
+			// Проверяем наличие функции removeNode
+			const state = get() as unknown as { removeNode?: (id: string) => void }
+			if (state.removeNode) state.removeNode(node.id)
+		})
+
+		// Создаем новые узлы для цепи
+		const node1Id = get().addNode({ x: 200, y: 300 })
+		const node2Id = get().addNode({ x: 400, y: 300 })
+
+		if (options.order === 'first') {
+			// Создаем цепь первого порядка (RC или RL)
+			get().addElement({
+				type: 'resistor',
+				value: 1000, // 1 кОм
+				unit: 'Ом',
+				rotation: 0,
+				startNodeId: node1Id,
+				endNodeId: node2Id,
+			})
+
+			// Добавляем конденсатор
+			const node3Id = get().addNode({ x: 600, y: 300 })
+
+			get().addElement({
+				type: 'capacitor',
+				value: 0.00001, // 10 мкФ
+				unit: 'Ф',
+				rotation: 0,
+				startNodeId: node2Id,
+				endNodeId: node3Id,
+			})
+
+			// Добавляем источник напряжения
+			const node4Id = get().addNode({ x: 200, y: 500 })
+			const node5Id = get().addNode({ x: 600, y: 500 })
+
+			get().addElement({
+				type: 'voltage',
+				value: 5, // 5 В
+				unit: 'В',
+				rotation: 0,
+				startNodeId: node4Id,
+				endNodeId: node5Id,
+			})
+
+			// Соединяем проводами
+			get().addElement({
+				type: 'wire',
+				value: 0,
+				unit: '',
+				rotation: 0,
+				startNodeId: node1Id,
+				endNodeId: node4Id,
+			})
+
+			get().addElement({
+				type: 'wire',
+				value: 0,
+				unit: '',
+				rotation: 0,
+				startNodeId: node3Id,
+				endNodeId: node5Id,
+			})
+		} else if (options.order === 'second') {
+			// Создаем цепь второго порядка (RLC)
+
+			// Создаем базовую RLC цепь
+			get().addElement({
+				type: 'resistor',
+				value: 1000, // 1 кОм
+				unit: 'Ом',
+				rotation: 0,
+				startNodeId: node1Id,
+				endNodeId: node2Id,
+			})
+
+			const node3Id = get().addNode({ x: 600, y: 300 })
+
+			get().addElement({
+				type: 'inductor',
+				value: 0.1, // 100 мГн
+				unit: 'Гн',
+				rotation: 0,
+				startNodeId: node2Id,
+				endNodeId: node3Id,
+			})
+
+			// Добавляем конденсатор
+			const node4Id = get().addNode({ x: 800, y: 300 })
+
+			get().addElement({
+				type: 'capacitor',
+				value: 0.00001, // 10 мкФ
+				unit: 'Ф',
+				rotation: 0,
+				startNodeId: node3Id,
+				endNodeId: node4Id,
+			})
+
+			// Настраиваем параметры в зависимости от типа корней
+			if (options.rootType === 'equal') {
+				// Для равных корней: R^2 = 4L/C
+				// R = 2sqrt(L/C)
+				// При L = 0.1 и C = 0.00001, R ≈ 2000 Ом
+				get().updateElementValue(get().elements[0].id, 2000)
+			} else if (options.rootType === 'complex') {
+				// Для комплексных корней: R^2 < 4L/C
+				// Используем R = 100 Ом для получения комплексных корней
+				get().updateElementValue(get().elements[0].id, 100)
+			} else if (options.rootType === 'different') {
+				// Для разных действительных корней: R^2 > 4L/C
+				// Используем R = 4000 Ом для получения разных корней
+				get().updateElementValue(get().elements[0].id, 4000)
+			}
+
+			// Добавляем источник напряжения
+			const node5Id = get().addNode({ x: 200, y: 500 })
+			const node6Id = get().addNode({ x: 800, y: 500 })
+
+			get().addElement({
+				type: 'voltage',
+				value: 5, // 5 В
+				unit: 'В',
+				rotation: 0,
+				startNodeId: node5Id,
+				endNodeId: node6Id,
+			})
+
+			// Соединяем проводами
+			get().addElement({
+				type: 'wire',
+				value: 0,
+				unit: '',
+				rotation: 0,
+				startNodeId: node1Id,
+				endNodeId: node5Id,
+			})
+
+			get().addElement({
+				type: 'wire',
+				value: 0,
+				unit: '',
+				rotation: 0,
+				startNodeId: node4Id,
+				endNodeId: node6Id,
+			})
+		}
+
+		// Переименовываем узлы и элементы
+		get().renameNodes()
+		get().renameElements()
 	},
 }))

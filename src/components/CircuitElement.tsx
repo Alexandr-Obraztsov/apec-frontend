@@ -6,6 +6,7 @@ import Resistor from './circuit-elements/Resistor'
 import Capacitor from './circuit-elements/Capacitor'
 import Inductor from './circuit-elements/Inductor'
 import Voltage from './circuit-elements/Voltage'
+import Current from './circuit-elements/Current'
 import Switch from './circuit-elements/Switch'
 
 interface CircuitElementProps {
@@ -98,6 +99,15 @@ const CircuitElement: React.FC<CircuitElementProps> = memo(
 				case 'voltage':
 					return (
 						<Voltage
+							element={element}
+							startNode={startNode}
+							endNode={endNode}
+							selected={selected || isHovered || highlighted}
+						/>
+					)
+				case 'current':
+					return (
+						<Current
 							element={element}
 							startNode={startNode}
 							endNode={endNode}

@@ -10,6 +10,7 @@ const ELEMENT_LABELS: Record<ElementType, string> = {
 	capacitor: 'Конденсатор (C)',
 	inductor: 'Катушка (L)',
 	voltage: 'Источник напряжения (V)',
+	current: 'Источник тока (I)',
 	switch: 'Ключ (SW)',
 }
 
@@ -200,6 +201,31 @@ const VoltageIcon = () => (
 	</svg>
 )
 
+const CurrentIcon = () => (
+	<svg
+		width='28'
+		height='28'
+		viewBox='0 0 24 24'
+		fill='none'
+		xmlns='http://www.w3.org/2000/svg'
+	>
+		<circle cx='12' cy='12' r='7' stroke='currentColor' strokeWidth='2' />
+		<path
+			d='M8 12H16'
+			stroke='currentColor'
+			strokeWidth='2'
+			strokeLinecap='round'
+		/>
+		<path
+			d='M14 10L16 12L14 14'
+			stroke='currentColor'
+			strokeWidth='2'
+			strokeLinecap='round'
+			strokeLinejoin='round'
+		/>
+	</svg>
+)
+
 const SwitchIcon = () => (
 	<svg
 		width='28'
@@ -252,6 +278,7 @@ const ELEMENT_ICONS: Record<ElementType, React.ReactNode> = {
 	capacitor: <CapacitorIcon />,
 	inductor: <InductorIcon />,
 	voltage: <VoltageIcon />,
+	current: <CurrentIcon />,
 	switch: <SwitchIcon />,
 }
 
@@ -277,16 +304,16 @@ const ToolboxItem: React.FC<ToolItemProps> = ({
 }
 
 const Toolbox: React.FC = () => {
+	const placementMode = useCircuitStore(state => state.placementMode)
 	const startPlacement = useCircuitStore(state => state.startPlacement)
 	const cancelPlacement = useCircuitStore(state => state.cancelPlacement)
-	const placementMode = useCircuitStore(state => state.placementMode)
 
 	const handleItemClick = (type: ElementType) => {
 		if (placementMode.active && placementMode.elementType === type) {
-			// Если тот же элемент уже активен, отменяем режим размещения
+			// Если выбран тот же элемент, отменяем размещение
 			cancelPlacement()
 		} else {
-			// Иначе переходим в режим размещения с выбранным элементом
+			// Иначе начинаем размещение нового элемента
 			startPlacement(type)
 		}
 	}
@@ -295,25 +322,73 @@ const Toolbox: React.FC = () => {
 		<ToolboxContainer>
 			<ToolboxHeader>
 				<Title>Элементы схемы</Title>
-				<SubTitle>Выберите компонент для размещения</SubTitle>
+				<SubTitle>Выберите элемент для размещения</SubTitle>
 			</ToolboxHeader>
 
 			<ToolGrid>
-				{Object.entries(ELEMENT_LABELS).map(([type, label]) => (
-					<ToolboxItem
-						key={type}
-						type={type as ElementType}
-						label={label}
-						isActive={
-							placementMode.active && placementMode.elementType === type
-						}
-						onClick={handleItemClick}
-					/>
-				))}
+				<ToolboxItem
+					type='wire'
+					label={ELEMENT_LABELS.wire}
+					isActive={
+						placementMode.active && placementMode.elementType === 'wire'
+					}
+					onClick={handleItemClick}
+				/>
+				<ToolboxItem
+					type='resistor'
+					label={ELEMENT_LABELS.resistor}
+					isActive={
+						placementMode.active && placementMode.elementType === 'resistor'
+					}
+					onClick={handleItemClick}
+				/>
+				<ToolboxItem
+					type='capacitor'
+					label={ELEMENT_LABELS.capacitor}
+					isActive={
+						placementMode.active && placementMode.elementType === 'capacitor'
+					}
+					onClick={handleItemClick}
+				/>
+				<ToolboxItem
+					type='inductor'
+					label={ELEMENT_LABELS.inductor}
+					isActive={
+						placementMode.active && placementMode.elementType === 'inductor'
+					}
+					onClick={handleItemClick}
+				/>
+				<ToolboxItem
+					type='voltage'
+					label={ELEMENT_LABELS.voltage}
+					isActive={
+						placementMode.active && placementMode.elementType === 'voltage'
+					}
+					onClick={handleItemClick}
+				/>
+				<ToolboxItem
+					type='current'
+					label={ELEMENT_LABELS.current}
+					isActive={
+						placementMode.active && placementMode.elementType === 'current'
+					}
+					onClick={handleItemClick}
+				/>
+				<ToolboxItem
+					type='switch'
+					label={ELEMENT_LABELS.switch}
+					isActive={
+						placementMode.active && placementMode.elementType === 'switch'
+					}
+					onClick={handleItemClick}
+				/>
 			</ToolGrid>
 
-			{placementMode.active && placementMode.elementType && (
-				<ToolTip>Нажмите на элемент еще раз, чтобы отменить размещение</ToolTip>
+			{placementMode.active && (
+				<ToolTip>
+					Поместите курсор над узлом, чтобы начать соединение. Затем выберите
+					второй узел для завершения.
+				</ToolTip>
 			)}
 		</ToolboxContainer>
 	)

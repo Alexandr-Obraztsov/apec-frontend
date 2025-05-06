@@ -233,6 +233,7 @@ const ELEMENT_TITLES: Record<ElementType, string> = {
 	capacitor: 'Конденсатор',
 	inductor: 'Катушка индуктивности',
 	voltage: 'Источник напряжения',
+	current: 'Источник тока',
 	switch: 'Ключ',
 }
 
@@ -243,6 +244,7 @@ const ELEMENT_ICON_CHARS: Record<ElementType, string> = {
 	capacitor: 'C',
 	inductor: 'L',
 	voltage: 'V',
+	current: 'I',
 	switch: 'S',
 }
 
