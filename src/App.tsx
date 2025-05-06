@@ -1,10 +1,14 @@
-import { memo } from 'react'
+import { memo, useState } from 'react'
 import styled from 'styled-components'
 import CircuitBoard from './components/CircuitBoard'
 import Toolbox from './components/Toolbox'
 import PropertiesPanel from './components/PropertiesPanel'
 import ConnectionsPanel from './components/ConnectionsPanel'
 import CircuitSolver from './components/CircuitSolver'
+import GenerateChainModal, {
+	ChainOptions,
+} from './components/GenerateChainModal'
+import { useCircuitStore } from './store/circuitStore'
 
 const AppContainer = styled.div`
 	display: flex;
@@ -53,12 +57,47 @@ const MainContent = styled.main`
 	overflow: hidden;
 `
 
+// Добавляем стили для кнопок в навбаре
+const NavbarActions = styled.div`
+	margin-left: auto;
+	display: flex;
+	gap: 12px;
+`
+
+const NavButton = styled.button`
+	padding: 6px 12px;
+	background-color: var(--primary-color);
+	color: white;
+	border: none;
+	border-radius: var(--radius-sm);
+	font-size: 14px;
+	font-weight: 500;
+	cursor: pointer;
+	transition: var(--transition);
+
+	&:hover {
+		background-color: var(--primary-dark);
+	}
+
+	&:focus {
+		outline: none;
+		box-shadow: 0 0 0 2px var(--primary-light);
+	}
+`
+
 // Мемоизированные компоненты
 const MemoizedToolbox = memo(Toolbox)
 const MemoizedPropertiesPanel = memo(PropertiesPanel)
 const MemoizedConnectionsPanel = memo(ConnectionsPanel)
 
 function App() {
+	const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false)
+	const generateChain = useCircuitStore(state => state.generateChain)
+
+	const handleGenerateChain = (options: ChainOptions) => {
+		generateChain(options)
+	}
+
 	return (
 		<AppContainer>
 			<Navbar>
@@ -87,6 +126,11 @@ function App() {
 					</LogoIcon>
 					Circuit<span>Designer</span>
 				</Logo>
+				<NavbarActions>
+					<NavButton onClick={() => setIsGenerateModalOpen(true)}>
+						Сгенерировать цепь
+					</NavButton>
+				</NavbarActions>
 			</Navbar>
 			<MainContent>
 				<CircuitBoard />
@@ -94,6 +138,11 @@ function App() {
 				<MemoizedPropertiesPanel />
 				<MemoizedConnectionsPanel />
 				<CircuitSolver />
+				<GenerateChainModal
+					isOpen={isGenerateModalOpen}
+					onClose={() => setIsGenerateModalOpen(false)}
+					onGenerate={handleGenerateChain}
+				/>
 			</MainContent>
 		</AppContainer>
 	)

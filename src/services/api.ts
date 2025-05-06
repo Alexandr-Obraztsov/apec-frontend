@@ -38,6 +38,17 @@ export interface SolutionResponse {
 	formattedSolution?: SolutionItem[]
 }
 
+// Интерфейс для запроса генерации цепи
+export interface GenerateCircuitRequest {
+	order?: number
+}
+
+// Интерфейс для ответа с генерацией цепи
+export interface GenerateCircuitResponse {
+	status?: string
+	circuit?: string
+}
+
 // Функция для проверки, содержит ли строка только число
 const isNumericString = (str: string): boolean => {
 	// Регулярное выражение для проверки, что строка содержит только число (целое или десятичное)
@@ -123,6 +134,26 @@ export const circuitApi = {
 			}
 		} catch (error) {
 			console.error('Ошибка при запросе к API:', error)
+			throw error
+		}
+	},
+
+	// Метод для генерации схемы
+	generateCircuit: async (
+		params: GenerateCircuitRequest = {}
+	): Promise<GenerateCircuitResponse> => {
+		try {
+			console.log('Отправляем запрос на генерацию цепи с параметрами:', params)
+
+			// Отправляем POST запрос для генерации цепи
+			const response = await axios.post<GenerateCircuitResponse>(
+				`${API_BASE_URL}/generate_circuit`,
+				params
+			)
+
+			return response.data
+		} catch (error) {
+			console.error('Ошибка при запросе генерации цепи:', error)
 			throw error
 		}
 	},

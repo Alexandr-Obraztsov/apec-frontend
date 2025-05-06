@@ -37,15 +37,12 @@ interface CircuitState {
 	highlightedNodeId: string | null
 
 	// Actions
-	addElement: (
-		element: Omit<
-			AnyCircuitElement,
-			'id' | 'startNodeId' | 'endNodeId' | 'name'
-		> & {
-			startNodeId: string
-			endNodeId: string
-		}
-	) => void
+	addElement: (element: {
+		type: ElementType
+		value: string
+		startNodeId: string
+		endNodeId: string
+	}) => void
 	removeElement: (id: string) => void
 	removeSelectedElements: () => void
 	updateElementValue: (id: string, value: number | string) => void
@@ -173,6 +170,46 @@ const distanceToLine = (
 	return { distance, closestPoint }
 }
 
+// Функция для преобразования короткого типа элемента в полный
+const convertElementType = (shortType: string): ElementType => {
+	switch (shortType.toUpperCase()[0]) {
+		case 'R':
+			return 'resistor'
+		case 'C':
+			return 'capacitor'
+		case 'L':
+			return 'inductor'
+		case 'V':
+			return 'voltage'
+		case 'I':
+			return 'current'
+		case 'W':
+			return 'wire'
+		case 'S':
+			return 'switch'
+		default:
+			// Если уже полное название, возвращаем как есть
+			if (
+				[
+					'resistor',
+					'capacitor',
+					'inductor',
+					'voltage',
+					'current',
+					'wire',
+					'switch',
+				].includes(shortType)
+			) {
+				return shortType as ElementType
+			}
+			// Если неизвестный тип, по умолчанию провод
+			console.warn(
+				`Неизвестный тип элемента: ${shortType}, используется тип "wire"`
+			)
+			return 'wire'
+	}
+}
+
 export const useCircuitStore = create<CircuitState>((set, get) => ({
 	elements: [],
 	nodes: [],
@@ -211,8 +248,12 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 			// Создаем имя для элемента
 			const elementName = `${ELEMENT_NAME_PREFIXES[element.type]}${counter}`
 
+			// Получаем единицу измерения из DEFAULT_VALUES
+			const unit = DEFAULT_VALUES[element.type].unit
+
 			const newElement = {
 				...element,
+				unit,
 				id: uuidv4(),
 				name: elementName,
 			} as AnyCircuitElement
@@ -1048,163 +1089,41 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 
 	// Функция для генерации цепи
 	generateChain: (options: ChainOptions) => {
-		// Очищаем текущую схему
 		const { nodes, elements } = get()
 
-		// Удаляем все существующие элементы
 		elements.forEach(element => get().removeElement(element.id))
 
-		// Удаляем все существующие узлы, кроме начального и конечного
 		nodes.forEach(node => {
-			// Проверяем наличие функции removeNode
 			const state = get() as unknown as { removeNode?: (id: string) => void }
 			if (state.removeNode) state.removeNode(node.id)
 		})
 
-		// Создаем новые узлы для цепи
-		const node1Id = get().addNode({ x: 200, y: 300 })
-		const node2Id = get().addNode({ x: 400, y: 300 })
+		const nodePositions = [
+			{ x: 600, y: 500 },
+			{ x: 600, y: 300 },
+			{ x: 600, y: 100 },
+			{ x: 900, y: 100 },
+			{ x: 1200, y: 100 },
+			{ x: 1200, y: 300 },
+			{ x: 1200, y: 500 },
+			{ x: 900, y: 500 },
+			{ x: 900, y: 300 },
+			{ x: 1350, y: 300 },
+			{ x: 1350, y: 500 },
+		]
 
-		if (options.order === 'first') {
-			// Создаем цепь первого порядка (RC или RL)
+		const nodeIds = nodePositions.map(position => get().addNode(position))
+		options.circuit.split('\n').forEach(element => {
+			const [type, startNodeId, endNodeId] = element.split(';')[0].split(' ')
 			get().addElement({
-				type: 'resistor',
-				value: 1000, // 1 кОм
-				unit: 'Ом',
-				rotation: 0,
-				startNodeId: node1Id,
-				endNodeId: node2Id,
+				type: convertElementType(type),
+				startNodeId: nodeIds[+startNodeId],
+				endNodeId: nodeIds[+endNodeId],
 			})
+			console.log(type, startNodeId, endNodeId)
+		})
 
-			// Добавляем конденсатор
-			const node3Id = get().addNode({ x: 600, y: 300 })
-
-			get().addElement({
-				type: 'capacitor',
-				value: 0.00001, // 10 мкФ
-				unit: 'Ф',
-				rotation: 0,
-				startNodeId: node2Id,
-				endNodeId: node3Id,
-			})
-
-			// Добавляем источник напряжения
-			const node4Id = get().addNode({ x: 200, y: 500 })
-			const node5Id = get().addNode({ x: 600, y: 500 })
-
-			get().addElement({
-				type: 'voltage',
-				value: 5, // 5 В
-				unit: 'В',
-				rotation: 0,
-				startNodeId: node4Id,
-				endNodeId: node5Id,
-			})
-
-			// Соединяем проводами
-			get().addElement({
-				type: 'wire',
-				value: 0,
-				unit: '',
-				rotation: 0,
-				startNodeId: node1Id,
-				endNodeId: node4Id,
-			})
-
-			get().addElement({
-				type: 'wire',
-				value: 0,
-				unit: '',
-				rotation: 0,
-				startNodeId: node3Id,
-				endNodeId: node5Id,
-			})
-		} else if (options.order === 'second') {
-			// Создаем цепь второго порядка (RLC)
-
-			// Создаем базовую RLC цепь
-			get().addElement({
-				type: 'resistor',
-				value: 1000, // 1 кОм
-				unit: 'Ом',
-				rotation: 0,
-				startNodeId: node1Id,
-				endNodeId: node2Id,
-			})
-
-			const node3Id = get().addNode({ x: 600, y: 300 })
-
-			get().addElement({
-				type: 'inductor',
-				value: 0.1, // 100 мГн
-				unit: 'Гн',
-				rotation: 0,
-				startNodeId: node2Id,
-				endNodeId: node3Id,
-			})
-
-			// Добавляем конденсатор
-			const node4Id = get().addNode({ x: 800, y: 300 })
-
-			get().addElement({
-				type: 'capacitor',
-				value: 0.00001, // 10 мкФ
-				unit: 'Ф',
-				rotation: 0,
-				startNodeId: node3Id,
-				endNodeId: node4Id,
-			})
-
-			// Настраиваем параметры в зависимости от типа корней
-			if (options.rootType === 'equal') {
-				// Для равных корней: R^2 = 4L/C
-				// R = 2sqrt(L/C)
-				// При L = 0.1 и C = 0.00001, R ≈ 2000 Ом
-				get().updateElementValue(get().elements[0].id, 2000)
-			} else if (options.rootType === 'complex') {
-				// Для комплексных корней: R^2 < 4L/C
-				// Используем R = 100 Ом для получения комплексных корней
-				get().updateElementValue(get().elements[0].id, 100)
-			} else if (options.rootType === 'different') {
-				// Для разных действительных корней: R^2 > 4L/C
-				// Используем R = 4000 Ом для получения разных корней
-				get().updateElementValue(get().elements[0].id, 4000)
-			}
-
-			// Добавляем источник напряжения
-			const node5Id = get().addNode({ x: 200, y: 500 })
-			const node6Id = get().addNode({ x: 800, y: 500 })
-
-			get().addElement({
-				type: 'voltage',
-				value: 5, // 5 В
-				unit: 'В',
-				rotation: 0,
-				startNodeId: node5Id,
-				endNodeId: node6Id,
-			})
-
-			// Соединяем проводами
-			get().addElement({
-				type: 'wire',
-				value: 0,
-				unit: '',
-				rotation: 0,
-				startNodeId: node1Id,
-				endNodeId: node5Id,
-			})
-
-			get().addElement({
-				type: 'wire',
-				value: 0,
-				unit: '',
-				rotation: 0,
-				startNodeId: node4Id,
-				endNodeId: node6Id,
-			})
-		}
-
-		// Переименовываем узлы и элементы
+		// TODO добавить добавление элементов
 		get().renameNodes()
 		get().renameElements()
 	},

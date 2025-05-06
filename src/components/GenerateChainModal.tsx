@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import styled from 'styled-components'
+import { circuitApi } from '../services/api'
 
 const ModalBackground = styled.div`
 	position: fixed;
@@ -95,6 +96,11 @@ const Button = styled.button`
 	&:focus {
 		outline: none;
 	}
+
+	&:disabled {
+		opacity: 0.7;
+		cursor: not-allowed;
+	}
 `
 
 const CancelButton = styled(Button)`
@@ -102,7 +108,7 @@ const CancelButton = styled(Button)`
 	border: 1px solid var(--border-color);
 	color: var(--text-secondary);
 
-	&:hover {
+	&:hover:not(:disabled) {
 		background-color: var(--bg-color);
 		border-color: var(--text-secondary);
 	}
@@ -112,10 +118,34 @@ const GenerateButton = styled(Button)`
 	background-color: var(--primary-color);
 	border: 1px solid var(--primary-color);
 	color: white;
+	position: relative;
 
-	&:hover {
+	&:hover:not(:disabled) {
 		background-color: var(--primary-dark);
 	}
+`
+
+const LoadingSpinner = styled.div`
+	display: inline-block;
+	width: 16px;
+	height: 16px;
+	margin-right: 8px;
+	border: 2px solid rgba(255, 255, 255, 0.3);
+	border-radius: 50%;
+	border-top-color: white;
+	animation: spin 1s linear infinite;
+
+	@keyframes spin {
+		to {
+			transform: rotate(360deg);
+		}
+	}
+`
+
+const ErrorMessage = styled.div`
+	color: var(--error-color);
+	margin-bottom: 16px;
+	font-size: 0.9rem;
 `
 
 interface GenerateChainModalProps {
@@ -127,6 +157,7 @@ interface GenerateChainModalProps {
 export interface ChainOptions {
 	order: 'first' | 'second'
 	rootType?: 'equal' | 'complex' | 'different'
+	circuit: string
 }
 
 const GenerateChainModal: React.FC<GenerateChainModalProps> = ({
@@ -138,15 +169,41 @@ const GenerateChainModal: React.FC<GenerateChainModalProps> = ({
 	const [rootType, setRootType] = useState<'equal' | 'complex' | 'different'>(
 		'equal'
 	)
+	const [isLoading, setIsLoading] = useState(false)
+	const [error, setError] = useState<string | null>(null)
 
 	if (!isOpen) return null
 
-	const handleSubmit = () => {
-		onGenerate({
-			order,
-			rootType: order === 'second' ? rootType : undefined,
-		})
-		onClose()
+	const handleSubmit = async () => {
+		try {
+			setIsLoading(true)
+			setError(null)
+
+			// Преобразуем порядок из строкового в числовой
+			const orderValue = order === 'first' ? 1 : 2
+
+			// Вызываем API для генерации цепи
+			const response = await circuitApi.generateCircuit({ order: orderValue })
+
+			if (response.status === 'success' && response.circuit) {
+				// Вызываем обработчик с параметрами и сгенерированной цепью
+				onGenerate({
+					order,
+					rootType: order === 'second' ? rootType : undefined,
+					circuit: response.circuit,
+				})
+
+				// Закрываем модальное окно
+				onClose()
+			} else {
+				setError('Ошибка при генерации цепи: Неверный формат ответа')
+			}
+		} catch (err) {
+			console.error('Ошибка при генерации цепи:', err)
+			setError('Ошибка при генерации цепи. Попробуйте позже.')
+		} finally {
+			setIsLoading(false)
+		}
 	}
 
 	return (
@@ -157,6 +214,8 @@ const GenerateChainModal: React.FC<GenerateChainModalProps> = ({
 				</ModalHeader>
 
 				<Content>
+					{error && <ErrorMessage>{error}</ErrorMessage>}
+
 					<OptionGroup>
 						<Label>Порядок цепи:</Label>
 						<RadioGroup>
@@ -167,6 +226,7 @@ const GenerateChainModal: React.FC<GenerateChainModalProps> = ({
 									value='first'
 									checked={order === 'first'}
 									onChange={() => setOrder('first')}
+									disabled={isLoading}
 								/>
 								<span>Первого порядка</span>
 							</RadioButton>
@@ -177,6 +237,7 @@ const GenerateChainModal: React.FC<GenerateChainModalProps> = ({
 									value='second'
 									checked={order === 'second'}
 									onChange={() => setOrder('second')}
+									disabled={isLoading}
 								/>
 								<span>Второго порядка</span>
 							</RadioButton>
@@ -194,6 +255,7 @@ const GenerateChainModal: React.FC<GenerateChainModalProps> = ({
 										value='equal'
 										checked={rootType === 'equal'}
 										onChange={() => setRootType('equal')}
+										disabled={isLoading}
 									/>
 									<span>Равные</span>
 								</RadioButton>
@@ -204,6 +266,7 @@ const GenerateChainModal: React.FC<GenerateChainModalProps> = ({
 										value='complex'
 										checked={rootType === 'complex'}
 										onChange={() => setRootType('complex')}
+										disabled={isLoading}
 									/>
 									<span>Комплексные</span>
 								</RadioButton>
@@ -214,6 +277,7 @@ const GenerateChainModal: React.FC<GenerateChainModalProps> = ({
 										value='different'
 										checked={rootType === 'different'}
 										onChange={() => setRootType('different')}
+										disabled={isLoading}
 									/>
 									<span>Разные</span>
 								</RadioButton>
@@ -223,8 +287,13 @@ const GenerateChainModal: React.FC<GenerateChainModalProps> = ({
 				</Content>
 
 				<ButtonGroup>
-					<CancelButton onClick={onClose}>Отмена</CancelButton>
-					<GenerateButton onClick={handleSubmit}>Сгенерировать</GenerateButton>
+					<CancelButton onClick={onClose} disabled={isLoading}>
+						Отмена
+					</CancelButton>
+					<GenerateButton onClick={handleSubmit} disabled={isLoading}>
+						{isLoading && <LoadingSpinner />}
+						{isLoading ? 'Генерация...' : 'Сгенерировать'}
+					</GenerateButton>
 				</ButtonGroup>
 			</ModalContainer>
 		</ModalBackground>
