@@ -39,9 +39,10 @@ interface CircuitState {
 	// Actions
 	addElement: (element: {
 		type: ElementType
-		value: string
+		value?: string
 		startNodeId: string
 		endNodeId: string
+		isOpen?: boolean
 	}) => void
 	removeElement: (id: string) => void
 	removeSelectedElements: () => void
@@ -1117,17 +1118,25 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 		options.circuit.split('\n').forEach(element => {
 			const splitElement = element.split(';')[0].split(' ')
 			const [type, startNodeId, endNodeId] = splitElement
-			console.log(type, startNodeId, endNodeId, splitElement[3])
-			if (type === 'switch')
+			const elementType = convertElementType(type)
+			if (elementType === 'voltage')
 				get().addElement({
-					type: convertElementType(type),
+					type: elementType,
+					startNodeId: nodeIds[+endNodeId],
+					endNodeId: nodeIds[+startNodeId],
+					value: '100',
+				})
+			else if (elementType === 'switch')
+				get().addElement({
+					type: elementType,
 					startNodeId: nodeIds[+startNodeId],
 					endNodeId: nodeIds[+endNodeId],
-					value: splitElement[3] === 'nc' ? '0' : '1',
+					value: '0',
+					isOpen: splitElement[3] !== 'nc',
 				})
 			else
 				get().addElement({
-					type: convertElementType(type),
+					type: elementType,
 					startNodeId: nodeIds[+startNodeId],
 					endNodeId: nodeIds[+endNodeId],
 					value: splitElement[3] || '0',
