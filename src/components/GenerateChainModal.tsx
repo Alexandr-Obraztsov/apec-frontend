@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import styled from 'styled-components'
-import { circuitApi } from '../services/api'
+import { circuitApi, RootType } from '../services/api'
 
 const ModalBackground = styled.div`
 	position: fixed;
@@ -156,7 +156,7 @@ interface GenerateChainModalProps {
 
 export interface ChainOptions {
 	order: 'first' | 'second'
-	rootType?: 'equal' | 'complex' | 'different'
+	rootType?: RootType
 	circuit: string
 }
 
@@ -166,9 +166,7 @@ const GenerateChainModal: React.FC<GenerateChainModalProps> = ({
 	onGenerate,
 }) => {
 	const [order, setOrder] = useState<'first' | 'second'>('first')
-	const [rootType, setRootType] = useState<'equal' | 'complex' | 'different'>(
-		'equal'
-	)
+	const [rootType, setRootType] = useState<RootType>(RootType.EQUAL)
 	const [isLoading, setIsLoading] = useState(false)
 	const [error, setError] = useState<string | null>(null)
 
@@ -183,7 +181,10 @@ const GenerateChainModal: React.FC<GenerateChainModalProps> = ({
 			const orderValue = order === 'first' ? 1 : 2
 
 			// Вызываем API для генерации цепи
-			const response = await circuitApi.generateCircuit({ order: orderValue })
+			const response = await circuitApi.generateCircuit({
+				order: orderValue,
+				rootType,
+			})
 
 			if (response.status === 'success' && response.circuit) {
 				// Вызываем обработчик с параметрами и сгенерированной цепью
@@ -253,8 +254,8 @@ const GenerateChainModal: React.FC<GenerateChainModalProps> = ({
 										type='radio'
 										name='rootType'
 										value='equal'
-										checked={rootType === 'equal'}
-										onChange={() => setRootType('equal')}
+										checked={rootType === RootType.EQUAL}
+										onChange={() => setRootType(RootType.EQUAL)}
 										disabled={isLoading}
 									/>
 									<span>Равные</span>
@@ -264,8 +265,8 @@ const GenerateChainModal: React.FC<GenerateChainModalProps> = ({
 										type='radio'
 										name='rootType'
 										value='complex'
-										checked={rootType === 'complex'}
-										onChange={() => setRootType('complex')}
+										checked={rootType === RootType.COMPLEX}
+										onChange={() => setRootType(RootType.COMPLEX)}
 										disabled={isLoading}
 									/>
 									<span>Комплексные</span>
@@ -275,8 +276,8 @@ const GenerateChainModal: React.FC<GenerateChainModalProps> = ({
 										type='radio'
 										name='rootType'
 										value='different'
-										checked={rootType === 'different'}
-										onChange={() => setRootType('different')}
+										checked={rootType === RootType.DIFFERENT}
+										onChange={() => setRootType(RootType.DIFFERENT)}
 										disabled={isLoading}
 									/>
 									<span>Разные</span>

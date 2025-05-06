@@ -38,9 +38,16 @@ export interface SolutionResponse {
 	formattedSolution?: SolutionItem[]
 }
 
+export enum RootType {
+	COMPLEX = '<',
+	DIFFERENT = '>',
+	EQUAL = '=',
+}
+
 // Интерфейс для запроса генерации цепи
 export interface GenerateCircuitRequest {
-	order?: number
+	order: number
+	rootType?: RootType
 }
 
 // Интерфейс для ответа с генерацией цепи
@@ -140,7 +147,7 @@ export const circuitApi = {
 
 	// Метод для генерации схемы
 	generateCircuit: async (
-		params: GenerateCircuitRequest = {}
+		params: GenerateCircuitRequest
 	): Promise<GenerateCircuitResponse> => {
 		try {
 			console.log('Отправляем запрос на генерацию цепи с параметрами:', params)
