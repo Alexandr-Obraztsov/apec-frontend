@@ -2,6 +2,7 @@ import React from 'react'
 import styled from 'styled-components'
 import { CurrentElement, Node } from '../../types'
 import CircuitValue from '../CircuitValue'
+import { formatValue } from '../../utils/formatters'
 
 interface CurrentProps {
 	element: CurrentElement
@@ -54,24 +55,6 @@ const Current: React.FC<CurrentProps> = ({
 
 	// Создаем трансформацию для поворота компонента
 	const transform = `translate(${centerX}, ${centerY}) rotate(${angle})`
-
-	// Форматирование значения тока в единицах СИ (А)
-	const formatValue = (value: number | string, unit: string) => {
-		if (typeof value === 'string') {
-			return `${value} ${unit}`
-		}
-
-		if (unit === 'А') {
-			if (value >= 1000) {
-				return `${(value / 1000).toFixed(1)} кА`
-			} else if (value < 1 && value >= 0.001) {
-				return `${(value * 1000).toFixed(1)} мА`
-			} else if (value < 0.001) {
-				return `${(value * 1000000).toFixed(1)} мкА`
-			}
-		}
-		return `${value} ${unit}`
-	}
 
 	const valueText = `${formatValue(element.value, element.unit)} ${
 		element.name

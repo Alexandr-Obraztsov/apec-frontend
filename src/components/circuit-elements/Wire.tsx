@@ -2,6 +2,7 @@ import React, { useMemo } from 'react'
 import styled from 'styled-components'
 import { WireElement, Node } from '../../types'
 import CircuitValue from '../CircuitValue'
+import { formatValue } from '../../utils/formatters'
 
 interface WireProps {
 	element: WireElement
@@ -23,20 +24,6 @@ const WirePath = styled.path<{ selected: boolean; highlighted: boolean }>`
 	stroke-linecap: round;
 	transition: stroke 0.1s ease, stroke-width 0.1s ease;
 `
-
-// Форматирование значения в единицах СИ (м)
-const formatValue = (value: number, unit: string) => {
-	if (unit === 'м') {
-		if (value >= 1) {
-			return `${value.toFixed(1)} м`
-		} else if (value >= 0.01) {
-			return `${(value * 100).toFixed(0)} см`
-		} else {
-			return `${(value * 1000).toFixed(0)} мм`
-		}
-	}
-	return `${value} ${unit}`
-}
 
 const Wire: React.FC<WireProps> = ({
 	element,

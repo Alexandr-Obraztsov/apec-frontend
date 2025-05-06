@@ -2,6 +2,7 @@ import React, { useMemo } from 'react'
 import styled from 'styled-components'
 import { CapacitorElement, Node } from '../../types'
 import CircuitValue from '../CircuitValue'
+import { formatValue } from '../../utils/formatters'
 
 interface CapacitorProps {
 	element: CapacitorElement
@@ -24,24 +25,6 @@ const CapacitorPlate = styled.line<{ selected: boolean }>`
 	stroke-width: 3px;
 	stroke-linecap: round;
 `
-
-// Форматирование значения конденсатора в единицах СИ (Ф)
-const formatValue = (value: number, unit: string) => {
-	if (unit === 'Ф') {
-		if (value >= 1) {
-			return `${value.toFixed(0)} Ф`
-		} else if (value >= 0.001) {
-			return `${(value * 1000).toFixed(0)} мФ`
-		} else if (value >= 0.000001) {
-			return `${(value * 1000000).toFixed(0)} мкФ`
-		} else if (value >= 0.000000001) {
-			return `${(value * 1000000000).toFixed(0)} нФ`
-		} else {
-			return `${(value * 1000000000000).toFixed(0)} пФ`
-		}
-	}
-	return `${value} ${unit}`
-}
 
 const CapacitorComponent = ({
 	element,

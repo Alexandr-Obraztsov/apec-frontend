@@ -2,6 +2,7 @@ import React, { useMemo } from 'react'
 import styled from 'styled-components'
 import { InductorElement, Node } from '../../types'
 import CircuitValue from '../CircuitValue'
+import { formatValue } from '../../utils/formatters'
 
 interface InductorProps {
 	element: InductorElement
@@ -24,22 +25,6 @@ const InductorPath = styled.path<{ selected: boolean }>`
 	fill: none;
 	stroke-width: 2px;
 `
-
-// Форматирование значения индуктора в единицах СИ (Гн)
-const formatValue = (value: number, unit: string) => {
-	if (unit === 'Гн') {
-		if (value >= 1) {
-			return `${value.toFixed(2)} Гн`
-		} else if (value >= 0.001) {
-			return `${(value * 1000).toFixed(0)} мГн`
-		} else if (value >= 0.000001) {
-			return `${(value * 1000000).toFixed(0)} мкГн`
-		} else {
-			return `${(value * 1000000000).toFixed(0)} нГн`
-		}
-	}
-	return `${value} ${unit}`
-}
 
 const InductorComponent = ({
 	element,

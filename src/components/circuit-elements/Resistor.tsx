@@ -2,6 +2,7 @@ import React, { memo, useMemo } from 'react'
 import styled from 'styled-components'
 import { ResistorElement, Node } from '../../types'
 import CircuitValue from '../CircuitValue'
+import { formatValue } from '../../utils/formatters'
 
 interface ResistorProps {
 	element: ResistorElement
@@ -17,18 +18,6 @@ const ResistorContainer = styled.g<{ selected: boolean }>`
 	fill: none;
 	transition: stroke 0.1s ease, stroke-width 0.1s ease, fill 0.1s ease;
 `
-
-// Форматирование значения в единицах СИ (Ом)
-const formatValue = (value: number, unit: string) => {
-	if (unit === 'Ом') {
-		if (value >= 1000000) {
-			return `${(value / 1000000).toFixed(1)} МОм`
-		} else if (value >= 1000) {
-			return `${(value / 1000).toFixed(1)} кОм`
-		}
-	}
-	return `${value} ${unit}`
-}
 
 const Resistor: React.FC<ResistorProps> = memo(
 	({ element, startNode, endNode, selected }) => {

@@ -241,6 +241,7 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 	highlightedNodeId: null,
 
 	addElement: element => {
+		console.log(element)
 		set(state => {
 			// Увеличиваем счетчик для типа элемента
 			const counter = state.nameCounters.elements[element.type] + 1
@@ -1099,31 +1100,41 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 		})
 
 		const nodePositions = [
-			{ x: 600, y: 500 },
-			{ x: 600, y: 300 },
+			{ x: 300, y: 500 },
+			{ x: 300, y: 300 },
+			{ x: 300, y: 100 },
 			{ x: 600, y: 100 },
 			{ x: 900, y: 100 },
-			{ x: 1200, y: 100 },
-			{ x: 1200, y: 300 },
-			{ x: 1200, y: 500 },
-			{ x: 900, y: 500 },
 			{ x: 900, y: 300 },
-			{ x: 1350, y: 300 },
-			{ x: 1350, y: 500 },
+			{ x: 900, y: 500 },
+			{ x: 600, y: 500 },
+			{ x: 600, y: 300 },
+			{ x: 1050, y: 300 },
+			{ x: 1050, y: 500 },
 		]
 
 		const nodeIds = nodePositions.map(position => get().addNode(position))
 		options.circuit.split('\n').forEach(element => {
-			const [type, startNodeId, endNodeId] = element.split(';')[0].split(' ')
-			get().addElement({
-				type: convertElementType(type),
-				startNodeId: nodeIds[+startNodeId],
-				endNodeId: nodeIds[+endNodeId],
-			})
-			console.log(type, startNodeId, endNodeId)
+			const splitElement = element.split(';')[0].split(' ')
+			const [type, startNodeId, endNodeId] = splitElement
+			console.log(type, startNodeId, endNodeId, splitElement[3])
+			if (type === 'switch')
+				get().addElement({
+					type: convertElementType(type),
+					startNodeId: nodeIds[+startNodeId],
+					endNodeId: nodeIds[+endNodeId],
+					value: splitElement[3] === 'nc' ? '0' : '1',
+				})
+			else
+				get().addElement({
+					type: convertElementType(type),
+					startNodeId: nodeIds[+startNodeId],
+					endNodeId: nodeIds[+endNodeId],
+					value: splitElement[3] || '0',
+				})
 		})
 
-		// TODO добавить добавление элементов
+		// Переименовываем узлы и элементы
 		get().renameNodes()
 		get().renameElements()
 	},
