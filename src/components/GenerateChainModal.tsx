@@ -72,6 +72,10 @@ const RadioButton = styled.label`
 	}
 `
 
+const CheckboxInput = styled(RadioButton)`
+	margin-top: 8px;
+`
+
 const ConditionalOptions = styled.div`
 	margin-top: 8px;
 	margin-left: 24px;
@@ -143,7 +147,7 @@ const LoadingSpinner = styled.div`
 `
 
 const ErrorMessage = styled.div`
-	color: var(--error-color);
+	color: red;
 	margin-bottom: 16px;
 	font-size: 0.9rem;
 `
@@ -169,6 +173,8 @@ const GenerateChainModal: React.FC<GenerateChainModalProps> = ({
 	const [rootType, setRootType] = useState<RootType>(RootType.EQUAL)
 	const [isLoading, setIsLoading] = useState(false)
 	const [error, setError] = useState<string | null>(null)
+	const [isMultiple, setIsMultiple] = useState(false)
+	const [multipleCount, setMultipleCount] = useState(5)
 
 	if (!isOpen) return null
 
@@ -180,24 +186,35 @@ const GenerateChainModal: React.FC<GenerateChainModalProps> = ({
 			// Преобразуем порядок из строкового в числовой
 			const orderValue = order === 'first' ? 1 : 2
 
-			// Вызываем API для генерации цепи
-			const response = await circuitApi.generateCircuit({
-				order: orderValue,
-				rootType,
-			})
-
-			if (response.status === 'success' && response.circuit) {
-				// Вызываем обработчик с параметрами и сгенерированной цепью
-				onGenerate({
-					order,
-					rootType: order === 'second' ? rootType : undefined,
-					circuit: response.circuit,
+			if (isMultiple && order === 'second') {
+				// Вызываем API для множественной генерации цепей
+				await circuitApi.generateMultipleCircuits({
+					count: multipleCount,
+					rootType,
 				})
 
-				// Закрываем модальное окно
+				// Пока просто закрываем модальное окно, потому что результаты не обрабатываем
 				onClose()
 			} else {
-				setError('Ошибка при генерации цепи: Неверный формат ответа')
+				// Вызываем API для генерации одной цепи
+				const response = await circuitApi.generateCircuit({
+					order: orderValue,
+					rootType,
+				})
+
+				if (response.status === 'success' && response.circuit) {
+					// Вызываем обработчик с параметрами и сгенерированной цепью
+					onGenerate({
+						order,
+						rootType: order === 'second' ? rootType : undefined,
+						circuit: response.circuit,
+					})
+
+					// Закрываем модальное окно
+					onClose()
+				} else {
+					setError('Ошибка при генерации цепи: Неверный формат ответа')
+				}
 			}
 		} catch (err) {
 			console.error('Ошибка при генерации цепи:', err)
@@ -226,7 +243,10 @@ const GenerateChainModal: React.FC<GenerateChainModalProps> = ({
 									name='order'
 									value='first'
 									checked={order === 'first'}
-									onChange={() => setOrder('first')}
+									onChange={() => {
+										setOrder('first')
+										setIsMultiple(false) // Отключаем множественную генерацию для цепей первого порядка
+									}}
 									disabled={isLoading}
 								/>
 								<span>Первого порядка</span>
@@ -243,23 +263,24 @@ const GenerateChainModal: React.FC<GenerateChainModalProps> = ({
 								<span>Второго порядка</span>
 							</RadioButton>
 						</RadioGroup>
+
+						{order === 'second' && (
+							<CheckboxInput>
+								<input
+									type='checkbox'
+									checked={isMultiple}
+									onChange={e => setIsMultiple(e.target.checked)}
+									disabled={isLoading}
+								/>
+								<span>Сгенерировать несколько цепей</span>
+							</CheckboxInput>
+						)}
 					</OptionGroup>
 
 					{order === 'second' && (
 						<ConditionalOptions>
 							<Label>Тип корней:</Label>
 							<RadioGroup>
-								<RadioButton>
-									<input
-										type='radio'
-										name='rootType'
-										value='equal'
-										checked={rootType === RootType.EQUAL}
-										onChange={() => setRootType(RootType.EQUAL)}
-										disabled={isLoading}
-									/>
-									<span>Равные</span>
-								</RadioButton>
 								<RadioButton>
 									<input
 										type='radio'
@@ -284,6 +305,26 @@ const GenerateChainModal: React.FC<GenerateChainModalProps> = ({
 								</RadioButton>
 							</RadioGroup>
 						</ConditionalOptions>
+					)}
+
+					{order === 'second' && isMultiple && (
+						<OptionGroup>
+							<Label>Количество цепей для генерации:</Label>
+							<input
+								type='number'
+								min='1'
+								max='20'
+								value={multipleCount}
+								onChange={e => setMultipleCount(parseInt(e.target.value) || 5)}
+								style={{
+									padding: '8px',
+									borderRadius: 'var(--radius-sm)',
+									border: '1px solid var(--border-color)',
+									width: '100px',
+								}}
+								disabled={isLoading}
+							/>
+						</OptionGroup>
 					)}
 				</Content>
 

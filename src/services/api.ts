@@ -56,6 +56,23 @@ export interface GenerateCircuitResponse {
 	circuit?: string
 }
 
+// Интерфейс для запроса на множественную генерацию цепей
+export interface GenerateMultipleCircuitsRequest {
+	count: number
+	rootType?: RootType
+}
+
+// Интерфейс для результата цепи с решением
+export interface CircuitWithSolution {
+	circuit: string
+	solution: CircuitSolutionResult
+}
+
+// Интерфейс для ответа с множественной генерацией цепей
+export interface GenerateMultipleCircuitsResponse {
+	[index: number]: CircuitWithSolution
+}
+
 // Функция для проверки, содержит ли строка только число
 const isNumericString = (str: string): boolean => {
 	// Регулярное выражение для проверки, что строка содержит только число (целое или десятичное)
@@ -161,6 +178,29 @@ export const circuitApi = {
 			return response.data
 		} catch (error) {
 			console.error('Ошибка при запросе генерации цепи:', error)
+			throw error
+		}
+	},
+
+	// Метод для множественной генерации схем
+	generateMultipleCircuits: async (
+		params: GenerateMultipleCircuitsRequest
+	): Promise<GenerateMultipleCircuitsResponse> => {
+		try {
+			console.log(
+				'Отправляем запрос на множественную генерацию цепей с параметрами:',
+				params
+			)
+
+			// Отправляем POST запрос для генерации нескольких цепей
+			const response = await axios.post<GenerateMultipleCircuitsResponse>(
+				`${API_BASE_URL}/generate_multiple_circuits`,
+				params
+			)
+
+			return response.data
+		} catch (error) {
+			console.error('Ошибка при запросе множественной генерации цепей:', error)
 			throw error
 		}
 	},
