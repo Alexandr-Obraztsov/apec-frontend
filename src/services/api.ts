@@ -47,13 +47,17 @@ export enum RootType {
 // Интерфейс для запроса генерации цепи
 export interface GenerateCircuitRequest {
 	order: number
+	count?: number
 	rootType?: RootType
 }
 
 // Интерфейс для ответа с генерацией цепи
 export interface GenerateCircuitResponse {
 	status?: string
-	circuit?: string
+	results?: {
+		circuit: string
+		svg: string
+	}[]
 }
 
 // Интерфейс для запроса на множественную генерацию цепей
