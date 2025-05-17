@@ -152,6 +152,22 @@ const ErrorMessage = styled.div`
 	font-size: 0.9rem;
 `
 
+const SuccessMessage = styled.div`
+	color: green;
+	margin-bottom: 16px;
+	font-size: 0.9rem;
+`
+
+const DownloadButton = styled(Button)`
+	background-color: var(--success-color, #28a745);
+	border: 1px solid var(--success-color, #28a745);
+	color: white;
+
+	&:hover:not(:disabled) {
+		background-color: var(--success-dark, #218838);
+	}
+`
+
 interface GenerateChainModalProps {
 	isOpen: boolean
 	onClose: () => void
@@ -175,45 +191,72 @@ const GenerateChainModal: React.FC<GenerateChainModalProps> = ({
 	const [error, setError] = useState<string | null>(null)
 	const [isMultiple, setIsMultiple] = useState(false)
 	const [multipleCount, setMultipleCount] = useState(5)
+	const [pdfBlob, setPdfBlob] = useState<Blob | null>(null)
+	const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
 	if (!isOpen) return null
+
+	// Функция для скачивания PDF файла
+	const handleDownloadPdf = () => {
+		if (!pdfBlob) return
+
+		// Создаем URL для скачивания
+		const url = URL.createObjectURL(pdfBlob)
+
+		// Создаем временную ссылку для скачивания
+		const link = document.createElement('a')
+		link.href = url
+		link.download = `circuits_${new Date().toISOString().slice(0, 10)}.pdf`
+		document.body.appendChild(link)
+		link.click()
+
+		// Удаляем временную ссылку и освобождаем URL
+		document.body.removeChild(link)
+		URL.revokeObjectURL(url)
+	}
 
 	const handleSubmit = async () => {
 		try {
 			setIsLoading(true)
 			setError(null)
+			setSuccessMessage(null)
+			setPdfBlob(null)
 
 			// Преобразуем порядок из строкового в числовой
 			const orderValue = order === 'first' ? 1 : 2
 
+			// Если выбрана множественная генерация
 			if (isMultiple && order === 'second') {
-				// Вызываем API для множественной генерации цепей
-				await circuitApi.generateMultipleCircuits({
+				// Вызываем API для генерации PDF с множественными цепями
+				const pdfResponse = await circuitApi.generateCircuitsPdf({
 					count: multipleCount,
+					order: orderValue,
 					rootType,
 				})
 
-				// Пока просто закрываем модальное окно, потому что результаты не обрабатываем
-				onClose()
+				// Сохраняем полученный PDF блоб для скачивания
+				setPdfBlob(pdfResponse)
+				setSuccessMessage(
+					'PDF с цепями успешно сгенерирован. Нажмите "Скачать PDF" чтобы сохранить файл.'
+				)
+				// Не закрываем модальное окно для множественной генерации
 			} else {
-				// Вызываем API для генерации одной цепи
+				// Для одиночной генерации используем существующий метод
 				const response = await circuitApi.generateCircuit({
 					order: orderValue,
 					rootType,
 				})
 
-				if (response.status === 'success' && response.circuit) {
-					// Вызываем обработчик с параметрами и сгенерированной цепью
+				if (response.status === 'success' && response.results) {
+					// Передаем данные цепи через обратный вызов
 					onGenerate({
 						order,
 						rootType: order === 'second' ? rootType : undefined,
-						circuit: response.circuit,
+						circuit: response.results[0].circuit,
 					})
 
-					// Закрываем модальное окно
+					// Закрываем модальное окно только для одиночной генерации
 					onClose()
-				} else {
-					setError('Ошибка при генерации цепи: Неверный формат ответа')
 				}
 			}
 		} catch (err) {
@@ -233,6 +276,7 @@ const GenerateChainModal: React.FC<GenerateChainModalProps> = ({
 
 				<Content>
 					{error && <ErrorMessage>{error}</ErrorMessage>}
+					{successMessage && <SuccessMessage>{successMessage}</SuccessMessage>}
 
 					<OptionGroup>
 						<Label>Порядок цепи:</Label>
@@ -332,6 +376,13 @@ const GenerateChainModal: React.FC<GenerateChainModalProps> = ({
 					<CancelButton onClick={onClose} disabled={isLoading}>
 						Отмена
 					</CancelButton>
+
+					{pdfBlob && (
+						<DownloadButton onClick={handleDownloadPdf}>
+							Скачать PDF
+						</DownloadButton>
+					)}
+
 					<GenerateButton onClick={handleSubmit} disabled={isLoading}>
 						{isLoading && <LoadingSpinner />}
 						{isLoading ? 'Генерация...' : 'Сгенерировать'}

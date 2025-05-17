@@ -47,7 +47,13 @@ export enum RootType {
 // Интерфейс для запроса генерации цепи
 export interface GenerateCircuitRequest {
 	order: number
-	count?: number
+	rootType?: RootType
+}
+
+// Интерфейс для запроса генерации PDF с множественными цепями
+export interface GenerateCircuitsPdfRequest {
+	count: number
+	order: number
 	rootType?: RootType
 }
 
@@ -56,25 +62,9 @@ export interface GenerateCircuitResponse {
 	status?: string
 	results?: {
 		circuit: string
+		result: CircuitSolutionResult
 		svg: string
 	}[]
-}
-
-// Интерфейс для запроса на множественную генерацию цепей
-export interface GenerateMultipleCircuitsRequest {
-	count: number
-	rootType?: RootType
-}
-
-// Интерфейс для результата цепи с решением
-export interface CircuitWithSolution {
-	circuit: string
-	solution: CircuitSolutionResult
-}
-
-// Интерфейс для ответа с множественной генерацией цепей
-export interface GenerateMultipleCircuitsResponse {
-	[index: number]: CircuitWithSolution
 }
 
 // Функция для проверки, содержит ли строка только число
@@ -186,25 +176,23 @@ export const circuitApi = {
 		}
 	},
 
-	// Метод для множественной генерации схем
-	generateMultipleCircuits: async (
-		params: GenerateMultipleCircuitsRequest
-	): Promise<GenerateMultipleCircuitsResponse> => {
+	// Метод для генерации PDF с множественными цепями
+	generateCircuitsPdf: async (
+		params: GenerateCircuitsPdfRequest
+	): Promise<Blob> => {
 		try {
-			console.log(
-				'Отправляем запрос на множественную генерацию цепей с параметрами:',
-				params
-			)
+			console.log('Отправляем запрос на генерацию PDF с цепями:', params)
 
-			// Отправляем POST запрос для генерации нескольких цепей
-			const response = await axios.post<GenerateMultipleCircuitsResponse>(
-				`${API_BASE_URL}/generate_multiple_circuits`,
-				params
+			// Отправляем POST запрос для генерации PDF с цепями с настройкой responseType: 'blob'
+			const response = await axios.post(
+				`${API_BASE_URL}/generate_circuits_pdf`,
+				params,
+				{ responseType: 'blob' }
 			)
 
 			return response.data
 		} catch (error) {
-			console.error('Ошибка при запросе множественной генерации цепей:', error)
+			console.error('Ошибка при запросе генерации PDF с цепями:', error)
 			throw error
 		}
 	},
