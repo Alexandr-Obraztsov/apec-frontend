@@ -247,12 +247,12 @@ const GenerateChainModal: React.FC<GenerateChainModalProps> = ({
 					rootType,
 				})
 
-				if (response.status === 'success' && response.results) {
+				if (response.status === 'success' && response.circuit) {
 					// Передаем данные цепи через обратный вызов
 					onGenerate({
 						order,
 						rootType: order === 'second' ? rootType : undefined,
-						circuit: response.results[0].circuit,
+						circuit: response.circuit,
 					})
 
 					// Закрываем модальное окно только для одиночной генерации

@@ -46,8 +46,8 @@ export enum RootType {
 
 // Интерфейс для запроса генерации цепи
 export interface GenerateCircuitRequest {
-	order: number
 	rootType?: RootType
+	order: number
 }
 
 // Интерфейс для запроса генерации PDF с множественными цепями
@@ -60,11 +60,7 @@ export interface GenerateCircuitsPdfRequest {
 // Интерфейс для ответа с генерацией цепи
 export interface GenerateCircuitResponse {
 	status?: string
-	results?: {
-		circuit: string
-		result: CircuitSolutionResult
-		svg: string
-	}[]
+	circuit?: string
 }
 
 // Функция для проверки, содержит ли строка только число
