@@ -1,6 +1,7 @@
 import React from 'react'
 import styled from 'styled-components'
-import { CircuitSolutionResult } from '../services/api'
+import { Task, useTasksStore } from '../store/tasksStore'
+import { generateConditions } from '../utils/generateConditions'
 
 const Card = styled.div`
 	background: var(--surface-color);
@@ -10,6 +11,7 @@ const Card = styled.div`
 	position: relative;
 	cursor: pointer;
 	transition: transform 0.2s;
+	color: var(--text-primary);
 
 	&:hover {
 		transform: translateY(-2px);
@@ -24,7 +26,9 @@ const TaskImage = styled.img`
 `
 
 const TaskConditions = styled.div`
-	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
 `
 
 const ConditionsList = styled.div`
@@ -42,22 +46,6 @@ const ConditionItem = styled.div`
 	font-size: 0.9rem;
 	text-align: center;
 	border: 1px solid var(--border-color);
-`
-
-const DeleteButton = styled.button`
-	position: absolute;
-	top: 0.5rem;
-	right: 0.5rem;
-	background: none;
-	border: none;
-	color: var(--text-secondary);
-	cursor: pointer;
-	padding: 0.5rem;
-	z-index: 2;
-
-	&:hover {
-		color: #ef4444;
-	}
 `
 
 const TaskCardActions = styled.div`
@@ -91,33 +79,26 @@ const TaskCardButton = styled.button`
 	}
 `
 
-interface Task {
-	id: string
-	imageUrl: string
-	conditions: { [key: string]: string }
-	answer: CircuitSolutionResult
-}
+const Exercise = styled.ul`
+	flex: 1;
+	padding: 0;
+	margin-left: 1rem;
+`
 
 interface TaskCardProps {
 	task: Task
-	onDelete: (e: React.MouseEvent, taskId: string) => void
-	onSelect: (task: Task) => void
-	onWorkWith: (task: Task) => void
+	onClick?: () => void
 }
 
-export const TaskCard: React.FC<TaskCardProps> = ({
-	task,
-	onDelete,
-	onSelect,
-	onWorkWith,
-}) => {
+export const TaskCard: React.FC<TaskCardProps> = ({ task, onClick }) => {
+	const removeTask = useTasksStore(state => state.removeTask)
+
 	return (
-		<Card>
-			<DeleteButton onClick={e => onDelete(e, task.id)}>✕</DeleteButton>
-			<div onClick={() => onSelect(task)}>
-				<TaskImage src={task.imageUrl} alt='Схема цепи' />
-				<TaskConditions>
-					<h4>Условия:</h4>
+		<Card onClick={onClick}>
+			<TaskImage src={task.imageUrl} alt='Схема цепи' />
+			<TaskConditions>
+				<div>
+					<h4>Дано:</h4>
 					<ConditionsList>
 						{Object.entries(task.conditions).map(([element, value]) => (
 							<ConditionItem key={element}>
@@ -125,10 +106,28 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 							</ConditionItem>
 						))}
 					</ConditionsList>
-				</TaskConditions>
-			</div>
+				</div>
+				<div>
+					<h4>Найти:</h4>
+					<Exercise>
+						{generateConditions(task) ? (
+							generateConditions(task)!.map(condition => (
+								<li key={condition}>{condition}</li>
+							))
+						) : (
+							<p>Условие не задано</p>
+						)}
+					</Exercise>
+				</div>
+			</TaskConditions>
 			<TaskCardActions>
-				<TaskCardButton className='delete' onClick={e => onDelete(e, task.id)}>
+				<TaskCardButton
+					className='delete'
+					onClick={e => {
+						e.stopPropagation()
+						removeTask(task.id)
+					}}
+				>
 					Удалить
 				</TaskCardButton>
 			</TaskCardActions>

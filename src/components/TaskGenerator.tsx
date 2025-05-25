@@ -3,8 +3,9 @@ import styled from 'styled-components'
 import { circuitApi, RootType } from '../services/api'
 import { AxiosError } from 'axios'
 import { MathJaxContext } from 'better-react-mathjax'
-import { EquationDisplay } from '../utils/components'
-import { TaskCard, Task } from './TaskCard'
+import { TaskCard } from './TaskCard'
+import { TaskModal } from './TaskModal'
+import { useTasksStore, Task } from '../store/tasksStore'
 
 const mathJaxConfig = {
 	tex: {
@@ -166,137 +167,18 @@ const TaskListContainer = styled.div`
 	border-top: 1px solid var(--border-color);
 `
 
-const TaskConditions = styled.div`
-	flex: 1;
-`
-
-const ConditionsList = styled.div`
-	display: grid;
-	grid-template-columns: repeat(3, 1fr);
-	gap: 0.5rem;
-	padding: 0;
-`
-
-const ConditionItem = styled.div`
-	color: var(--text-primary);
-	background: var(--background-color);
-	padding: 0.5rem;
-	border-radius: var(--radius-sm);
-	font-size: 0.9rem;
-	text-align: center;
-	border: 1px solid var(--border-color);
-`
-
-const Modal = styled.div`
-	position: fixed;
-	top: 0;
-	left: 0;
-	right: 0;
-	bottom: 0;
-	background: rgba(0, 0, 0, 0.5);
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	z-index: 1000;
-`
-
-const ModalContent = styled.div`
-	background: var(--surface-color);
-	border-radius: var(--radius-lg);
-	padding: 2rem;
-	max-width: 1000px;
-	width: 90%;
-	max-height: 90vh;
-	overflow-y: auto;
-	position: relative;
-	display: flex;
-	flex-direction: column;
-	gap: 2rem;
-`
-
-const ModalImage = styled.img`
-	width: 100%;
-	height: 400px;
-	object-fit: contain;
-	margin: 0;
-`
-
-const ElementBlock = styled.div`
-	padding-bottom: 1.5rem;
-	border-bottom: 1px solid var(--border-color);
-
-	& > h4 {
-		font-weight: bold;
-		color: blueviolet;
-		font-size: 1.2rem;
-	}
-
-	& > div {
-		display: flex;
-		flex-direction: row;
-		align-items: center;
-		gap: 0.5rem;
-	}
-
-	&:last-child {
-		padding-bottom: 0;
-		border-bottom: none;
-	}
-`
-
-const CloseButton = styled.button`
-	position: absolute;
-	top: 1rem;
-	right: 1rem;
-	background: none;
-	border: none;
-	color: var(--text-secondary);
-	cursor: pointer;
-	padding: 0.5rem;
-	font-size: 1.2rem;
-
-	&:hover {
-		color: var(--text-primary);
-	}
-`
-
-const SolutionContent = styled.div`
-	padding: 1rem;
-	background: var(--surface-color);
-	border: 1px solid var(--border-color);
-	border-radius: var(--radius-sm);
-	font-size: 0.9rem;
-	color: var(--text-primary);
-	margin-top: 1.5rem;
-
-	h4 {
-		margin: 0 0 0.5rem 0;
-		color: var(--text-primary);
-	}
-
-	strong {
-		color: var(--text-primary);
-		margin-right: 0.5rem;
-	}
-`
-
 const TaskGenerator: React.FC = () => {
 	const [order, setOrder] = useState<'first' | 'second'>('second')
 	const [rootType, setRootType] = useState<RootType>(RootType.DIFFERENT)
 	const [isLoading, setIsLoading] = useState(false)
 	const [error, setError] = useState<string | null>(null)
-	const [tasks, setTasks] = useState<Task[]>([])
-	const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+	const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
 
-	const handleDeleteTask = (e: React.MouseEvent, taskId: string) => {
-		e.stopPropagation()
-		setTasks(prev => prev.filter(task => task.id !== taskId))
-	}
+	const { tasks, addTask } = useTasksStore()
 
-	const handleWorkWithTask = (task: Task) => {
-		// TODO: Implement work with task functionality
-		console.log('Work with task:', task)
-	}
+	const selectedTask = selectedTaskId
+		? tasks.find(task => task.id === selectedTaskId)
+		: null
 
 	const handleGenerate = async () => {
 		try {
@@ -314,9 +196,16 @@ const TaskGenerator: React.FC = () => {
 				imageUrl: `data:image/png;base64,${response.image}`,
 				conditions: response.conditions,
 				answer: response.solution,
+				searchParams: Object.fromEntries(
+					Object.keys(response.conditions).map(element => [
+						element,
+						{ current: false, voltage: false },
+					])
+				),
 			}
 
-			setTasks(prev => [newTask, ...prev])
+			console.log('Generated task:', newTask)
+			addTask(newTask)
 		} catch (err) {
 			if (err instanceof AxiosError) {
 				setError(
@@ -406,7 +295,6 @@ const TaskGenerator: React.FC = () => {
 							{isLoading && <LoadingSpinner />}
 							{isLoading ? 'Генерация...' : 'Сгенерировать'}
 						</ActionButton>
-						<ActionButton onClick={() => {}}>Сохранить в PDF</ActionButton>
 					</ButtonContainer>
 
 					<TaskListContainer>
@@ -414,52 +302,22 @@ const TaskGenerator: React.FC = () => {
 							<TaskCard
 								key={task.id}
 								task={task}
-								onDelete={handleDeleteTask}
-								onSelect={setSelectedTask}
-								onWorkWith={handleWorkWithTask}
+								onClick={() => {
+									setSelectedTaskId(task.id)
+								}}
 							/>
 						))}
 					</TaskListContainer>
 				</Card>
 
 				{selectedTask && (
-					<Modal onClick={() => setSelectedTask(null)}>
-						<ModalContent onClick={e => e.stopPropagation()}>
-							<CloseButton onClick={() => setSelectedTask(null)}>✕</CloseButton>
-							<ModalImage src={selectedTask.imageUrl} alt='Схема цепи' />
-							<TaskConditions>
-								<h4>Условия:</h4>
-								<ConditionsList>
-									{Object.entries(selectedTask.conditions).map(
-										([element, value]) => (
-											<ConditionItem key={element}>
-												{element}: {value}
-											</ConditionItem>
-										)
-									)}
-								</ConditionsList>
-							</TaskConditions>
-							<SolutionContent>
-								{Object.entries(selectedTask.answer).map(
-									([elementName, elementEquations]) => (
-										<ElementBlock key={elementName}>
-											<h4>Элемент {elementName}:</h4>
-											{Object.entries(elementEquations).map(
-												([eqName, eqValue]) => (
-													<div key={eqName}>
-														<strong>
-															{eqName === 'i(t)' ? 'Ток:' : 'Напряжение:'}
-														</strong>
-														<EquationDisplay tex={String(eqValue)} />
-													</div>
-												)
-											)}
-										</ElementBlock>
-									)
-								)}
-							</SolutionContent>
-						</ModalContent>
-					</Modal>
+					<TaskModal
+						isOpen={!!selectedTask}
+						onClose={() => {
+							setSelectedTaskId(null)
+						}}
+						task={selectedTask}
+					/>
 				)}
 			</Container>
 		</MathJaxContext>
