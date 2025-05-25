@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import styled from 'styled-components'
 import { EquationDisplay } from '../utils/components'
 import { Task, useTasksStore } from '../store/tasksStore'
@@ -106,6 +106,13 @@ const SolutionContent = styled.div`
 	gap: 1.5rem;
 `
 
+const Exercise = styled.ul`
+	flex: 1;
+	padding: 0;
+	margin-left: 1rem;
+	padding-bottom: 1rem;
+`
+
 const Answer = styled.div`
 	background: var(--background-color);
 	border-radius: var(--radius-md);
@@ -146,6 +153,26 @@ const Section = styled.div`
 	}
 `
 
+const ShowAllToggle = styled.label`
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	font-size: 0.9rem;
+	color: var(--text-secondary);
+	margin-bottom: 1rem;
+	cursor: pointer;
+
+	input {
+		width: 1rem;
+		height: 1rem;
+		cursor: pointer;
+	}
+
+	&:hover {
+		color: var(--text-primary);
+	}
+`
+
 interface TaskModalProps {
 	isOpen: boolean
 	onClose: () => void
@@ -158,6 +185,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
 	task,
 }) => {
 	const updateSearchParams = useTasksStore(state => state.updateSearchParams)
+	const [showAllAnswers, setShowAllAnswers] = useState(false)
 
 	if (!isOpen) return null
 
@@ -216,27 +244,56 @@ export const TaskModal: React.FC<TaskModalProps> = ({
 						))}
 					</ConditionsList>
 				</Section>
-				{generateConditions(task) && (
-					<Section>
-						<h4>Найти:</h4>
-						<ul>
-							{generateConditions(task).map(condition => (
-								<li key={condition}>{condition}</li>
-							))}
-						</ul>
-					</Section>
-				)}
 				<Section>
-					<h4>Ответ:</h4>
+					<h4>Найти:</h4>
+					<Exercise>
+						{generateConditions(task)
+							? generateConditions(task)!.map(condition => (
+									<li key={condition}>{condition}</li>
+							  ))
+							: 'Условие не задано'}
+					</Exercise>
+				</Section>
+				<Section>
+					<div
+						style={{
+							display: 'flex',
+							justifyContent: 'space-between',
+							alignItems: 'center',
+						}}
+					>
+						<h4>Ответы:</h4>
+						<ShowAllToggle>
+							<input
+								type='checkbox'
+								checked={showAllAnswers}
+								onChange={e => setShowAllAnswers(e.target.checked)}
+							/>
+							Показать все ответы
+						</ShowAllToggle>
+					</div>
 					<SolutionContent>
 						{Object.entries(task.answer).map(
 							([elementName, elementEquations]) => {
+								const shouldShowCurrent =
+									showAllAnswers || task.searchParams[elementName]?.current
+								const shouldShowVoltage =
+									showAllAnswers || task.searchParams[elementName]?.voltage
+
+								if (!shouldShowCurrent && !shouldShowVoltage) return null
+
 								return (
 									<Answer key={elementName}>
 										<strong>Элемент {elementName}</strong>
 										{Object.entries(elementEquations).map(
 											([eqName, eqValue]) => {
 												const isCurrent = eqName === 'i(t)'
+												if (
+													(isCurrent && !shouldShowCurrent) ||
+													(!isCurrent && !shouldShowVoltage)
+												) {
+													return null
+												}
 												return (
 													<div key={eqName}>
 														<span>{isCurrent ? 'Ток:' : 'Напряжение:'}</span>

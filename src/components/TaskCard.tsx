@@ -12,6 +12,9 @@ const Card = styled.div`
 	cursor: pointer;
 	transition: transform 0.2s;
 	color: var(--text-primary);
+	display: flex;
+	flex-direction: column;
+	min-height: 100%;
 
 	&:hover {
 		transform: translateY(-2px);
@@ -29,6 +32,7 @@ const TaskConditions = styled.div`
 	display: flex;
 	flex-direction: column;
 	gap: 1rem;
+	flex: 1;
 `
 
 const ConditionsList = styled.div`
@@ -51,7 +55,7 @@ const ConditionItem = styled.div`
 const TaskCardActions = styled.div`
 	display: flex;
 	gap: 0.5rem;
-	margin-top: 1rem;
+	margin-top: auto;
 	border-top: 1px solid var(--border-color);
 	padding-top: 1rem;
 `
@@ -83,6 +87,7 @@ const Exercise = styled.ul`
 	flex: 1;
 	padding: 0;
 	margin-left: 1rem;
+	padding-bottom: 1rem;
 `
 
 interface TaskCardProps {
