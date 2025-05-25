@@ -1,9 +1,10 @@
 import React, { useState } from 'react'
 import styled from 'styled-components'
-import { circuitApi, RootType, CircuitSolutionResult } from '../services/api'
+import { circuitApi, RootType } from '../services/api'
 import { AxiosError } from 'axios'
 import { MathJaxContext } from 'better-react-mathjax'
 import { EquationDisplay } from '../utils/components'
+import { TaskCard, Task } from './TaskCard'
 
 const mathJaxConfig = {
 	tex: {
@@ -165,27 +166,6 @@ const TaskListContainer = styled.div`
 	border-top: 1px solid var(--border-color);
 `
 
-const TaskCard = styled.div`
-	background: var(--surface-color);
-	border-radius: var(--radius-md);
-	padding: 1.5rem;
-	border: 1px solid var(--border-color);
-	position: relative;
-	cursor: pointer;
-	transition: transform 0.2s;
-
-	&:hover {
-		transform: translateY(-2px);
-	}
-`
-
-const TaskImage = styled.img`
-	width: 100%;
-	height: 200px;
-	object-fit: contain;
-	margin-bottom: 1rem;
-`
-
 const TaskConditions = styled.div`
 	flex: 1;
 `
@@ -205,22 +185,6 @@ const ConditionItem = styled.div`
 	font-size: 0.9rem;
 	text-align: center;
 	border: 1px solid var(--border-color);
-`
-
-const DeleteButton = styled.button`
-	position: absolute;
-	top: 0.5rem;
-	right: 0.5rem;
-	background: none;
-	border: none;
-	color: var(--text-secondary);
-	cursor: pointer;
-	padding: 0.5rem;
-	z-index: 2;
-
-	&:hover {
-		color: #ef4444;
-	}
 `
 
 const Modal = styled.div`
@@ -250,9 +214,10 @@ const ModalContent = styled.div`
 	gap: 2rem;
 `
 
-const ModalImage = styled(TaskImage)`
+const ModalImage = styled.img`
 	width: 100%;
 	height: 400px;
+	object-fit: contain;
 	margin: 0;
 `
 
@@ -315,13 +280,6 @@ const SolutionContent = styled.div`
 	}
 `
 
-interface Task {
-	id: string
-	imageUrl: string
-	conditions: { [key: string]: string }
-	answer: CircuitSolutionResult
-}
-
 const TaskGenerator: React.FC = () => {
 	const [order, setOrder] = useState<'first' | 'second'>('second')
 	const [rootType, setRootType] = useState<RootType>(RootType.DIFFERENT)
@@ -333,6 +291,11 @@ const TaskGenerator: React.FC = () => {
 	const handleDeleteTask = (e: React.MouseEvent, taskId: string) => {
 		e.stopPropagation()
 		setTasks(prev => prev.filter(task => task.id !== taskId))
+	}
+
+	const handleWorkWithTask = (task: Task) => {
+		// TODO: Implement work with task functionality
+		console.log('Work with task:', task)
 	}
 
 	const handleGenerate = async () => {
@@ -448,22 +411,13 @@ const TaskGenerator: React.FC = () => {
 
 					<TaskListContainer>
 						{tasks.map(task => (
-							<TaskCard key={task.id} onClick={() => setSelectedTask(task)}>
-								<DeleteButton onClick={e => handleDeleteTask(e, task.id)}>
-									✕
-								</DeleteButton>
-								<TaskImage src={task.imageUrl} alt='Схема цепи' />
-								<TaskConditions>
-									<h4>Условия:</h4>
-									<ConditionsList>
-										{Object.entries(task.conditions).map(([element, value]) => (
-											<ConditionItem key={element}>
-												{element}: {value}
-											</ConditionItem>
-										))}
-									</ConditionsList>
-								</TaskConditions>
-							</TaskCard>
+							<TaskCard
+								key={task.id}
+								task={task}
+								onDelete={handleDeleteTask}
+								onSelect={setSelectedTask}
+								onWorkWith={handleWorkWithTask}
+							/>
 						))}
 					</TaskListContainer>
 				</Card>
