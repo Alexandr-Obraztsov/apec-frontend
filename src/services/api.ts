@@ -60,6 +60,14 @@ export interface GenerateCircuitResponse {
 	circuit?: string
 }
 
+// Интерфейс для ответа с генерацией задачи
+export interface GenerateTaskResponse {
+	circuit: string
+	image: string
+	conditions: Record<string, string>
+	solution: string
+}
+
 // Функция для проверки, содержит ли строка только число
 const isNumericString = (str: string): boolean => {
 	// Регулярное выражение для проверки, что строка содержит только число (целое или десятичное)
@@ -187,6 +195,28 @@ export const circuitApi = {
 			return response.data
 		} catch (error) {
 			console.error('Ошибка при запросе генерации PDF с цепями:', error)
+			throw error
+		}
+	},
+
+	// Метод для генерации задачи
+	generateTask: async (
+		params: GenerateCircuitRequest
+	): Promise<GenerateTaskResponse> => {
+		try {
+			console.log(
+				'Отправляем запрос на генерацию задачи с параметрами:',
+				params
+			)
+
+			const response = await axios.post<GenerateTaskResponse>(
+				`${API_BASE_URL}/generate_task`,
+				params
+			)
+
+			return response.data
+		} catch (error) {
+			console.error('Ошибка при запросе генерации задачи:', error)
 			throw error
 		}
 	},

@@ -8,6 +8,8 @@ const Container = styled.div`
 	margin: 0 auto;
 	background-color: var(--background-color);
 	border-radius: var(--radius-lg);
+	max-height: 100%;
+	overflow-y: auto;
 `
 
 const Card = styled.div`
@@ -85,13 +87,17 @@ const ActionButton = styled.button`
 	cursor: pointer;
 	transition: background-color 0.2s ease;
 	min-width: 120px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
 
 	&:hover {
 		background: var(--primary-dark);
 	}
 
 	&:disabled {
-		background: var(--disabled-color);
+		background: var(--primary-color);
+		opacity: 0.7;
 		cursor: not-allowed;
 	}
 `
@@ -114,24 +120,35 @@ const LoadingSpinner = styled.div`
 `
 
 const ErrorMessage = styled.div`
-	color: var(--error-color);
-	background: var(--error-bg);
+	color: #ef4444;
+	background: #fee2e2;
 	padding: 1rem;
 	border-radius: var(--radius-md);
 	margin-bottom: 1rem;
 	font-size: 0.9rem;
+	border: 1px solid #fca5a5;
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+
+	&::before {
+		content: '⚠️';
+	}
 `
 
 const TaskListContainer = styled.div`
 	margin-top: 2rem;
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 1.5rem;
 `
 
 const TaskCard = styled.div`
 	background: var(--surface-color);
 	border-radius: var(--radius-md);
 	padding: 1.5rem;
-	margin-bottom: 1rem;
 	border: 1px solid var(--border-color);
+	height: fit-content;
 `
 
 const TaskImage = styled.img`
@@ -212,35 +229,21 @@ const TaskGenerator: React.FC = () => {
 			setError(null)
 
 			const orderValue = order === 'first' ? 1 : 2
-			const response = await circuitApi.generateCircuit({
+			const response = await circuitApi.generateTask({
 				order: orderValue,
 				rootType: order === 'second' ? rootType : undefined,
 			})
 
-			if (!response.circuit) {
-				throw new Error('Не удалось сгенерировать цепь')
-			}
-
-			// Здесь нужно будет добавить логику преобразования response.circuit в Task
 			const newTask: Task = {
 				id: Date.now().toString(),
-				imageUrl: 'URL_TO_CIRCUIT_IMAGE', // Нужно будет заменить на реальный URL
-				conditions: {
-					'Резистор R1': '100 Ом',
-					'Конденсатор C1': '0.1 мкФ',
-					// Добавьте другие элементы схемы
-				},
-				answer: 'Ответ для схемы...', // Заменить на реальный ответ
+				imageUrl: `data:image/png;base64,${response.image}`,
+				conditions: response.conditions,
+				answer: response.solution,
 			}
 
 			setTasks(prev => [newTask, ...prev])
 		} catch (err) {
-			console.error('Ошибка при генерации цепи:', err)
-			setError(
-				err instanceof Error
-					? err.message
-					: 'Произошла ошибка при генерации цепи'
-			)
+			setError(err.response.data.message)
 		} finally {
 			setIsLoading(false)
 		}
