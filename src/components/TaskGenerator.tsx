@@ -160,10 +160,13 @@ const TaskCard = styled.div`
 	border-radius: var(--radius-md);
 	padding: 1.5rem;
 	border: 1px solid var(--border-color);
-	height: 450px;
 	position: relative;
-	display: flex;
-	flex-direction: column;
+	cursor: pointer;
+	transition: transform 0.2s;
+
+	&:hover {
+		transform: translateY(-2px);
+	}
 `
 
 const TaskImage = styled.img`
@@ -194,46 +197,70 @@ const ConditionItem = styled.div`
 	border: 1px solid var(--border-color);
 `
 
-const AnswerAccordion = styled.div`
-	border: 1px solid var(--border-color);
-	border-radius: var(--radius-sm);
+const DeleteButton = styled.button`
 	position: absolute;
-	bottom: 1.5rem;
-	left: 1.5rem;
-	right: 1.5rem;
-	background: var(--surface-color);
-`
-
-const AccordionHeader = styled.button`
-	width: 100%;
-	padding: 0.75rem;
+	top: 0.5rem;
+	right: 0.5rem;
 	background: none;
 	border: none;
-	text-align: left;
+	color: var(--text-secondary);
 	cursor: pointer;
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	color: var(--text-primary);
+	padding: 0.5rem;
+	z-index: 2;
 
 	&:hover {
-		background: var(--background-color);
+		color: #ef4444;
 	}
 `
 
-const AccordionContent = styled.div<{ isOpen: boolean }>`
-	padding: ${props => (props.isOpen ? '1rem' : '0')};
-	height: ${props => (props.isOpen ? 'auto' : '0')};
-	overflow: hidden;
-	transition: all 0.3s ease;
+const Modal = styled.div`
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(0, 0, 0, 0.5);
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	z-index: 1000;
+`
+
+const ModalContent = styled.div`
+	background: var(--surface-color);
+	border-radius: var(--radius-lg);
+	padding: 2rem;
+	max-width: 800px;
+	width: 90%;
+	max-height: 90vh;
+	overflow-y: auto;
+	position: relative;
+`
+
+const CloseButton = styled.button`
+	position: absolute;
+	top: 1rem;
+	right: 1rem;
+	background: none;
+	border: none;
+	color: var(--text-secondary);
+	cursor: pointer;
+	padding: 0.5rem;
+	font-size: 1.2rem;
+
+	&:hover {
+		color: var(--text-primary);
+	}
 `
 
 const SolutionContent = styled.div`
 	padding: 1rem;
 	background: var(--surface-color);
+	border: 1px solid var(--border-color);
 	border-radius: var(--radius-sm);
 	font-size: 0.9rem;
 	color: var(--text-primary);
+	margin-top: 1.5rem;
 
 	h4 {
 		margin: 0 0 0.5rem 0;
@@ -259,13 +286,11 @@ const TaskGenerator: React.FC = () => {
 	const [isLoading, setIsLoading] = useState(false)
 	const [error, setError] = useState<string | null>(null)
 	const [tasks, setTasks] = useState<Task[]>([])
-	const [openAnswers, setOpenAnswers] = useState<{ [key: string]: boolean }>({})
+	const [selectedTask, setSelectedTask] = useState<Task | null>(null)
 
-	const toggleAnswer = (taskId: string) => {
-		setOpenAnswers(prev => ({
-			...prev,
-			[taskId]: !prev[taskId],
-		}))
+	const handleDeleteTask = (e: React.MouseEvent, taskId: string) => {
+		e.stopPropagation()
+		setTasks(prev => prev.filter(task => task.id !== taskId))
 	}
 
 	const handleGenerate = async () => {
@@ -378,7 +403,10 @@ const TaskGenerator: React.FC = () => {
 
 					<TaskListContainer>
 						{tasks.map(task => (
-							<TaskCard key={task.id}>
+							<TaskCard key={task.id} onClick={() => setSelectedTask(task)}>
+								<DeleteButton onClick={e => handleDeleteTask(e, task.id)}>
+									✕
+								</DeleteButton>
 								<TaskImage src={task.imageUrl} alt='Схема цепи' />
 								<TaskConditions>
 									<h4>Условия:</h4>
@@ -390,37 +418,50 @@ const TaskGenerator: React.FC = () => {
 										))}
 									</ConditionsList>
 								</TaskConditions>
-								<AnswerAccordion>
-									<AccordionHeader onClick={() => toggleAnswer(task.id)}>
-										Ответ
-										<span>{openAnswers[task.id] ? '▼' : '▶'}</span>
-									</AccordionHeader>
-									<AccordionContent isOpen={openAnswers[task.id] || false}>
-										<SolutionContent>
-											{Object.entries(task.answer).map(
-												([elementName, elementEquations]) => (
-													<div key={elementName}>
-														<h4>Элемент {elementName}:</h4>
-														{Object.entries(elementEquations).map(
-															([eqName, eqValue]) => (
-																<div key={eqName}>
-																	<strong>
-																		{eqName === 'i(t)' ? 'Ток:' : 'Напряжение:'}
-																	</strong>
-																	<EquationDisplay tex={String(eqValue)} />
-																</div>
-															)
-														)}
-													</div>
-												)
-											)}
-										</SolutionContent>
-									</AccordionContent>
-								</AnswerAccordion>
 							</TaskCard>
 						))}
 					</TaskListContainer>
 				</Card>
+
+				{selectedTask && (
+					<Modal onClick={() => setSelectedTask(null)}>
+						<ModalContent onClick={e => e.stopPropagation()}>
+							<CloseButton onClick={() => setSelectedTask(null)}>✕</CloseButton>
+							<TaskImage src={selectedTask.imageUrl} alt='Схема цепи' />
+							<TaskConditions>
+								<h4>Условия:</h4>
+								<ConditionsList>
+									{Object.entries(selectedTask.conditions).map(
+										([element, value]) => (
+											<ConditionItem key={element}>
+												{element}: {value}
+											</ConditionItem>
+										)
+									)}
+								</ConditionsList>
+							</TaskConditions>
+							<SolutionContent>
+								{Object.entries(selectedTask.answer).map(
+									([elementName, elementEquations]) => (
+										<div key={elementName}>
+											<h4>Элемент {elementName}:</h4>
+											{Object.entries(elementEquations).map(
+												([eqName, eqValue]) => (
+													<div key={eqName}>
+														<strong>
+															{eqName === 'i(t)' ? 'Ток:' : 'Напряжение:'}
+														</strong>
+														<EquationDisplay tex={String(eqValue)} />
+													</div>
+												)
+											)}
+										</div>
+									)
+								)}
+							</SolutionContent>
+						</ModalContent>
+					</Modal>
+				)}
 			</Container>
 		</MathJaxContext>
 	)
