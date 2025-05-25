@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import styled from 'styled-components'
 import { circuitApi, RootType } from '../services/api'
+import { createPortal } from 'react-dom'
 
 const ModalBackground = styled.div`
 	position: fixed;
@@ -12,7 +13,7 @@ const ModalBackground = styled.div`
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	z-index: 1000;
+	z-index: 10000;
 `
 
 const ModalContainer = styled.div`
@@ -22,6 +23,7 @@ const ModalContainer = styled.div`
 	width: 500px;
 	max-width: 90%;
 	padding: 24px;
+	margin-bottom: 8px;
 `
 
 const ModalHeader = styled.div`
@@ -70,17 +72,6 @@ const RadioButton = styled.label`
 		font-size: 0.9rem;
 		color: var(--text-primary);
 	}
-`
-
-const CheckboxInput = styled(RadioButton)`
-	margin-top: 8px;
-`
-
-const ConditionalOptions = styled.div`
-	margin-top: 8px;
-	margin-left: 24px;
-	padding-left: 8px;
-	border-left: 2px solid var(--border-color);
 `
 
 const ButtonGroup = styled.div`
@@ -152,22 +143,6 @@ const ErrorMessage = styled.div`
 	font-size: 0.9rem;
 `
 
-const SuccessMessage = styled.div`
-	color: green;
-	margin-bottom: 16px;
-	font-size: 0.9rem;
-`
-
-const DownloadButton = styled(Button)`
-	background-color: var(--success-color, #28a745);
-	border: 1px solid var(--success-color, #28a745);
-	color: white;
-
-	&:hover:not(:disabled) {
-		background-color: var(--success-dark, #218838);
-	}
-`
-
 interface GenerateChainModalProps {
 	isOpen: boolean
 	onClose: () => void
@@ -186,97 +161,60 @@ const GenerateChainModal: React.FC<GenerateChainModalProps> = ({
 	onGenerate,
 }) => {
 	const [order, setOrder] = useState<'first' | 'second'>('first')
-	const [rootType, setRootType] = useState<RootType>(RootType.EQUAL)
+	const [rootType, setRootType] = useState<RootType>(RootType.DIFFERENT)
 	const [isLoading, setIsLoading] = useState(false)
 	const [error, setError] = useState<string | null>(null)
-	const [isMultiple, setIsMultiple] = useState(false)
-	const [multipleCount, setMultipleCount] = useState(5)
-	const [pdfBlob, setPdfBlob] = useState<Blob | null>(null)
-	const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
 	if (!isOpen) return null
-
-	// Функция для скачивания PDF файла
-	const handleDownloadPdf = () => {
-		if (!pdfBlob) return
-
-		// Создаем URL для скачивания
-		const url = URL.createObjectURL(pdfBlob)
-
-		// Создаем временную ссылку для скачивания
-		const link = document.createElement('a')
-		link.href = url
-		link.download = `circuits_${new Date().toISOString().slice(0, 10)}.pdf`
-		document.body.appendChild(link)
-		link.click()
-
-		// Удаляем временную ссылку и освобождаем URL
-		document.body.removeChild(link)
-		URL.revokeObjectURL(url)
-	}
 
 	const handleSubmit = async () => {
 		try {
 			setIsLoading(true)
 			setError(null)
-			setSuccessMessage(null)
-			setPdfBlob(null)
 
 			// Преобразуем порядок из строкового в числовой
 			const orderValue = order === 'first' ? 1 : 2
 
-			// Если выбрана множественная генерация
-			if (isMultiple && order === 'second') {
-				// Вызываем API для генерации PDF с множественными цепями
-				const pdfResponse = await circuitApi.generateCircuitsPdf({
-					count: multipleCount,
-					order: orderValue,
-					rootType,
-				})
+			// Для одиночной генерации используем существующий метод
+			const response = await circuitApi.generateCircuit({
+				order: orderValue,
+				rootType: order === 'second' ? rootType : undefined,
+			})
 
-				// Сохраняем полученный PDF блоб для скачивания
-				setPdfBlob(pdfResponse)
-				setSuccessMessage(
-					'PDF с цепями успешно сгенерирован. Нажмите "Скачать PDF" чтобы сохранить файл.'
-				)
-				// Не закрываем модальное окно для множественной генерации
+			if (response.status === 'success' && response.circuit) {
+				onGenerate({
+					order,
+					rootType: order === 'second' ? rootType : undefined,
+					circuit: response.circuit,
+				})
+				onClose() // Закрываем модальное окно после успешной генерации
 			} else {
-				// Для одиночной генерации используем существующий метод
-				const response = await circuitApi.generateCircuit({
-					order: orderValue,
-					rootType,
-				})
-
-				if (response.status === 'success' && response.circuit) {
-					// Передаем данные цепи через обратный вызов
-					onGenerate({
-						order,
-						rootType: order === 'second' ? rootType : undefined,
-						circuit: response.circuit,
-					})
-
-					// Закрываем модальное окно только для одиночной генерации
-					onClose()
-				}
+				setError(
+					// Устанавливаем общее сообщение, так как response.message отсутствует в GenerateCircuitResponse
+					'Произошла ошибка при генерации цепи. Попробуйте еще раз.'
+				)
 			}
 		} catch (err) {
 			console.error('Ошибка при генерации цепи:', err)
-			setError('Ошибка при генерации цепи. Попробуйте позже.')
+			let errorMessage = 'Ошибка при генерации цепи. Попробуйте позже.'
+			if (err instanceof Error) {
+				errorMessage = err.message
+			}
+			setError(errorMessage)
 		} finally {
 			setIsLoading(false)
 		}
 	}
 
-	return (
+	return createPortal(
 		<ModalBackground onClick={onClose}>
 			<ModalContainer onClick={e => e.stopPropagation()}>
 				<ModalHeader>
-					<Title>Сгенерировать цепь</Title>
+					<Title>Генерация цепи</Title>
 				</ModalHeader>
 
 				<Content>
 					{error && <ErrorMessage>{error}</ErrorMessage>}
-					{successMessage && <SuccessMessage>{successMessage}</SuccessMessage>}
 
 					<OptionGroup>
 						<Label>Порядок цепи:</Label>
@@ -289,7 +227,6 @@ const GenerateChainModal: React.FC<GenerateChainModalProps> = ({
 									checked={order === 'first'}
 									onChange={() => {
 										setOrder('first')
-										setIsMultiple(false) // Отключаем множественную генерацию для цепей первого порядка
 									}}
 									disabled={isLoading}
 								/>
@@ -307,67 +244,35 @@ const GenerateChainModal: React.FC<GenerateChainModalProps> = ({
 								<span>Второго порядка</span>
 							</RadioButton>
 						</RadioGroup>
-
-						{order === 'second' && (
-							<CheckboxInput>
-								<input
-									type='checkbox'
-									checked={isMultiple}
-									onChange={e => setIsMultiple(e.target.checked)}
-									disabled={isLoading}
-								/>
-								<span>Сгенерировать несколько цепей</span>
-							</CheckboxInput>
-						)}
 					</OptionGroup>
 
 					{order === 'second' && (
-						<ConditionalOptions>
-							<Label>Тип корней:</Label>
+						<OptionGroup>
+							<Label>Тип корневого элемента:</Label>
 							<RadioGroup>
 								<RadioButton>
 									<input
 										type='radio'
 										name='rootType'
-										value='complex'
-										checked={rootType === RootType.COMPLEX}
-										onChange={() => setRootType(RootType.COMPLEX)}
-										disabled={isLoading}
-									/>
-									<span>Комплексные</span>
-								</RadioButton>
-								<RadioButton>
-									<input
-										type='radio'
-										name='rootType'
-										value='different'
+										value={RootType.DIFFERENT}
 										checked={rootType === RootType.DIFFERENT}
 										onChange={() => setRootType(RootType.DIFFERENT)}
 										disabled={isLoading}
 									/>
 									<span>Разные</span>
 								</RadioButton>
+								<RadioButton>
+									<input
+										type='radio'
+										name='rootType'
+										value={RootType.COMPLEX}
+										checked={rootType === RootType.COMPLEX}
+										onChange={() => setRootType(RootType.COMPLEX)}
+										disabled={isLoading}
+									/>
+									<span>Комплексные</span>
+								</RadioButton>
 							</RadioGroup>
-						</ConditionalOptions>
-					)}
-
-					{order === 'second' && isMultiple && (
-						<OptionGroup>
-							<Label>Количество цепей для генерации:</Label>
-							<input
-								type='number'
-								min='1'
-								max='20'
-								value={multipleCount}
-								onChange={e => setMultipleCount(parseInt(e.target.value) || 5)}
-								style={{
-									padding: '8px',
-									borderRadius: 'var(--radius-sm)',
-									border: '1px solid var(--border-color)',
-									width: '100px',
-								}}
-								disabled={isLoading}
-							/>
 						</OptionGroup>
 					)}
 				</Content>
@@ -377,19 +282,14 @@ const GenerateChainModal: React.FC<GenerateChainModalProps> = ({
 						Отмена
 					</CancelButton>
 
-					{pdfBlob && (
-						<DownloadButton onClick={handleDownloadPdf}>
-							Скачать PDF
-						</DownloadButton>
-					)}
-
 					<GenerateButton onClick={handleSubmit} disabled={isLoading}>
 						{isLoading && <LoadingSpinner />}
 						{isLoading ? 'Генерация...' : 'Сгенерировать'}
 					</GenerateButton>
 				</ButtonGroup>
 			</ModalContainer>
-		</ModalBackground>
+		</ModalBackground>,
+		document.body
 	)
 }
 

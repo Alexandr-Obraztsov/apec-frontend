@@ -33,6 +33,15 @@ const SwitchTerminal = styled.circle<{ selected: boolean }>`
 	stroke-width: 2px;
 `
 
+const SwitchArrow = styled.path<{ selected: boolean }>`
+	stroke: ${({ selected }) =>
+		selected ? 'var(--primary-color)' : 'var(--text-primary)'};
+	stroke-width: 1px;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+	fill: none;
+`
+
 const SwitchComponent: React.FC<SwitchProps> = ({
 	element,
 	startNode,
@@ -112,6 +121,24 @@ const SwitchComponent: React.FC<SwitchProps> = ({
 				transform={`rotate(${leverRotation}, ${-switchLength / 2}, 0)`}
 				selected={selected}
 				isOpen={element.isOpen}
+			/>
+
+			{/* Стрелка направления коммутации */}
+			<SwitchArrow
+				// M 0 4 - перемещение в начальную точку (0,4)
+				// L 0 12 - линия вниз до точки (0,12)
+				// L -3 8 - линия влево-вверх до точки (-3,8)
+				// L 0 12 - возврат к точке (0,12)
+				// L 3 8 - линия вправо-вверх до точки (3,8)
+				d={
+					element.isOpen
+						? `M 0 -20 L 0 4 L -3 0 L 0 4 L 3 0`
+						: `M 0 12 L 0 -12 L -3 -8 L 0 -12 L 3 -8`
+				}
+				selected={selected}
+				transform={`rotate(${
+					element.isOpen ? leverRotation + 30 : leverRotation
+				}, ${-switchLength / 2}, 0)`}
 			/>
 
 			{/* Правая клемма */}

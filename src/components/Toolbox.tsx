@@ -1,7 +1,8 @@
-import React from 'react'
+import React, { useState } from 'react'
 import styled from 'styled-components'
 import { ElementType } from '../types'
 import { useCircuitStore } from '../store/circuitStore'
+import GenerateChainModal, { ChainOptions } from './GenerateChainModal'
 
 // Label mapping
 const ELEMENT_LABELS: Record<ElementType, string> = {
@@ -52,6 +53,44 @@ const ToolGrid = styled.div`
 	display: grid;
 	grid-template-columns: 1fr 1fr;
 	gap: 10px;
+`
+
+const Divider = styled.div`
+	margin: 20px 0;
+	height: 1px;
+	background-color: var(--border-color);
+	position: relative;
+
+	&:after {
+		content: 'или';
+		position: absolute;
+		left: 50%;
+		top: 50%;
+		transform: translate(-50%, -50%);
+		background-color: var(--surface-color);
+		padding: 0 10px;
+		color: var(--text-secondary);
+		font-size: 0.9rem;
+	}
+`
+
+const GenerateButton = styled.button`
+	width: 100%;
+	padding: 12px;
+	background-color: #0066cc;
+	color: white;
+	border: none;
+	border-radius: var(--radius-sm);
+	font-weight: 500;
+	cursor: pointer;
+	transition: background-color 0.2s;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+
+	&:hover {
+		background-color: #0052a3;
+	}
 `
 
 const ToolItem = styled.div<{ $isActive: boolean }>`
@@ -307,6 +346,8 @@ const Toolbox: React.FC = () => {
 	const placementMode = useCircuitStore(state => state.placementMode)
 	const startPlacement = useCircuitStore(state => state.startPlacement)
 	const cancelPlacement = useCircuitStore(state => state.cancelPlacement)
+	const generateChain = useCircuitStore(state => state.generateChain)
+	const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false)
 
 	const handleItemClick = (type: ElementType) => {
 		if (placementMode.active && placementMode.elementType === type) {
@@ -316,6 +357,11 @@ const Toolbox: React.FC = () => {
 			// Иначе начинаем размещение нового элемента
 			startPlacement(type)
 		}
+	}
+
+	const handleGenerateChain = (options: ChainOptions) => {
+		generateChain(options)
+		setIsGenerateModalOpen(false)
 	}
 
 	return (
@@ -390,6 +436,18 @@ const Toolbox: React.FC = () => {
 					второй узел для завершения.
 				</ToolTip>
 			)}
+
+			<Divider />
+
+			<GenerateButton onClick={() => setIsGenerateModalOpen(true)}>
+				Сгенерировать цепь
+			</GenerateButton>
+
+			<GenerateChainModal
+				isOpen={isGenerateModalOpen}
+				onClose={() => setIsGenerateModalOpen(false)}
+				onGenerate={handleGenerateChain}
+			/>
 		</ToolboxContainer>
 	)
 }

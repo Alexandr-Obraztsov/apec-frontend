@@ -41,7 +41,6 @@ export interface SolutionResponse {
 export enum RootType {
 	COMPLEX = '<',
 	DIFFERENT = '>',
-	EQUAL = '=',
 }
 
 // Интерфейс для запроса генерации цепи
@@ -102,12 +101,9 @@ export const formatCircuitToString = (
 			valueStr = isNumericString(stringValue) ? stringValue : `{${stringValue}}`
 		}
 
-		if (element.type === 'voltage' || element.type === 'current') {
-			// Для источников напряжения и тока переворачиваем порядок узлов
-			lineValue = `${element.name} ${endNode.name} ${startNode.name} ${valueStr};`
-		} else if (element.type === 'switch') {
+		if (element.type === 'switch') {
 			lineValue = `${element.name} ${startNode.name} ${endNode.name} ${
-				element.isOpen ? 'no 0' : 'nc 0'
+				element.isOpen ? 'no' : 'nc'
 			};`
 		} else if (element.type === 'wire') {
 			lineValue = `W ${startNode.name} ${endNode.name};`
@@ -136,7 +132,7 @@ export const circuitApi = {
 
 			// Отправляем POST запрос с требуемой структурой
 			const response = await axios.post<SolutionResponse>(
-				`${API_BASE_URL}/process`,
+				`${API_BASE_URL}/solve`,
 				{
 					circuit: circuitString,
 				}

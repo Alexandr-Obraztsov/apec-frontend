@@ -69,7 +69,6 @@ const SolveButton = styled.button`
 	border: none;
 	border-radius: 4px;
 	padding: 8px 16px;
-	margin-top: 10px;
 	font-weight: 500;
 	cursor: pointer;
 	transition: background-color 0.2s;
@@ -208,7 +207,7 @@ const CircuitSolver: React.FC = () => {
 		)
 	}
 
-	// Если все узлы подключены корректно, показываем кнопку "Решить задачу"
+	// Если все узлы подключены корректно, показываем кнопку решения
 	return (
 		<>
 			<SolveContainer>

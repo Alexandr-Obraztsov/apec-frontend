@@ -5,10 +5,7 @@ import Toolbox from './components/Toolbox'
 import PropertiesPanel from './components/PropertiesPanel'
 import ConnectionsPanel from './components/ConnectionsPanel'
 import CircuitSolver from './components/CircuitSolver'
-import GenerateChainModal, {
-	ChainOptions,
-} from './components/GenerateChainModal'
-import { useCircuitStore } from './store/circuitStore'
+import Header from './components/Header'
 
 const AppContainer = styled.div`
 	display: flex;
@@ -18,38 +15,6 @@ const AppContainer = styled.div`
 	overflow: hidden;
 `
 
-const Navbar = styled.header`
-	display: flex;
-	align-items: center;
-	background-color: var(--surface-color);
-	height: 60px;
-	padding: 0 24px;
-	box-shadow: var(--shadow-sm);
-	z-index: 100;
-`
-
-const Logo = styled.div`
-	font-size: 1.4rem;
-	font-weight: 700;
-	color: var(--primary-color);
-	letter-spacing: -0.5px;
-	display: flex;
-	align-items: center;
-
-	span {
-		color: var(--text-primary);
-	}
-`
-
-const LogoIcon = styled.div`
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	margin-right: 12px;
-	font-size: 24px;
-	color: var(--primary-color);
-`
-
 const MainContent = styled.main`
 	display: flex;
 	flex: 1;
@@ -57,32 +22,12 @@ const MainContent = styled.main`
 	overflow: hidden;
 `
 
-// Добавляем стили для кнопок в навбаре
-const NavbarActions = styled.div`
-	margin-left: auto;
+const TabContent = styled.div`
+	padding: 24px;
+	flex: 1;
+	overflow-y: auto;
 	display: flex;
-	gap: 12px;
-`
-
-const NavButton = styled.button`
-	padding: 6px 12px;
-	background-color: var(--primary-color);
-	color: white;
-	border: none;
-	border-radius: var(--radius-sm);
-	font-size: 14px;
-	font-weight: 500;
-	cursor: pointer;
-	transition: var(--transition);
-
-	&:hover {
-		background-color: var(--primary-dark);
-	}
-
-	&:focus {
-		outline: none;
-		box-shadow: 0 0 0 2px var(--primary-light);
-	}
+	flex-direction: column;
 `
 
 // Мемоизированные компоненты
@@ -91,58 +36,30 @@ const MemoizedPropertiesPanel = memo(PropertiesPanel)
 const MemoizedConnectionsPanel = memo(ConnectionsPanel)
 
 function App() {
-	const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false)
-	const generateChain = useCircuitStore(state => state.generateChain)
-
-	const handleGenerateChain = (options: ChainOptions) => {
-		generateChain(options)
-	}
+	const [activeTab, setActiveTab] = useState<'circuit' | 'tasks'>('circuit')
 
 	return (
 		<AppContainer>
-			<Navbar>
-				<Logo>
-					<LogoIcon>
-						<svg
-							width='24'
-							height='24'
-							viewBox='0 0 24 24'
-							fill='none'
-							xmlns='http://www.w3.org/2000/svg'
-						>
-							<path
-								d='M3 11H11V3H13V11H21V13H13V21H11V13H3V11Z'
-								fill='currentColor'
-							/>
-							<circle
-								cx='12'
-								cy='12'
-								r='9'
-								stroke='currentColor'
-								strokeWidth='2'
-								fill='none'
-							/>
-						</svg>
-					</LogoIcon>
-					Circuit<span>Designer</span>
-				</Logo>
-				<NavbarActions>
-					<NavButton onClick={() => setIsGenerateModalOpen(true)}>
-						Сгенерировать цепь
-					</NavButton>
-				</NavbarActions>
-			</Navbar>
+			<Header activeTab={activeTab} onTabChange={setActiveTab} />
 			<MainContent>
-				<CircuitBoard />
-				<MemoizedToolbox />
-				<MemoizedPropertiesPanel />
-				<MemoizedConnectionsPanel />
-				<CircuitSolver />
-				<GenerateChainModal
-					isOpen={isGenerateModalOpen}
-					onClose={() => setIsGenerateModalOpen(false)}
-					onGenerate={handleGenerateChain}
-				/>
+				{activeTab === 'circuit' && (
+					<>
+						<CircuitBoard />
+						<MemoizedToolbox />
+						<MemoizedPropertiesPanel />
+						<MemoizedConnectionsPanel />
+						<CircuitSolver />
+					</>
+				)}
+				{activeTab === 'tasks' && (
+					<TabContent>
+						<h2>Генерация Задач</h2>
+						<p>
+							Здесь будет размещен интерфейс для генерации и управления
+							задачами.
+						</p>
+					</TabContent>
+				)}
 			</MainContent>
 		</AppContainer>
 	)
