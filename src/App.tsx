@@ -6,6 +6,7 @@ import PropertiesPanel from './components/PropertiesPanel'
 import ConnectionsPanel from './components/ConnectionsPanel'
 import CircuitSolver from './components/CircuitSolver'
 import Header from './components/Header'
+import TaskGenerator from './components/TaskGenerator'
 
 const AppContainer = styled.div`
 	display: flex;
@@ -20,14 +21,7 @@ const MainContent = styled.main`
 	flex: 1;
 	position: relative;
 	overflow: hidden;
-`
-
-const TabContent = styled.div`
-	padding: 24px;
-	flex: 1;
-	overflow-y: auto;
-	display: flex;
-	flex-direction: column;
+	background-color: white;
 `
 
 // Мемоизированные компоненты
@@ -51,15 +45,7 @@ function App() {
 						<CircuitSolver />
 					</>
 				)}
-				{activeTab === 'tasks' && (
-					<TabContent>
-						<h2>Генерация Задач</h2>
-						<p>
-							Здесь будет размещен интерфейс для генерации и управления
-							задачами.
-						</p>
-					</TabContent>
-				)}
+				{activeTab === 'tasks' && <TaskGenerator />}
 			</MainContent>
 		</AppContainer>
 	)

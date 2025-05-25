@@ -33,9 +33,7 @@ export interface CircuitSolutionResult {
 // Интерфейс для ответа с решением
 export interface SolutionResponse {
 	status?: string
-	result?: CircuitSolutionResult
-	solution?: string
-	formattedSolution?: SolutionItem[]
+	solution?: CircuitSolutionResult
 }
 
 export enum RootType {
@@ -120,7 +118,10 @@ export const formatCircuitToString = (
 // Сервис для работы с API
 export const circuitApi = {
 	// Метод для решения схемы
-	solveCircuit: async (circuitData: CircuitData): Promise<SolutionResponse> => {
+	solveCircuit: async (
+		circuitData: CircuitData,
+		latex: boolean = true
+	): Promise<SolutionResponse> => {
 		try {
 			// Форматируем данные схемы в нужный формат
 			const circuitString = formatCircuitToString(
@@ -135,6 +136,7 @@ export const circuitApi = {
 				`${API_BASE_URL}/solve`,
 				{
 					circuit: circuitString,
+					latex: latex,
 				}
 			)
 

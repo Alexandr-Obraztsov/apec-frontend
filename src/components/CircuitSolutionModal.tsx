@@ -1,10 +1,8 @@
 import React from 'react'
 import { MathJaxContext } from 'better-react-mathjax'
-import { CircuitSolutionResult, SolutionItem } from '../services/api'
+import { CircuitSolutionResult } from '../services/api'
 import { mathJaxConfig } from '../utils/mathConfig'
-import { DebugInfo } from '../utils/debug'
 import Loading from './Loading'
-import ResultTable from './ResultTable'
 import EquationList from './EquationList'
 import ErrorMessage from './ErrorMessage'
 
@@ -23,9 +21,6 @@ interface CircuitSolutionModalProps {
 	isLoading: boolean
 	error: string | null
 	solutionEquations: CircuitSolutionResult | null
-	solutionResult: string | null
-	formattedResult: SolutionItem[]
-	debugInfo: string | null
 }
 
 /**
@@ -37,9 +32,6 @@ const CircuitSolutionModal: React.FC<CircuitSolutionModalProps> = ({
 	isLoading,
 	error,
 	solutionEquations,
-	solutionResult,
-	formattedResult,
-	debugInfo,
 }) => {
 	if (!isOpen) return null
 
@@ -56,23 +48,9 @@ const CircuitSolutionModal: React.FC<CircuitSolutionModalProps> = ({
 							<Loading />
 						) : error ? (
 							<ErrorMessage message={error} title='Ошибка расчета' />
-						) : solutionEquations ? (
-							<EquationList equations={solutionEquations} />
-						) : solutionResult ? (
-							<div>
-								<p>Результаты расчета:</p>
-								{formattedResult.length > 0 ? (
-									<ResultTable formattedResult={formattedResult} />
-								) : (
-									<pre>{solutionResult}</pre>
-								)}
-							</div>
 						) : (
-							<p>Нет данных для отображения.</p>
+							<EquationList equations={solutionEquations!} />
 						)}
-
-						{/* Отладочная информация */}
-						{!isLoading && debugInfo && <DebugInfo debugInfo={debugInfo} />}
 					</PopupBody>
 				</PopupContent>
 			</PopupOverlay>

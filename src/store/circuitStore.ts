@@ -1,18 +1,20 @@
 import { create } from 'zustand'
-import {
-	AnyCircuitElement,
-	ElementType,
-	Node,
-	Position,
-	WireElement,
-	SwitchElement,
-	ELEMENT_NAME_PREFIXES,
-	NODE_NAME_PREFIX,
-} from '../types'
+
 import { v4 as uuidv4 } from 'uuid'
 
 // Импортируем интерфейс с параметрами для генерации цепи
 import { ChainOptions } from '../components/GenerateChainModal'
+
+import {
+	AnyCircuitElement,
+	Position,
+	ELEMENT_NAME_PREFIXES,
+	NODE_NAME_PREFIX,
+	WireElement,
+	SwitchElement,
+	ElementType,
+	Node,
+} from '../types'
 
 interface CircuitState {
 	elements: AnyCircuitElement[]

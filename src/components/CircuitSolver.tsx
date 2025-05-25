@@ -2,12 +2,7 @@ import React, { useEffect, useState } from 'react'
 import styled from 'styled-components'
 import { useCircuitStore } from '../store/circuitStore'
 import { Node } from '../types'
-import {
-	circuitApi,
-	SolutionItem,
-	CircuitSolutionResult,
-} from '../services/api'
-import { formatCircuitToString } from '../services/api'
+import { circuitApi, CircuitSolutionResult } from '../services/api'
 import CircuitSolutionModal from './CircuitSolutionModal'
 
 // Стили для уведомления
@@ -97,14 +92,8 @@ const CircuitSolver: React.FC = () => {
 	// Состояние для попапа
 	const [isPopupOpen, setIsPopupOpen] = useState(false)
 
-	// Состояния для результата решения и загрузки
-	const [solutionResult, setSolutionResult] = useState<string | null>(null)
-	const [formattedResult, setFormattedResult] = useState<SolutionItem[]>([])
 	const [isLoading, setIsLoading] = useState(false)
 	const [error, setError] = useState<string | null>(null)
-
-	// Состояние для отладочной информации
-	const [debugInfo, setDebugInfo] = useState<string | null>(null)
 
 	// Добавляем состояние для результатов с уравнениями
 	const [solutionEquations, setSolutionEquations] =
@@ -121,45 +110,28 @@ const CircuitSolver: React.FC = () => {
 	const handleSolveButtonClick = async () => {
 		// Сбрасываем предыдущие результаты и ошибки
 		setError(null)
-		setDebugInfo(null)
 		setSolutionEquations(null)
-		setSolutionResult(null)
-		setFormattedResult([])
 
 		// Сначала открываем попап и показываем в нем загрузку
 		setIsLoading(true)
 		setIsPopupOpen(true)
 
-		try {
-			// Подготовка данных схемы для отправки
-			const circuitData = {
+		circuitApi
+			.solveCircuit({
 				nodes: nodes,
 				elements: elements,
-			}
-
-			// Получаем отладочную информацию - строковое представление схемы
-			const circuitString = formatCircuitToString(nodes, elements)
-			setDebugInfo(circuitString)
-
-			// Используем API-сервис для отправки данных
-			const response = await circuitApi.solveCircuit(circuitData)
-
-			// Устанавливаем результаты
-			if (response.status === 'success' && response.result) {
-				setSolutionEquations(response.result)
-			}
-			setSolutionResult(response.solution || null)
-			setFormattedResult(response.formattedSolution || [])
-		} catch (err) {
-			// Обработка ошибок
-			console.error('Ошибка при решении схемы:', err)
-			setError(
-				'Произошла ошибка при попытке решить схему. Пожалуйста, попробуйте позже.'
-			)
-		} finally {
-			// Скрываем индикатор загрузки
-			setIsLoading(false)
-		}
+			})
+			.then(response => {
+				if (response.status === 'success' && response.solution) {
+					setSolutionEquations(response.solution)
+				}
+			})
+			.catch(err => {
+				setError(err.response.data.message)
+			})
+			.finally(() => {
+				setIsLoading(false)
+			})
 	}
 
 	// Обработчик закрытия попапа
@@ -226,9 +198,6 @@ const CircuitSolver: React.FC = () => {
 				isLoading={isLoading}
 				error={error}
 				solutionEquations={solutionEquations}
-				solutionResult={solutionResult}
-				formattedResult={formattedResult}
-				debugInfo={debugInfo}
 			/>
 		</>
 	)
