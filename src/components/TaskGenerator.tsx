@@ -1,6 +1,16 @@
 import React, { useState } from 'react'
 import styled from 'styled-components'
-import { circuitApi, RootType } from '../services/api'
+import { circuitApi, RootType, CircuitSolutionResult } from '../services/api'
+import { AxiosError } from 'axios'
+import { MathJaxContext } from 'better-react-mathjax'
+import { EquationDisplay } from '../utils/components'
+
+const mathJaxConfig = {
+	tex: {
+		inlineMath: [['$', '$']],
+		displayMath: [['$$', '$$']],
+	},
+}
 
 const Container = styled.div`
 	padding: 2rem;
@@ -141,6 +151,8 @@ const TaskListContainer = styled.div`
 	display: grid;
 	grid-template-columns: repeat(3, 1fr);
 	gap: 1.5rem;
+	padding-top: 2rem;
+	border-top: 1px solid var(--border-color);
 `
 
 const TaskCard = styled.div`
@@ -148,33 +160,48 @@ const TaskCard = styled.div`
 	border-radius: var(--radius-md);
 	padding: 1.5rem;
 	border: 1px solid var(--border-color);
-	height: fit-content;
+	height: 450px;
+	position: relative;
+	display: flex;
+	flex-direction: column;
 `
 
 const TaskImage = styled.img`
 	width: 100%;
-	max-height: 200px;
+	height: 200px;
 	object-fit: contain;
 	margin-bottom: 1rem;
 `
 
 const TaskConditions = styled.div`
-	margin-bottom: 1rem;
+	flex: 1;
 `
 
-const ConditionsList = styled.ul`
-	list-style: none;
+const ConditionsList = styled.div`
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 0.5rem;
 	padding: 0;
 `
 
-const ConditionItem = styled.li`
-	margin-bottom: 0.5rem;
+const ConditionItem = styled.div`
 	color: var(--text-primary);
+	background: var(--background-color);
+	padding: 0.5rem;
+	border-radius: var(--radius-sm);
+	font-size: 0.9rem;
+	text-align: center;
+	border: 1px solid var(--border-color);
 `
 
 const AnswerAccordion = styled.div`
 	border: 1px solid var(--border-color);
 	border-radius: var(--radius-sm);
+	position: absolute;
+	bottom: 1.5rem;
+	left: 1.5rem;
+	right: 1.5rem;
+	background: var(--surface-color);
 `
 
 const AccordionHeader = styled.button`
@@ -201,11 +228,29 @@ const AccordionContent = styled.div<{ isOpen: boolean }>`
 	transition: all 0.3s ease;
 `
 
+const SolutionContent = styled.div`
+	padding: 1rem;
+	background: var(--surface-color);
+	border-radius: var(--radius-sm);
+	font-size: 0.9rem;
+	color: var(--text-primary);
+
+	h4 {
+		margin: 0 0 0.5rem 0;
+		color: var(--text-primary);
+	}
+
+	strong {
+		color: var(--text-primary);
+		margin-right: 0.5rem;
+	}
+`
+
 interface Task {
 	id: string
 	imageUrl: string
 	conditions: { [key: string]: string }
-	answer: string
+	answer: CircuitSolutionResult
 }
 
 const TaskGenerator: React.FC = () => {
@@ -243,115 +288,141 @@ const TaskGenerator: React.FC = () => {
 
 			setTasks(prev => [newTask, ...prev])
 		} catch (err) {
-			setError(err.response.data.message)
+			if (err instanceof AxiosError) {
+				setError(
+					err.response?.data?.message || 'Произошла ошибка при генерации задачи'
+				)
+			} else {
+				setError('Произошла неизвестная ошибка')
+			}
 		} finally {
 			setIsLoading(false)
 		}
 	}
 
 	return (
-		<Container>
-			<Card>
-				<Title>Генерация задач</Title>
+		<MathJaxContext config={mathJaxConfig}>
+			<Container>
+				<Card>
+					<Title>Генерация задач</Title>
 
-				{error && <ErrorMessage>{error}</ErrorMessage>}
+					{error && <ErrorMessage>{error}</ErrorMessage>}
 
-				<OptionsGrid>
-					<OptionCard>
-						<OptionTitle>Порядок цепи</OptionTitle>
-						<RadioGroup>
-							<RadioLabel>
-								<input
-									type='radio'
-									name='order'
-									value='first'
-									checked={order === 'first'}
-									onChange={() => setOrder('first')}
-									disabled={isLoading}
-								/>
-								Первого порядка
-							</RadioLabel>
-							<RadioLabel>
-								<input
-									type='radio'
-									name='order'
-									value='second'
-									checked={order === 'second'}
-									onChange={() => setOrder('second')}
-									disabled={isLoading}
-								/>
-								Второго порядка
-							</RadioLabel>
-						</RadioGroup>
-					</OptionCard>
-
-					{order === 'second' && (
+					<OptionsGrid>
 						<OptionCard>
-							<OptionTitle>Тип корней</OptionTitle>
+							<OptionTitle>Порядок цепи</OptionTitle>
 							<RadioGroup>
 								<RadioLabel>
 									<input
 										type='radio'
-										name='rootType'
-										value={RootType.DIFFERENT}
-										checked={rootType === RootType.DIFFERENT}
-										onChange={() => setRootType(RootType.DIFFERENT)}
+										name='order'
+										value='first'
+										checked={order === 'first'}
+										onChange={() => setOrder('first')}
 										disabled={isLoading}
 									/>
-									Различные действительные
+									Первого порядка
 								</RadioLabel>
 								<RadioLabel>
 									<input
 										type='radio'
-										name='rootType'
-										value={RootType.COMPLEX}
-										checked={rootType === RootType.COMPLEX}
-										onChange={() => setRootType(RootType.COMPLEX)}
+										name='order'
+										value='second'
+										checked={order === 'second'}
+										onChange={() => setOrder('second')}
 										disabled={isLoading}
 									/>
-									Комплексно-сопряженные
+									Второго порядка
 								</RadioLabel>
 							</RadioGroup>
 						</OptionCard>
-					)}
-				</OptionsGrid>
 
-				<ButtonContainer>
-					<ActionButton onClick={handleGenerate} disabled={isLoading}>
-						{isLoading && <LoadingSpinner />}
-						{isLoading ? 'Генерация...' : 'Сгенерировать'}
-					</ActionButton>
-					<ActionButton onClick={() => {}}>Сохранить в PDF</ActionButton>
-				</ButtonContainer>
+						{order === 'second' && (
+							<OptionCard>
+								<OptionTitle>Тип корней</OptionTitle>
+								<RadioGroup>
+									<RadioLabel>
+										<input
+											type='radio'
+											name='rootType'
+											value={RootType.DIFFERENT}
+											checked={rootType === RootType.DIFFERENT}
+											onChange={() => setRootType(RootType.DIFFERENT)}
+											disabled={isLoading}
+										/>
+										Различные действительные
+									</RadioLabel>
+									<RadioLabel>
+										<input
+											type='radio'
+											name='rootType'
+											value={RootType.COMPLEX}
+											checked={rootType === RootType.COMPLEX}
+											onChange={() => setRootType(RootType.COMPLEX)}
+											disabled={isLoading}
+										/>
+										Комплексно-сопряженные
+									</RadioLabel>
+								</RadioGroup>
+							</OptionCard>
+						)}
+					</OptionsGrid>
 
-				<TaskListContainer>
-					{tasks.map(task => (
-						<TaskCard key={task.id}>
-							<TaskImage src={task.imageUrl} alt='Схема цепи' />
-							<TaskConditions>
-								<h4>Условия:</h4>
-								<ConditionsList>
-									{Object.entries(task.conditions).map(([element, value]) => (
-										<ConditionItem key={element}>
-											{element}: {value}
-										</ConditionItem>
-									))}
-								</ConditionsList>
-							</TaskConditions>
-							<AnswerAccordion>
-								<AccordionHeader onClick={() => toggleAnswer(task.id)}>
-									Ответ
-									<span>{openAnswers[task.id] ? '▼' : '▶'}</span>
-								</AccordionHeader>
-								<AccordionContent isOpen={openAnswers[task.id] || false}>
-									{task.answer}
-								</AccordionContent>
-							</AnswerAccordion>
-						</TaskCard>
-					))}
-				</TaskListContainer>
-			</Card>
-		</Container>
+					<ButtonContainer>
+						<ActionButton onClick={handleGenerate} disabled={isLoading}>
+							{isLoading && <LoadingSpinner />}
+							{isLoading ? 'Генерация...' : 'Сгенерировать'}
+						</ActionButton>
+						<ActionButton onClick={() => {}}>Сохранить в PDF</ActionButton>
+					</ButtonContainer>
+
+					<TaskListContainer>
+						{tasks.map(task => (
+							<TaskCard key={task.id}>
+								<TaskImage src={task.imageUrl} alt='Схема цепи' />
+								<TaskConditions>
+									<h4>Условия:</h4>
+									<ConditionsList>
+										{Object.entries(task.conditions).map(([element, value]) => (
+											<ConditionItem key={element}>
+												{element}: {value}
+											</ConditionItem>
+										))}
+									</ConditionsList>
+								</TaskConditions>
+								<AnswerAccordion>
+									<AccordionHeader onClick={() => toggleAnswer(task.id)}>
+										Ответ
+										<span>{openAnswers[task.id] ? '▼' : '▶'}</span>
+									</AccordionHeader>
+									<AccordionContent isOpen={openAnswers[task.id] || false}>
+										<SolutionContent>
+											{Object.entries(task.answer).map(
+												([elementName, elementEquations]) => (
+													<div key={elementName}>
+														<h4>Элемент {elementName}:</h4>
+														{Object.entries(elementEquations).map(
+															([eqName, eqValue]) => (
+																<div key={eqName}>
+																	<strong>
+																		{eqName === 'i(t)' ? 'Ток:' : 'Напряжение:'}
+																	</strong>
+																	<EquationDisplay tex={String(eqValue)} />
+																</div>
+															)
+														)}
+													</div>
+												)
+											)}
+										</SolutionContent>
+									</AccordionContent>
+								</AnswerAccordion>
+							</TaskCard>
+						))}
+					</TaskListContainer>
+				</Card>
+			</Container>
+		</MathJaxContext>
 	)
 }
 

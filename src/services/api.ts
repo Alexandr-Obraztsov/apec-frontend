@@ -65,7 +65,7 @@ export interface GenerateTaskResponse {
 	circuit: string
 	image: string
 	conditions: Record<string, string>
-	solution: string
+	solution: CircuitSolutionResult
 }
 
 // Функция для проверки, содержит ли строка только число
