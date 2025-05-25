@@ -34,6 +34,16 @@ const Title = styled.h2`
 	margin: 0 0 1.5rem 0;
 	font-size: 1.5rem;
 	font-weight: 600;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1rem;
+`
+
+const TaskCounter = styled.span`
+	color: var(--text-secondary);
+	font-size: 1rem;
+	font-weight: normal;
 `
 
 const OptionsGrid = styled.div`
@@ -230,11 +240,43 @@ const ModalContent = styled.div`
 	background: var(--surface-color);
 	border-radius: var(--radius-lg);
 	padding: 2rem;
-	max-width: 800px;
+	max-width: 1000px;
 	width: 90%;
 	max-height: 90vh;
 	overflow-y: auto;
 	position: relative;
+	display: flex;
+	flex-direction: column;
+	gap: 2rem;
+`
+
+const ModalImage = styled(TaskImage)`
+	width: 100%;
+	height: 400px;
+	margin: 0;
+`
+
+const ElementBlock = styled.div`
+	padding-bottom: 1.5rem;
+	border-bottom: 1px solid var(--border-color);
+
+	& > h4 {
+		font-weight: bold;
+		color: blueviolet;
+		font-size: 1.2rem;
+	}
+
+	& > div {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	&:last-child {
+		padding-bottom: 0;
+		border-bottom: none;
+	}
 `
 
 const CloseButton = styled.button`
@@ -329,7 +371,10 @@ const TaskGenerator: React.FC = () => {
 		<MathJaxContext config={mathJaxConfig}>
 			<Container>
 				<Card>
-					<Title>Генерация задач</Title>
+					<Title>
+						Генерация задач
+						<TaskCounter>Всего задач сгенерировано: {tasks.length}</TaskCounter>
+					</Title>
 
 					{error && <ErrorMessage>{error}</ErrorMessage>}
 
@@ -427,7 +472,7 @@ const TaskGenerator: React.FC = () => {
 					<Modal onClick={() => setSelectedTask(null)}>
 						<ModalContent onClick={e => e.stopPropagation()}>
 							<CloseButton onClick={() => setSelectedTask(null)}>✕</CloseButton>
-							<TaskImage src={selectedTask.imageUrl} alt='Схема цепи' />
+							<ModalImage src={selectedTask.imageUrl} alt='Схема цепи' />
 							<TaskConditions>
 								<h4>Условия:</h4>
 								<ConditionsList>
@@ -443,7 +488,7 @@ const TaskGenerator: React.FC = () => {
 							<SolutionContent>
 								{Object.entries(selectedTask.answer).map(
 									([elementName, elementEquations]) => (
-										<div key={elementName}>
+										<ElementBlock key={elementName}>
 											<h4>Элемент {elementName}:</h4>
 											{Object.entries(elementEquations).map(
 												([eqName, eqValue]) => (
@@ -455,7 +500,7 @@ const TaskGenerator: React.FC = () => {
 													</div>
 												)
 											)}
-										</div>
+										</ElementBlock>
 									)
 								)}
 							</SolutionContent>
