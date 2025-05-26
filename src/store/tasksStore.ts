@@ -4,9 +4,9 @@ import { CircuitSolutionResult } from '../services/api'
 export interface Task {
 	id: string
 	imageUrl: string
-	conditions: { [key: string]: string }
+	componentValues: { [key: string]: string }
 	answer: CircuitSolutionResult
-	searchParams: {
+	requiredParameters: {
 		[key: string]: {
 			current: boolean
 			voltage: boolean
@@ -19,7 +19,7 @@ interface TasksState {
 	addTask: (task: Task) => void
 	removeTask: (taskId: string) => void
 	clearTasks: () => void
-	updateSearchParams: (
+	updateRequiredParameters: (
 		taskId: string,
 		element: string,
 		param: 'current' | 'voltage',
@@ -35,7 +35,7 @@ export const useTasksStore = create<TasksState>(set => ({
 			tasks: state.tasks.filter(task => task.id !== taskId),
 		})),
 	clearTasks: () => set({ tasks: [] }),
-	updateSearchParams: (taskId, element, param, value) =>
+	updateRequiredParameters: (taskId, element, param, value) =>
 		set(state => {
 			const taskIndex = state.tasks.findIndex(task => task.id === taskId)
 			if (taskIndex === -1) return state
@@ -43,10 +43,10 @@ export const useTasksStore = create<TasksState>(set => ({
 			const newTasks = [...state.tasks]
 			const task = { ...newTasks[taskIndex] }
 
-			task.searchParams = {
-				...task.searchParams,
+			task.requiredParameters = {
+				...task.requiredParameters,
 				[element]: {
-					...task.searchParams[element],
+					...task.requiredParameters[element],
 					[param]: value,
 				},
 			}

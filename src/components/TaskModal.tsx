@@ -3,6 +3,7 @@ import styled from 'styled-components'
 import { EquationDisplay } from '../utils/components'
 import { Task, useTasksStore } from '../store/tasksStore'
 import { generateConditions } from '../utils/generateConditions'
+import { getElementUnit } from '../utils/getElementUnit'
 
 const Modal = styled.div`
 	position: fixed;
@@ -184,7 +185,9 @@ export const TaskModal: React.FC<TaskModalProps> = ({
 	onClose,
 	task,
 }) => {
-	const updateSearchParams = useTasksStore(state => state.updateSearchParams)
+	const updateRequiredParameters = useTasksStore(
+		state => state.updateRequiredParameters
+	)
 	const [showAllAnswers, setShowAllAnswers] = useState(false)
 
 	if (!isOpen) return null
@@ -194,10 +197,8 @@ export const TaskModal: React.FC<TaskModalProps> = ({
 		param: 'current' | 'voltage',
 		checked: boolean
 	) => {
-		updateSearchParams(task.id, element, param, checked)
+		updateRequiredParameters(task.id, element, param, checked)
 	}
-
-	console.log('task', task)
 
 	return (
 		<Modal onClick={onClose}>
@@ -207,41 +208,46 @@ export const TaskModal: React.FC<TaskModalProps> = ({
 				<Section>
 					<h4>Условия:</h4>
 					<ConditionsList>
-						{Object.entries(task.conditions).map(([element, value]) => (
-							<ConditionItem key={element}>
-								<div>
-									{element}: {value}
-								</div>
-								<CheckboxGroup>
-									<ParameterButton
-										type='button'
-										$active={task.searchParams[element].current || false}
-										onClick={() =>
-											handleCheckboxChange(
-												element,
-												'current',
-												!task.searchParams[element].current
-											)
-										}
-									>
-										i(t)
-									</ParameterButton>
-									<ParameterButton
-										type='button'
-										$active={task.searchParams[element].voltage || false}
-										onClick={() =>
-											handleCheckboxChange(
-												element,
-												'voltage',
-												!task.searchParams[element]?.voltage
-											)
-										}
-									>
-										U(t)
-									</ParameterButton>
-								</CheckboxGroup>
-							</ConditionItem>
-						))}
+						{task.componentValues &&
+							Object.entries(task.componentValues).map(([element, value]) => (
+								<ConditionItem key={element}>
+									<div>
+										{element}: {value} {getElementUnit(element)}
+									</div>
+									<CheckboxGroup>
+										<ParameterButton
+											type='button'
+											$active={
+												task.requiredParameters?.[element]?.current || false
+											}
+											onClick={() =>
+												handleCheckboxChange(
+													element,
+													'current',
+													!task.requiredParameters?.[element]?.current
+												)
+											}
+										>
+											i(t)
+										</ParameterButton>
+										<ParameterButton
+											type='button'
+											$active={
+												task.requiredParameters?.[element]?.voltage || false
+											}
+											onClick={() =>
+												handleCheckboxChange(
+													element,
+													'voltage',
+													!task.requiredParameters?.[element]?.voltage
+												)
+											}
+										>
+											U(t)
+										</ParameterButton>
+									</CheckboxGroup>
+								</ConditionItem>
+							))}
 					</ConditionsList>
 				</Section>
 				<Section>
@@ -273,39 +279,42 @@ export const TaskModal: React.FC<TaskModalProps> = ({
 						</ShowAllToggle>
 					</div>
 					<SolutionContent>
-						{Object.entries(task.answer).map(
-							([elementName, elementEquations]) => {
-								const shouldShowCurrent =
-									showAllAnswers || task.searchParams[elementName]?.current
-								const shouldShowVoltage =
-									showAllAnswers || task.searchParams[elementName]?.voltage
+						{task.answer &&
+							Object.entries(task.answer).map(
+								([elementName, elementEquations]) => {
+									const shouldShowCurrent =
+										showAllAnswers ||
+										task.requiredParameters?.[elementName]?.current
+									const shouldShowVoltage =
+										showAllAnswers ||
+										task.requiredParameters?.[elementName]?.voltage
 
-								if (!shouldShowCurrent && !shouldShowVoltage) return null
+									if (!shouldShowCurrent && !shouldShowVoltage) return null
 
-								return (
-									<Answer key={elementName}>
-										<strong>Элемент {elementName}</strong>
-										{Object.entries(elementEquations).map(
-											([eqName, eqValue]) => {
-												const isCurrent = eqName === 'i(t)'
-												if (
-													(isCurrent && !shouldShowCurrent) ||
-													(!isCurrent && !shouldShowVoltage)
-												) {
-													return null
+									return (
+										<Answer key={elementName}>
+											<strong>Элемент {elementName}</strong>
+											{Object.entries(elementEquations).map(
+												([eqName, eqValue]) => {
+													const isCurrent = eqName === 'i(t)'
+													if (
+														(isCurrent && !shouldShowCurrent) ||
+														(!isCurrent && !shouldShowVoltage)
+													) {
+														return null
+													}
+													return (
+														<div key={eqName}>
+															<span>{isCurrent ? 'Ток:' : 'Напряжение:'}</span>
+															<EquationDisplay tex={String(eqValue)} />
+														</div>
+													)
 												}
-												return (
-													<div key={eqName}>
-														<span>{isCurrent ? 'Ток:' : 'Напряжение:'}</span>
-														<EquationDisplay tex={String(eqValue)} />
-													</div>
-												)
-											}
-										)}
-									</Answer>
-								)
-							}
-						)}
+											)}
+										</Answer>
+									)
+								}
+							)}
 					</SolutionContent>
 				</Section>
 			</ModalContent>

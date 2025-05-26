@@ -2,6 +2,7 @@ import React from 'react'
 import styled from 'styled-components'
 import { Task, useTasksStore } from '../store/tasksStore'
 import { generateConditions } from '../utils/generateConditions'
+import { getElementUnit } from '../utils/getElementUnit'
 
 const Card = styled.div`
 	background: var(--surface-color);
@@ -105,11 +106,12 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onClick }) => {
 				<div>
 					<h4>Дано:</h4>
 					<ConditionsList>
-						{Object.entries(task.conditions).map(([element, value]) => (
-							<ConditionItem key={element}>
-								{element}: {value}
-							</ConditionItem>
-						))}
+						{task.componentValues &&
+							Object.entries(task.componentValues).map(([element, value]) => (
+								<ConditionItem key={element}>
+									{element}: {value} {getElementUnit(element)}
+								</ConditionItem>
+							))}
 					</ConditionsList>
 				</div>
 				<div>

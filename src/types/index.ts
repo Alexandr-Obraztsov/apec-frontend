@@ -79,5 +79,13 @@ export const ELEMENT_NAME_PREFIXES: Record<ElementType, string> = {
 	switch: 'SW',
 }
 
+export const ELEMENT_UNIT = {
+	wire: '',
+	resistor: 'Ом',
+	capacitor: 'Ф',
+	inductor: 'Гн',
+	voltage: 'В',
+	current: 'А',
+}
 // Префикс для имен узлов
 export const NODE_NAME_PREFIX = ''

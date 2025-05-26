@@ -64,8 +64,9 @@ export interface GenerateCircuitResponse {
 export interface GenerateTaskResponse {
 	circuit: string
 	image: string
-	conditions: Record<string, string>
+	componentValues: Record<string, string>
 	solution: CircuitSolutionResult
+	requiredParameters: Record<string, { current: boolean; voltage: boolean }>
 }
 
 // Функция для проверки, содержит ли строка только число

@@ -194,14 +194,9 @@ const TaskGenerator: React.FC = () => {
 			const newTask: Task = {
 				id: Date.now().toString(),
 				imageUrl: `data:image/png;base64,${response.image}`,
-				conditions: response.conditions,
+				componentValues: response.componentValues,
 				answer: response.solution,
-				searchParams: Object.fromEntries(
-					Object.keys(response.conditions).map(element => [
-						element,
-						{ current: false, voltage: false },
-					])
-				),
+				requiredParameters: response.requiredParameters,
 			}
 
 			console.log('Generated task:', newTask)
