@@ -11,8 +11,8 @@ export interface TaskData {
 	solutions: CircuitSolutionResult
 }
 
-export const pdfService = {
-	async generateTasksPdf(tasks: Task[]): Promise<Blob> {
+export const htmlService = {
+	async generateTasksHtml(tasks: Task[]): Promise<Blob> {
 		try {
 			const tasksData = tasks.map(task => {
 				const component_values = Object.entries(task.componentValues).reduce(
@@ -42,22 +42,22 @@ export const pdfService = {
 				}
 			})
 			const response = await axios.post(
-				`${API_BASE_URL}/generate_pdf`,
+				`${API_BASE_URL}/generate_html`,
 				{ tasks: tasksData },
 				{
 					responseType: 'blob',
 				}
 			)
 
-			return new Blob([response.data], { type: 'application/pdf' })
+			return new Blob([response.data], { type: 'text/html' })
 		} catch (error) {
-			console.error('Error generating PDF:', error)
+			console.error('Error generating HTML:', error)
 			throw error
 		}
 	},
 
-	downloadPdf(pdfBlob: Blob, filename: string = 'tasks.pdf'): void {
-		const url = window.URL.createObjectURL(pdfBlob)
+	downloadHtml(htmlBlob: Blob, filename: string = 'tasks.html'): void {
+		const url = window.URL.createObjectURL(htmlBlob)
 		const link = document.createElement('a')
 		link.href = url
 		link.setAttribute('download', filename)

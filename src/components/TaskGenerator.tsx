@@ -6,7 +6,7 @@ import { MathJaxContext } from 'better-react-mathjax'
 import { TaskCard } from './TaskCard'
 import { TaskModal } from './TaskModal'
 import { useTasksStore, Task } from '../store/tasksStore'
-import { pdfService } from '../services/pdfService'
+import { htmlService } from '../services/htmlService'
 
 const mathJaxConfig = {
 	tex: {
@@ -215,12 +215,12 @@ const TaskGenerator: React.FC = () => {
 		}
 	}
 
-	const handleDownloadPdf = async () => {
+	const handleDownloadHtml = async () => {
 		try {
-			const pdfBlob = await pdfService.generateTasksPdf(tasks)
-			pdfService.downloadPdf(pdfBlob)
+			const htmlBlob = await htmlService.generateTasksHtml(tasks)
+			htmlService.downloadHtml(htmlBlob)
 		} catch {
-			setError('Ошибка при генерации PDF')
+			setError('Ошибка при генерации HTML')
 		}
 	}
 
@@ -301,8 +301,8 @@ const TaskGenerator: React.FC = () => {
 							{isLoading ? 'Генерация...' : 'Сгенерировать'}
 						</ActionButton>
 						{tasks.length > 0 && (
-							<ActionButton onClick={handleDownloadPdf}>
-								Скачать PDF
+							<ActionButton onClick={handleDownloadHtml}>
+								Скачать HTML-документ
 							</ActionButton>
 						)}
 					</ButtonContainer>
