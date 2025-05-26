@@ -2,7 +2,7 @@ import axios from 'axios'
 import { AnyCircuitElement, Node } from '../types'
 
 // Базовый URL API
-const API_BASE_URL = 'http://localhost:8000/api'
+export const API_BASE_URL = 'http://localhost:8000/api'
 
 // Интерфейс для данных схемы
 export interface CircuitData {
