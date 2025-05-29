@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@stagewise/toolbar-react": "^0.1.2",
     "@types/react-mathjax": "^1.0.4",
     "axios": "^1.9.0",
     "better-react-mathjax": "^2.3.0",

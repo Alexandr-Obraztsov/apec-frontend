@@ -10,11 +10,11 @@ export const generateConditions = (task: Task) => {
 			task.requiredParameters[element]?.current &&
 			task.requiredParameters[element]?.voltage
 		) {
-			conditions.push(`I(t) и U(t) для ${element}`)
+			conditions.push(`Ток I(t) и напряжение U(t) для ${element}`)
 		} else if (task.requiredParameters[element]?.current) {
-			conditions.push(`I(t) для ${element}`)
+			conditions.push(`Ток I(t) для ${element}`)
 		} else if (task.requiredParameters[element]?.voltage) {
-			conditions.push(`U(t) для ${element}`)
+			conditions.push(`Напряжение U(t) для ${element}`)
 		}
 	}
 
