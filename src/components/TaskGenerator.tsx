@@ -7,6 +7,7 @@ import { TaskCard } from './TaskCard'
 import { TaskModal } from './TaskModal'
 import { useTasksStore, Task } from '../store/tasksStore'
 import { htmlService } from '../services/htmlService'
+import GenerateMultipleTasksModal from './GenerateMultipleTasksModal'
 
 const mathJaxConfig = {
 	tex: {
@@ -174,6 +175,7 @@ const TaskGenerator: React.FC = () => {
 	const [isLoading, setIsLoading] = useState(false)
 	const [error, setError] = useState<string | null>(null)
 	const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
+	const [isMultipleModalOpen, setIsMultipleModalOpen] = useState(false)
 
 	const { tasks, addTask } = useTasksStore()
 
@@ -301,6 +303,12 @@ const TaskGenerator: React.FC = () => {
 							{isLoading && <LoadingSpinner />}
 							{isLoading ? 'Генерация...' : 'Сгенерировать'}
 						</ActionButton>
+						<ActionButton
+							onClick={() => setIsMultipleModalOpen(true)}
+							disabled={isLoading}
+						>
+							Сгенерировать несколько
+						</ActionButton>
 						{tasks.length > 0 && (
 							<ActionButton onClick={handleDownloadHtml}>
 								Скачать HTML-документ
@@ -330,6 +338,11 @@ const TaskGenerator: React.FC = () => {
 						task={selectedTask}
 					/>
 				)}
+
+				<GenerateMultipleTasksModal
+					isOpen={isMultipleModalOpen}
+					onClose={() => setIsMultipleModalOpen(false)}
+				/>
 			</Container>
 		</MathJaxContext>
 	)
