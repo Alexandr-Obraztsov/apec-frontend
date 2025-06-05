@@ -78,30 +78,54 @@ export const htmlService = {
 
 	generateHtmlFromTasks(tasks: Task[]): string {
 		const styles = `
-			body { font-family: sans-serif; margin: 2em; background-color: #f4f4f9; color: #333; }
-			.page { padding: 1.5em; }
-			.tasks-container, .solutions-container { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5em; }
-			.task { display: flex; flex-direction: column; background-color: #fff; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 1em; padding: 1em; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-			.solution-task { background-color: #fff; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 1em; padding: 1em; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-			h1 { color: #2c3e50; text-align: center; }
-			h2 { font-size: 1.1rem; color: #34495e; border-bottom: 2px solid #3498db; padding-bottom: 0.3em; margin-top: 1em; }
-			h3 { font-size: 0.9rem; color: #555; margin-bottom: 0.5em; }
-			img { max-width: 100%; height: auto; max-height: 200px; object-fit: contain; margin: 0 auto 1em; border-radius: 4px; }
-			.conditions, .component-values { display: grid; grid-template-columns: 1fr; gap: 0.5em; margin-bottom: 1em; }
-			.condition-item, .component-item { font-size: 0.8em; background-color: #ecf0f1; padding: 0.5em; border-radius: 4px; }
-			.solution-details { display: flex; flex-direction: column; gap: 1em; }
-			.solution-block { background-color: #f8f9fa; padding: 0.8em; border: 1px solid #e9ecef; border-radius: 4px; }
-			.answers { margin-top: 1em; }
-			.answer-item { background: #e8f6f3; padding: 0.8em; border: 1px solid #d1e9e3; border-radius: 4px; margin-bottom: 0.5em; font-size: 0.9em;}
+			body { font-family: sans-serif; margin: 1em; background-color: #f4f4f9; color: #333; }
+			.page { padding: 1em; }
+			.tasks-container, .solutions-container { }
+			.task, .solution-task {
+				background-color: #fff;
+				border: 1px solid #ddd;
+				border-radius: 8px;
+				margin: 1em auto;
+				padding: 1em;
+				box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+				max-width: 55em;
+			}
+			.solution-task {
+				padding: 0.8em;
+			}
+			h1 { font-size: 1.5rem; color: #2c3e50; text-align: center; }
+			h2 { font-size: 1rem; color: #34495e; border-bottom: 1px solid #3498db; padding-bottom: 0.2em; margin-top: 0.5em; margin-bottom: 0.5em; }
+			h3 { font-size: 0.9rem; color: #555; margin-top: 0.5em; margin-bottom: 0.3em; }
+			h4 { font-size: 0.85rem; color: #333; margin: 0 0 0.4em 0; font-weight: 600; }
+			img { max-width: 100%; height: auto; max-height: 180px; object-fit: contain; margin: 0 auto 0.5em; border-radius: 4px; }
+			.component-values { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 0.4em; margin-bottom: 0.8em; }
+			.condition-item, .component-item { font-size: 0.9em; background-color: #ecf0f1; padding: 0.5em; border-radius: 4px; }
+			.solution-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.5em; margin-bottom: 0.8em;}
+			.solution-block { background-color: #f8f9fa; padding: 0.5em; border: 1px solid #e9ecef; border-radius: 4px; }
+			.solution-block p, .solution-block ul { margin: 1em; }
+			.answers { margin-top: 0.8em; }
+			.answer-item { background: #e8f6f3; padding: 0.5em; border: 1px solid #d1e9e3; border-radius: 4px; margin-bottom: 0.4em; font-size: 0.9em;}
 			.print-button { position: fixed; top: 1em; right: 1em; padding: 0.5em 1em; background-color: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; z-index: 100; }
 
 			@media print {
-				body { margin: 0.5em; background-color: #fff; font-size: 10pt; }
+				body { margin: 0.5em; background-color: #fff; font-size: 8.5pt; }
 				.print-button { display: none; }
 				.solutions-page { page-break-before: always; }
-				.tasks-container, .solutions-container { grid-template-columns: 1fr 1fr; gap: 1em; }
-				.task, .solution-task { border: 1px solid #ccc; box-shadow: none; page-break-inside: avoid; margin: 0; }
+				.tasks-container, .solutions-container { }
+				.task, .solution-task {
+					max-width: 100%;
+					border: 1px solid #ccc;
+					box-shadow: none;
+					page-break-inside: avoid;
+					margin: 0 0 0.5em 0;
+					padding: 0.5em;
+				}
+				.solution-task {
+					padding: 0.3em;
+				}
+				.tasks-container .task:nth-child(2n),
 				.solutions-container .solution-task:nth-child(2n) { page-break-after: always; }
+				.tasks-container .task:last-child,
 				.solutions-container .solution-task:last-child { page-break-after: auto; }
 			}
 		`
@@ -173,11 +197,14 @@ export const htmlService = {
 						let answer = ''
 						if (task.detailedSolution?.elements[elementName]) {
 							const elemSolution = task.detailedSolution.elements[elementName]
+							const steadyStateValue = elemSolution.steady_state
+							const steadyStateHtml = `(установившийся режим: ${steadyStateValue})`
+
 							if (params.current && elemSolution.type === 'i') {
-								answer += `<div class="answer-item"><strong>Ток i(t) для ${elementName}:</strong> $$${elemSolution.expr}$$</div>`
+								answer += `<div class="answer-item"><strong>Ток i(t) для ${elementName}:</strong> $$${elemSolution.expr}$$ <span>${steadyStateHtml}</span></div>`
 							}
 							if (params.voltage && elemSolution.type === 'v') {
-								answer += `<div class="answer-item"><strong>Напряжение U(t) для ${elementName}:</strong> $$${elemSolution.expr}$$</div>`
+								answer += `<div class="answer-item"><strong>Напряжение U(t) для ${elementName}:</strong> $$${elemSolution.expr}$$ <span>${steadyStateHtml}</span></div>`
 							}
 						}
 						return answer
