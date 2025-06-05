@@ -58,14 +58,31 @@ export interface GenerateCircuitsPdfRequest {
 export interface GenerateCircuitResponse {
 	status?: string
 	circuit?: string
+	message?: string
 }
 
 // Интерфейс для ответа с генерацией задачи
 export interface GenerateTaskResponse {
 	circuit: string
 	image: string
-	componentValues: Record<string, string>
-	solution: CircuitSolutionResult
+	componentValues: Record<string, number>
+	detailedSolution: {
+		roots: string[]
+		poly: string
+		initial_values: Record<string, number>
+		elements: Record<
+			string,
+			{
+				type: 'i' | 'v'
+				expr: string
+				steady_state: number
+				coefficients: Array<{
+					type: 'phi' | 'A'
+					value: number
+				}>
+			}
+		>
+	} | null
 	requiredParameters: Record<string, { current: boolean; voltage: boolean }>
 }
 
@@ -171,6 +188,16 @@ export const circuitApi = {
 				`${API_BASE_URL}/generate_circuit`,
 				params
 			)
+
+			console.log('Получен ответ от сервера:', response.data)
+
+			if (!response.data.circuit) {
+				console.error('Ошибка: в ответе сервера отсутствует circuit')
+				return {
+					status: 'error',
+					message: 'В ответе сервера отсутствует описание цепи',
+				}
+			}
 
 			return response.data
 		} catch (error) {

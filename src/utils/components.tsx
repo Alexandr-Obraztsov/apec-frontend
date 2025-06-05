@@ -2,14 +2,23 @@ import React from 'react'
 import { MathJax } from 'better-react-mathjax'
 import { prettifyEquation } from './mathFormatters'
 
+interface EquationDisplayProps {
+	equation?: string
+	tex?: string
+}
+
 /**
  * Компонент для отображения математических уравнений в LaTeX формате
- * @param tex Текст уравнения
+ * @param equation Текст уравнения (новый формат)
+ * @param tex Текст уравнения (старый формат)
  * @returns React компонент
  */
-export const EquationDisplay: React.FC<{ tex: string }> = ({ tex }) => {
-	// Преобразуем формулу в красивый LaTeX формат
-	const processedTex = prettifyEquation(tex)
+export const EquationDisplay: React.FC<EquationDisplayProps> = ({
+	equation,
+	tex,
+}) => {
+	// Используем equation если он есть, иначе используем tex
+	const processedTex = prettifyEquation(equation || tex || '')
 
 	return <MathJax dynamic>{`$$${processedTex}$$`}</MathJax>
 }

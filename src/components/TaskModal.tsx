@@ -1,9 +1,16 @@
-import React, { useState } from 'react'
+import React from 'react'
 import styled from 'styled-components'
 import { EquationDisplay } from '../utils/components'
-import { Task, useTasksStore } from '../store/tasksStore'
-import { generateConditions } from '../utils/generateConditions'
+import { Task } from '../store/tasksStore'
 import { getElementUnit } from '../utils/getElementUnit'
+
+const Section = styled.div`
+	h4 {
+		color: var(--text-primary);
+		margin-bottom: 1rem;
+		font-size: 1.2rem;
+	}
+`
 
 const Modal = styled.div`
 	position: fixed;
@@ -71,34 +78,6 @@ const ConditionItem = styled.div`
 	font-size: 0.9rem;
 	text-align: center;
 	border: 1px solid var(--border-color);
-	display: flex;
-	flex-direction: column;
-	gap: 0.5rem;
-`
-
-const CheckboxGroup = styled.div`
-	display: grid;
-	grid-template-columns: 1fr 1fr;
-	gap: 0.5rem;
-	width: 100%;
-`
-
-const ParameterButton = styled.button<{ $active: boolean }>`
-	padding: 0.5rem;
-	border: 1px solid var(--border-color);
-	border-radius: var(--radius-sm);
-	background: ${props =>
-		props.$active ? 'var(--primary-color)' : 'var(--background-color)'};
-	color: ${props => (props.$active ? 'white' : 'var(--text-primary)')};
-	cursor: pointer;
-	font-size: 0.8rem;
-	width: 100%;
-	transition: all 0.2s;
-
-	&:hover {
-		background: ${props =>
-			props.$active ? 'var(--primary-dark)' : 'var(--surface-color)'};
-	}
 `
 
 const SolutionContent = styled.div`
@@ -107,70 +86,115 @@ const SolutionContent = styled.div`
 	gap: 1.5rem;
 `
 
-const Exercise = styled.ul`
-	flex: 1;
-	padding: 0;
-	margin-left: 1rem;
-	padding-bottom: 1rem;
+const InitialSolutionGrid = styled.div`
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 1rem;
+	margin-bottom: 1.25rem;
+`
+
+const SolutionBlock = styled.div`
+	background: var(--background-color);
+	border-radius: var(--radius-md);
+	padding: 1rem;
+	border: 1px solid var(--border-color);
+	font-size: 0.95rem;
+
+	h3 {
+		color: var(--primary-color);
+		margin-bottom: 0.75rem;
+		font-size: 1rem;
+		font-weight: 500;
+	}
+`
+
+const PolynomialBlock = styled(SolutionBlock)`
+	.equation-wrapper {
+		padding: 0.5rem 0;
+	}
+`
+
+const RootsBlock = styled(SolutionBlock)`
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
 `
 
 const Answer = styled.div`
 	background: var(--background-color);
 	border-radius: var(--radius-md);
-	padding: 1.5rem;
+	padding: 1.25rem;
 	border: 1px solid var(--border-color);
 
 	strong {
 		display: block;
-		margin-bottom: 1rem;
 		color: var(--primary-color);
 		font-size: 1.1rem;
-	}
-
-	& > div {
-		display: flex;
-		flex-direction: row;
-		align-items: center;
-		gap: 1rem;
-		padding: 0.5rem;
-		border-radius: var(--radius-sm);
-
-		span {
-			min-width: 100px;
-			color: var(--text-primary);
-		}
-	}
-`
-
-const Section = styled.div`
-	h4 {
-		color: var(--text-primary);
 		margin-bottom: 1rem;
-		font-size: 1.2rem;
-	}
-
-	& > div {
-		color: var(--text-secondary);
 	}
 `
 
-const ShowAllToggle = styled.label`
+const ElementSolution = styled.div`
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+`
+
+const ElementEquation = styled.div`
 	display: flex;
 	align-items: center;
 	gap: 0.5rem;
-	font-size: 0.9rem;
-	color: var(--text-secondary);
-	margin-bottom: 1rem;
-	cursor: pointer;
 
-	input {
-		width: 1rem;
-		height: 1rem;
-		cursor: pointer;
+	span {
+		font-weight: 500;
+		font-size: 0.95rem;
+		color: var(--text-primary);
+	}
+`
+
+const SteadyStateValue = styled.div`
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	font-size: 0.95rem;
+
+	span {
+		color: var(--text-primary);
+	}
+`
+
+const CoefficientsSection = styled.div`
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+`
+
+const CoefficientsTitle = styled.span`
+	font-weight: 500;
+	font-size: 0.95rem;
+	color: var(--text-primary);
+`
+
+const CoefficientsTable = styled.table`
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 0.95rem;
+
+	th,
+	td {
+		padding: 0.5rem;
+		border: 1px solid var(--border-color);
+		text-align: left;
 	}
 
-	&:hover {
-		color: var(--text-primary);
+	th {
+		background: var(--background-color);
+		font-weight: 500;
+		font-size: 0.95rem;
+	}
+
+	td:first-child {
+		width: 45%;
 	}
 `
 
@@ -185,20 +209,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
 	onClose,
 	task,
 }) => {
-	const updateRequiredParameters = useTasksStore(
-		state => state.updateRequiredParameters
-	)
-	const [showAllAnswers, setShowAllAnswers] = useState(false)
-
 	if (!isOpen) return null
-
-	const handleCheckboxChange = (
-		element: string,
-		param: 'current' | 'voltage',
-		checked: boolean
-	) => {
-		updateRequiredParameters(task.id, element, param, checked)
-	}
 
 	return (
 		<Modal onClick={onClose}>
@@ -211,112 +222,102 @@ export const TaskModal: React.FC<TaskModalProps> = ({
 						{task.componentValues &&
 							Object.entries(task.componentValues).map(([element, value]) => (
 								<ConditionItem key={element}>
-									<div>
-										{element}: {value} {getElementUnit(element)}
-									</div>
-									<CheckboxGroup>
-										<ParameterButton
-											type='button'
-											$active={
-												task.requiredParameters?.[element]?.current || false
-											}
-											onClick={() =>
-												handleCheckboxChange(
-													element,
-													'current',
-													!task.requiredParameters?.[element]?.current
-												)
-											}
-										>
-											i(t)
-										</ParameterButton>
-										<ParameterButton
-											type='button'
-											$active={
-												task.requiredParameters?.[element]?.voltage || false
-											}
-											onClick={() =>
-												handleCheckboxChange(
-													element,
-													'voltage',
-													!task.requiredParameters?.[element]?.voltage
-												)
-											}
-										>
-											U(t)
-										</ParameterButton>
-									</CheckboxGroup>
+									{element}: {value} {getElementUnit(element)}
 								</ConditionItem>
 							))}
 					</ConditionsList>
 				</Section>
-				<Section>
-					<h4>Найти:</h4>
-					<Exercise>
-						{generateConditions(task)
-							? generateConditions(task)!.map(condition => (
-									<li key={condition}>{condition}</li>
-							  ))
-							: 'Условие не задано'}
-					</Exercise>
-				</Section>
-				<Section>
-					<div
-						style={{
-							display: 'flex',
-							justifyContent: 'space-between',
-							alignItems: 'center',
-						}}
-					>
-						<h4>Ответы:</h4>
-						<ShowAllToggle>
-							<input
-								type='checkbox'
-								checked={showAllAnswers}
-								onChange={e => setShowAllAnswers(e.target.checked)}
-							/>
-							Показать все ответы
-						</ShowAllToggle>
-					</div>
-					<SolutionContent>
-						{task.answer &&
-							Object.entries(task.answer).map(
-								([elementName, elementEquations]) => {
-									const shouldShowCurrent =
-										showAllAnswers ||
-										task.requiredParameters?.[elementName]?.current
-									const shouldShowVoltage =
-										showAllAnswers ||
-										task.requiredParameters?.[elementName]?.voltage
-
-									if (!shouldShowCurrent && !shouldShowVoltage) return null
-
-									return (
-										<Answer key={elementName}>
-											<strong>Элемент {elementName}</strong>
-											{Object.entries(elementEquations).map(
-												([eqName, eqValue]) => {
-													const isCurrent = eqName === 'i(t)'
-													if (
-														(isCurrent && !shouldShowCurrent) ||
-														(!isCurrent && !shouldShowVoltage)
-													) {
-														return null
-													}
-													return (
-														<div key={eqName}>
-															<span>{isCurrent ? 'Ток:' : 'Напряжение:'}</span>
-															<EquationDisplay tex={String(eqValue)} />
-														</div>
-													)
-												}
+				{task.detailedSolution && (
+					<Section>
+						<h4>Решение:</h4>
+						<SolutionContent>
+							<InitialSolutionGrid>
+								<PolynomialBlock>
+									<h3>Характеристический многочлен</h3>
+									<div className='equation-wrapper'>
+										<EquationDisplay equation={task.detailedSolution.poly} />
+									</div>
+								</PolynomialBlock>
+								<RootsBlock>
+									<h3>Корни уравнения</h3>
+									{task.detailedSolution.roots.map((root, index) => (
+										<ElementEquation key={index}>
+											<span>p{index + 1} = </span>
+											<EquationDisplay equation={root} />
+										</ElementEquation>
+									))}
+								</RootsBlock>
+								<SolutionBlock>
+									<h3>Начальные значения</h3>
+									<CoefficientsTable>
+										<tbody>
+											{Object.entries(task.detailedSolution.initial_values).map(
+												([element, value]) => (
+													<tr key={element}>
+														<td>{element}</td>
+														<td>
+															{value} {element.startsWith('L') ? 'А' : 'В'}
+														</td>
+													</tr>
+												)
 											)}
-										</Answer>
-									)
-								}
+										</tbody>
+									</CoefficientsTable>
+								</SolutionBlock>
+							</InitialSolutionGrid>
+							{Object.entries(task.detailedSolution.elements).map(
+								([element, solution]) => (
+									<Answer key={element}>
+										<strong>{element}:</strong>
+										<ElementSolution>
+											<SteadyStateValue>
+												<span>Установившееся значение:</span>
+												{solution.steady_state}{' '}
+												{solution.type === 'i' ? 'А' : 'В'}
+											</SteadyStateValue>
+											{solution.coefficients.length > 0 && (
+												<CoefficientsSection>
+													<CoefficientsTitle>Коэффициенты:</CoefficientsTitle>
+													<CoefficientsTable>
+														<thead>
+															<tr>
+																<th>Тип</th>
+																<th>Значение</th>
+															</tr>
+														</thead>
+														<tbody>
+															{solution.coefficients.map((coef, idx) => (
+																<tr key={idx}>
+																	<td>
+																		{coef.type === 'A' ? 'Амплитуда' : 'Фаза'}
+																	</td>
+																	<td>
+																		{coef.value}{' '}
+																		{coef.type === 'A'
+																			? solution.type === 'i'
+																				? 'А'
+																				: 'В'
+																			: 'рад'}
+																	</td>
+																</tr>
+															))}
+														</tbody>
+													</CoefficientsTable>
+												</CoefficientsSection>
+											)}
+											<ElementEquation>
+												<span>
+													{solution.type === 'i' ? 'i(t)' : 'U(t)'} ={' '}
+												</span>
+												<EquationDisplay equation={solution.expr} />
+											</ElementEquation>
+										</ElementSolution>
+									</Answer>
+								)
 							)}
-					</SolutionContent>
-				</Section>
+						</SolutionContent>
+					</Section>
+				)}
 			</ModalContent>
 		</Modal>
 	)

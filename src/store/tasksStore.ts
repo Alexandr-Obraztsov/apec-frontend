@@ -1,11 +1,27 @@
 import { create } from 'zustand'
-import { CircuitSolutionResult } from '../services/api'
+
+interface DetailedSolution {
+	roots: string[]
+	poly: string
+	initial_values: Record<string, number>
+	elements: Record<string, ElementSolution>
+}
+
+interface ElementSolution {
+	type: 'i' | 'v'
+	expr: string
+	steady_state: number
+	coefficients: Array<{
+		type: 'phi' | 'A'
+		value: number
+	}>
+}
 
 export interface Task {
 	id: string
 	imageUrl: string
-	componentValues: { [key: string]: string }
-	answer: CircuitSolutionResult
+	componentValues: Record<string, number>
+	detailedSolution: DetailedSolution
 	requiredParameters: {
 		[key: string]: {
 			current: boolean

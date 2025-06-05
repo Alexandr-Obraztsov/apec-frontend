@@ -196,8 +196,8 @@ const TaskGenerator: React.FC = () => {
 				id: Date.now().toString(),
 				imageUrl: `data:image/png;base64,${response.image}`,
 				componentValues: response.componentValues,
-				answer: response.solution,
-				requiredParameters: response.requiredParameters,
+				detailedSolution: response.detailedSolution!,
+				requiredParameters: response.requiredParameters!,
 			}
 
 			console.log('Generated task:', newTask)
@@ -217,7 +217,8 @@ const TaskGenerator: React.FC = () => {
 
 	const handleDownloadHtml = async () => {
 		try {
-			const htmlBlob = await htmlService.generateTasksHtml(tasks)
+			const htmlString = htmlService.generateHtmlFromTasks(tasks)
+			const htmlBlob = new Blob([htmlString], { type: 'text/html' })
 			htmlService.downloadHtml(htmlBlob)
 		} catch {
 			setError('Ошибка при генерации HTML')

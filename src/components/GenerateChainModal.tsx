@@ -181,15 +181,16 @@ const GenerateChainModal: React.FC<GenerateChainModalProps> = ({
 				rootType: order === 'second' ? rootType : undefined,
 			})
 
-			if (response.status === 'success') {
+			if (response.status === 'success' && response.circuit) {
+				console.log('Сгенерированная цепь:', response.circuit)
 				onGenerate({
 					order,
 					rootType: order === 'second' ? rootType : undefined,
-					circuit: response.circuit!,
+					circuit: response.circuit,
 				})
 				onClose() // Закрываем модальное окно после успешной генерации
 			} else {
-				setError(response.message!)
+				setError(response.message || 'Не удалось сгенерировать цепь')
 			}
 		} catch (err) {
 			console.error('Ошибка при генерации цепи:', err)

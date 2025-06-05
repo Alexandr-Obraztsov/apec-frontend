@@ -1095,54 +1095,201 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 	generateChain: (options: ChainOptions) => {
 		const { nodes, elements } = get()
 
+		// Очищаем существующую схему
 		elements.forEach(element => get().removeElement(element.id))
-
 		nodes.forEach(node => {
 			const state = get() as unknown as { removeNode?: (id: string) => void }
 			if (state.removeNode) state.removeNode(node.id)
 		})
 
-		const nodePositions = [
-			{ x: 300, y: 500 },
-			{ x: 300, y: 300 },
-			{ x: 300, y: 100 },
-			{ x: 600, y: 100 },
-			{ x: 900, y: 100 },
-			{ x: 900, y: 300 },
-			{ x: 900, y: 500 },
-			{ x: 600, y: 500 },
-			{ x: 600, y: 300 },
-			{ x: 1050, y: 300 },
-			{ x: 1050, y: 500 },
-		]
+		// Парсим схему из строк
+		const circuitLines = options.circuit.split('\n').filter(line => line.trim())
 
-		const nodeIds = nodePositions.map(position => get().addNode(position))
-		options.circuit.split('\n').forEach(element => {
-			const splitElement = element.split(';')[0].split(' ')
-			const [type, startNodeId, endNodeId] = splitElement
-			const elementType = convertElementType(type)
-			if (elementType === 'voltage')
+		// Начальная позиция для узла 0
+		const basePosition = { x: 400, y: 500 }
+		const nodePositions: Record<number, Position> = {
+			0: basePosition,
+		}
+		const SPACING = 200 // Расстояние между узлами. Можно будет настроить.
+
+		const placedNodes = new Set<number>([0])
+		const nodesToProcess = [0] // Очередь узлов для обработки
+
+		while (nodesToProcess.length > 0) {
+			const currentNodeId = nodesToProcess.shift()!
+			const currentPosition = nodePositions[currentNodeId]
+
+			if (!currentPosition) {
+				console.warn(
+					`Не найдена позиция для currentNodeId: ${currentNodeId}. Пропуск.`
+				)
+				continue
+			}
+
+			circuitLines.forEach(line => {
+				const lineParts = line.split(';')
+				const elementDefinition = lineParts[0].split(' ')
+
+				// Предполагаем, что ID узлов всегда 2-й и 3-й элементы после типа
+				// Например: W 0 1 или R1 1 2 110
+				const typePart = elementDefinition[0]
+				const startNodeStr = elementDefinition[1]
+				const endNodeStr = elementDefinition[2]
+
+				if (!startNodeStr || !endNodeStr) {
+					console.warn(
+						`Не удалось распарсить узлы из строки: ${line}. Пропуск.`
+					)
+					return // continue to next line
+				}
+
+				const startNodeNum = parseInt(startNodeStr)
+				const endNodeNum = parseInt(endNodeStr)
+
+				let directionFromLine = ''
+				if (lineParts.length > 1 && lineParts[1]) {
+					directionFromLine = lineParts[1].trim().toLowerCase()
+					// Убираем возможные значения после =, например, "right=0.4" -> "right"
+					if (directionFromLine.includes('=')) {
+						directionFromLine = directionFromLine.split('=')[0].trim()
+					}
+				}
+
+				let targetNodeId: number | null = null
+				let placementDirection = ''
+
+				if (startNodeNum === currentNodeId && !placedNodes.has(endNodeNum)) {
+					targetNodeId = endNodeNum
+					placementDirection = directionFromLine
+				} else if (
+					endNodeNum === currentNodeId &&
+					!placedNodes.has(startNodeNum)
+				) {
+					targetNodeId = startNodeNum
+					// Инвертируем направление, так как оно дано от startNodeNum к endNodeNum (currentNodeId)
+					switch (directionFromLine) {
+						case 'up':
+							placementDirection = 'down'
+							break
+						case 'down':
+							placementDirection = 'up'
+							break
+						case 'left':
+							placementDirection = 'right'
+							break
+						case 'right':
+							placementDirection = 'left'
+							break
+						default:
+							placementDirection = '' // Оставляем пустым, если направление неизвестно
+					}
+				}
+
+				if (targetNodeId !== null) {
+					let newPosition: Position
+					switch (placementDirection) {
+						case 'up':
+							newPosition = {
+								x: currentPosition.x,
+								y: currentPosition.y - SPACING,
+							}
+							break
+						case 'right':
+							newPosition = {
+								x: currentPosition.x + SPACING,
+								y: currentPosition.y,
+							}
+							break
+						case 'down':
+							newPosition = {
+								x: currentPosition.x,
+								y: currentPosition.y + SPACING,
+							}
+							break
+						case 'left':
+							newPosition = {
+								x: currentPosition.x - SPACING,
+								y: currentPosition.y,
+							}
+							break
+						default:
+							console.warn(
+								`Неизвестное или отсутствующее направление '${placementDirection}' для элемента ${typePart} ${startNodeStr}-${endNodeStr} из строки: ${line}. Размещение ${targetNodeId} справа от ${currentNodeId}.`
+							)
+							newPosition = {
+								x: currentPosition.x + SPACING,
+								y: currentPosition.y,
+							} // По умолчанию вправо
+					}
+
+					// Если узел уже был размещен (например, через другую связь), обновляем его позицию.
+					// Можно добавить логику для обработки конфликтов, если нужно.
+					nodePositions[targetNodeId] = newPosition
+					if (!placedNodes.has(targetNodeId)) {
+						placedNodes.add(targetNodeId)
+						nodesToProcess.push(targetNodeId)
+					}
+				}
+			})
+		}
+
+		// Создаем узлы с рассчитанными позициями
+		const nodeIds: Record<number, string> = {}
+		Object.keys(nodePositions)
+			.map(Number)
+			.forEach(nodeNum => {
+				// Убедимся, что у узла есть позиция перед добавлением
+				if (nodePositions[nodeNum]) {
+					nodeIds[nodeNum] = get().addNode(nodePositions[nodeNum])
+				}
+			})
+
+		// Создаем элементы схемы
+		circuitLines.forEach(line => {
+			const lineParts = line.split(';')
+			const splitElement = lineParts[0].split(' ')
+			const elementTypeStr = splitElement[0] // R1, V1, W, etc.
+			const startNodeIdStr = splitElement[1]
+			const endNodeIdStr = splitElement[2]
+			const valueStr = splitElement.length > 3 ? splitElement[3] : undefined
+			const switchStateStr =
+				splitElement.length > 4 ? splitElement[4] : undefined
+
+			const startNodeNum = parseInt(startNodeIdStr)
+			const endNodeNum = parseInt(endNodeIdStr)
+			const elementType = convertElementType(elementTypeStr) // Это ваша функция convertElementType
+
+			if (!nodeIds[startNodeNum] || !nodeIds[endNodeNum]) {
+				console.warn(
+					`Пропуск элемента ${elementTypeStr} ${startNodeNum}-${endNodeNum}: один или оба узла не были размещены или не имеют ID.`
+				)
+				return
+			}
+
+			if (elementType === 'voltage') {
 				get().addElement({
 					type: elementType,
-					startNodeId: nodeIds[+endNodeId],
-					endNodeId: nodeIds[+startNodeId],
-					value: '100',
+					startNodeId: nodeIds[startNodeNum],
+					endNodeId: nodeIds[endNodeNum],
+					value: valueStr || DEFAULT_VALUES.voltage.value.toString(),
 				})
-			else if (elementType === 'switch')
+			} else if (elementType === 'switch') {
 				get().addElement({
 					type: elementType,
-					startNodeId: nodeIds[+startNodeId],
-					endNodeId: nodeIds[+endNodeId],
-					value: '0',
-					isOpen: splitElement[3] !== 'nc',
+					startNodeId: nodeIds[startNodeNum],
+					endNodeId: nodeIds[endNodeNum],
+					value: valueStr || DEFAULT_VALUES.switch.value.toString(),
+					isOpen: switchStateStr === 'nc',
 				})
-			else
+			} else {
 				get().addElement({
 					type: elementType,
-					startNodeId: nodeIds[+startNodeId],
-					endNodeId: nodeIds[+endNodeId],
-					value: splitElement[3] || '0',
+					startNodeId: nodeIds[startNodeNum],
+					endNodeId: nodeIds[endNodeNum],
+					value:
+						valueStr || DEFAULT_VALUES[elementType]?.value.toString() || '0',
 				})
+			}
 		})
 
 		// Переименовываем узлы и элементы
