@@ -102,6 +102,7 @@ export const htmlService = {
 			.condition-item, .component-item { font-size: 0.9em; background-color: #ecf0f1; padding: 0.5em; border-radius: 4px; }
 			.solution-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.5em; margin-bottom: 0.8em;}
 			.solution-block { background-color: #f8f9fa; padding: 0.5em; border: 1px solid #e9ecef; border-radius: 4px; }
+			.solution-block.full-width { grid-column: 1 / -1; }
 			.solution-block p, .solution-block ul { margin: 1em; }
 			.answers { margin-top: 0.8em; }
 			.answer-item { background: #e8f6f3; padding: 0.5em; border: 1px solid #d1e9e3; border-radius: 4px; margin-bottom: 0.4em; font-size: 0.9em;}
@@ -176,7 +177,7 @@ export const htmlService = {
 
 					detailedSolutionHtml = `
 					<div class="solution-details">
-						<div class="solution-block">
+						<div class="solution-block full-width">
 							<h4>Характеристический многочлен</h4>
 							<p>$$${poly}$$</p>
 						</div>

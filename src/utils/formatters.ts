@@ -58,7 +58,7 @@ export const formatValue = (value: number | string, unit: string): string => {
 	const scaledValue = numValue / prefix.value
 
 	// Удаляем лишние нули после запятой
-	const formattedValue = scaledValue.toString().replace(/\.0+$/, '')
+	const formattedValue = scaledValue.toFixed(2)
 
 	// Формируем итоговую строку
 	return `${formattedValue} ${prefix.symbol}${unit}`
