@@ -4,7 +4,7 @@ import { StagewiseToolbar } from '@stagewise/toolbar-react'
 const stagewiseConfig = { plugins: [] }
 
 export function mountStagewiseToolbar() {
-	if (process.env.NODE_ENV === 'development') {
+	if (import.meta.env.MODE === 'development') {
 		let toolbarRoot = document.getElementById('stagewise-toolbar-root')
 		if (!toolbarRoot) {
 			toolbarRoot = document.createElement('div')
