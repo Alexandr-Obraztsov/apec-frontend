@@ -293,11 +293,21 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 		setTimeout(() => get().renameElements(), 0)
 	},
 
-	removeElement: id =>
+	removeElement: (id: string) => {
 		set(state => {
 			// Получаем элемент, который нужно удалить
 			const elementToRemove = state.elements.find(el => el.id === id)
 			if (!elementToRemove) return state
+
+			// Сначала снимаем выделение, если элемент был выбран
+			const updatedState = {
+				...state,
+				selectedElementId:
+					state.selectedElementId === id ? null : state.selectedElementId,
+				multiSelectedElementIds: state.multiSelectedElementIds.filter(
+					elementId => elementId !== id
+				),
+			}
 
 			// Обновляем узлы, удаляя ссылки на удаляемый элемент
 			const updatedNodes = state.nodes.map(node => {
@@ -320,25 +330,23 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 				node => node.connectedElements.length > 0
 			)
 
-			const updatedState = {
+			// Обновляем состояние синхронно
+			const finalState = {
+				...updatedState,
 				elements: state.elements.filter(element => element.id !== id),
 				nodes: nodesToKeep,
-				// Если удаляемый элемент был выбран, снимаем выделение
-				selectedElementId:
-					state.selectedElementId === id ? null : state.selectedElementId,
-				multiSelectedElementIds: state.multiSelectedElementIds.filter(
-					elementId => elementId !== id
-				),
 			}
 
-			// После удаления элемента и связанных узлов, переименовываем оставшиеся узлы и элементы
-			setTimeout(() => {
-				get().renameNodes()
-				get().renameElements()
-			}, 0)
+			// Запускаем переименование в следующем микротаске
+			queueMicrotask(() => {
+				const store = get()
+				store.renameNodes()
+				store.renameElements()
+			})
 
-			return updatedState
-		}),
+			return finalState
+		})
+	},
 
 	removeSelectedElements: () =>
 		set(state => {
