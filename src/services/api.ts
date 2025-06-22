@@ -11,6 +11,71 @@ import {
 // Базовый URL API
 export const API_BASE_URL = 'http://localhost:8000/api'
 
+// Интерфейсы для работы с базой данных топологий и схем
+export interface Topology {
+	id: number
+	image_base64: string
+	created_at: string
+	updated_at?: string
+}
+
+export interface Circuit {
+	id: number
+	topology_id: number
+	circuit_string: string
+	order: number
+	created_at: string
+	updated_at?: string
+}
+
+export interface TopologyListResponse {
+	topologies: Topology[]
+	total: number
+	page: number
+	per_page: number
+}
+
+export interface CircuitListResponse {
+	circuits: Circuit[]
+	total: number
+	page: number
+	per_page: number
+}
+
+// Интерфейсы для создания топологий и схем
+export interface CreateTopologyRequest {
+	image_base64: string
+}
+
+export interface CreateTopologyResponse {
+	id: number
+	image_base64: string
+	created_at: string
+}
+
+export interface CreateCircuitRequest {
+	topology_id: number
+	circuit_string: string
+	order: number
+}
+
+export interface CreateCircuitResponse {
+	id: number
+	topology_id: number
+	circuit_string: string
+	order: number
+	created_at: string
+}
+
+// Интерфейсы для генерации изображений
+export interface GenerateImageRequest {
+	circuit_string: string
+}
+
+export interface GenerateImageResponse {
+	image_base64: string
+}
+
 // Интерфейс для данных схемы
 export interface CircuitData {
 	nodes: Node[]
@@ -61,6 +126,8 @@ export interface GenerateCircuitRequest {
 	order: number
 	difficulty?: DifficultyLevel // Добавляем параметр сложности
 	resistors_count?: number // Количество резисторов для исследования (только для advanced)
+	topology_id?: number // ID конкретной топологии (опционально)
+	circuit_string?: string // Строка схемы (для использования конкретной схемы)
 }
 
 // Интерфейс для запроса генерации PDF с множественными цепями
@@ -171,7 +238,8 @@ export const formatCircuitToString = (
 // Функция для преобразования цепи в формат LCapy с учетом направлений
 export const formatCircuitToLCapy = (
 	nodes: Node[],
-	elements: AnyCircuitElement[]
+	elements: AnyCircuitElement[],
+	with_values: boolean = true
 ): LCapyCircuit => {
 	const lcapyElements: LCapyElement[] = []
 	const nodeNames = nodes.map(node => node.name)
@@ -218,7 +286,7 @@ export const formatCircuitToLCapy = (
 	})
 
 	// Создаем строковое представление для LCapy
-	const circuitString = formatLCapyElementsToString(lcapyElements)
+	const circuitString = formatLCapyElementsToString(lcapyElements, with_values)
 
 	// Анализируем топологию цепи
 	const topology = analyzeCircuitTopology(lcapyElements, nodeNames)
@@ -232,7 +300,10 @@ export const formatCircuitToLCapy = (
 }
 
 // Функция для преобразования LCapy элементов в строковое представление
-const formatLCapyElementsToString = (elements: LCapyElement[]): string => {
+const formatLCapyElementsToString = (
+	elements: LCapyElement[],
+	with_values: boolean = true
+): string => {
 	const circuitLines: string[] = []
 
 	elements.forEach(element => {
@@ -254,7 +325,9 @@ const formatLCapyElementsToString = (elements: LCapyElement[]): string => {
 		} else if (element.type === 'wire') {
 			line = `W ${element.startNode} ${element.endNode}; ${element.direction}`
 		} else {
-			line = `${element.name} ${element.startNode} ${element.endNode} ${valueStr}; ${element.direction}`
+			line = `${element.name} ${element.startNode} ${element.endNode} ${
+				with_values ? valueStr : ''
+			}; ${element.direction}`
 		}
 
 		circuitLines.push(line)
@@ -383,6 +456,30 @@ export const circuitApi = {
 		try {
 			console.log('Отправляем запрос на генерацию цепи с параметрами:', params)
 
+			// Если указана конкретная топология, используем схему из базы данных
+			if (params.topology_id) {
+				console.log(
+					'Используем схему из базы данных для топологии:',
+					params.topology_id
+				)
+
+				const circuit = await circuitApi.getCircuitFromDB(
+					params.topology_id,
+					params.order
+				)
+
+				if (circuit) {
+					console.log('Найдена схема в базе данных:', circuit)
+					return {
+						status: 'success',
+						circuit: circuit.circuit_string,
+						message: 'Схема получена из базы данных',
+					}
+				} else {
+					console.log('Схема не найдена в базе данных, используем генерацию')
+				}
+			}
+
 			// Отправляем POST запрос для генерации цепи
 			const response = await axios.post<GenerateCircuitResponse>(
 				`${API_BASE_URL}/generate_circuit`,
@@ -436,6 +533,34 @@ export const circuitApi = {
 				'Отправляем запрос на генерацию задачи с параметрами:',
 				params
 			)
+
+			// Если указана конкретная топология, используем схему из базы данных
+			if (params.topology_id) {
+				console.log(
+					'Используем схему из базы данных для топологии:',
+					params.topology_id
+				)
+
+				const circuit = await circuitApi.getCircuitFromDB(
+					params.topology_id,
+					params.order
+				)
+
+				if (circuit) {
+					console.log('Найдена схема в базе данных:', circuit)
+					// Отправляем запрос на генерацию задачи с конкретной схемой
+					const response = await axios.post<GenerateTaskResponse>(
+						`${API_BASE_URL}/generate_task`,
+						{
+							...params,
+							circuit_string: circuit.circuit_string, // Передаем строку схемы
+						}
+					)
+					return response.data
+				} else {
+					console.log('Схема не найдена в базе данных, используем генерацию')
+				}
+			}
 
 			const response = await axios.post<GenerateTaskResponse>(
 				`${API_BASE_URL}/generate_task`,
@@ -502,6 +627,190 @@ export const circuitApi = {
 			return { success: true }
 		} catch (error) {
 			console.error('Ошибка при удалении цепи:', error)
+			throw error
+		}
+	},
+
+	// Методы для работы с базой данных топологий и схем
+
+	// Получить список топологий
+	getTopologies: async (): Promise<TopologyListResponse> => {
+		try {
+			const response = await axios.get<TopologyListResponse>(
+				'http://localhost:8000/circuits/topologies/'
+			)
+			return response.data
+		} catch (error) {
+			console.error('Ошибка при получении топологий:', error)
+			throw error
+		}
+	},
+
+	// Получить топологии, которые имеют схемы определенного порядка
+	getTopologiesWithOrder: async (order: number): Promise<Topology[]> => {
+		try {
+			// Сначала получаем все схемы с нужным порядком
+			const circuitsResponse = await axios.get<CircuitListResponse>(
+				`http://localhost:8000/circuits/?order=${order}`
+			)
+
+			// Извлекаем уникальные topology_id
+			const topologyIds = [
+				...new Set(circuitsResponse.data.circuits.map(c => c.topology_id)),
+			]
+
+			// Получаем все топологии
+			const topologiesResponse = await axios.get<TopologyListResponse>(
+				'http://localhost:8000/circuits/topologies/'
+			)
+
+			// Фильтруем топологии, которые имеют схемы нужного порядка
+			const filteredTopologies = topologiesResponse.data.topologies.filter(
+				topology => topologyIds.includes(topology.id)
+			)
+
+			return filteredTopologies
+		} catch (error) {
+			console.error(
+				'Ошибка при получении топологий с определенным порядком:',
+				error
+			)
+			throw error
+		}
+	},
+
+	// Получить схему из базы данных по топологии и порядку
+	getCircuitFromDB: async (
+		topologyId: number,
+		order: number
+	): Promise<Circuit | null> => {
+		try {
+			const response = await axios.get<Circuit[]>(
+				`http://localhost:8000/circuits/topologies/${topologyId}/circuits/?order=${order}`
+			)
+
+			// Возвращаем первую найденную схему
+			return response.data.length > 0 ? response.data[0] : null
+		} catch (error) {
+			console.error('Ошибка при получении схемы из БД:', error)
+			throw error
+		}
+	},
+
+	// Получить случайную схему определенного порядка
+	getRandomCircuitFromDB: async (
+		order: number,
+		topologyId?: number
+	): Promise<Circuit | null> => {
+		try {
+			let url = `http://localhost:8000/circuits/?order=${order}`
+			if (topologyId) {
+				url = `http://localhost:8000/circuits/topologies/${topologyId}/circuits/?order=${order}`
+			}
+
+			const response = await axios.get<CircuitListResponse | Circuit[]>(url)
+
+			// Определяем, какой формат ответа мы получили
+			const circuits = Array.isArray(response.data)
+				? response.data
+				: (response.data as CircuitListResponse).circuits
+
+			if (circuits.length === 0) {
+				return null
+			}
+
+			// Возвращаем случайную схему
+			const randomIndex = Math.floor(Math.random() * circuits.length)
+			return circuits[randomIndex]
+		} catch (error) {
+			console.error('Ошибка при получении случайной схемы из БД:', error)
+			throw error
+		}
+	},
+
+	// Создать новую топологию
+	createTopology: async (
+		request: CreateTopologyRequest
+	): Promise<CreateTopologyResponse> => {
+		try {
+			const response = await axios.post<CreateTopologyResponse>(
+				'http://localhost:8000/circuits/topologies/',
+				request
+			)
+			return response.data
+		} catch (error) {
+			console.error('Ошибка при создании топологии:', error)
+			throw error
+		}
+	},
+
+	// Создать новую схему
+	createCircuit: async (
+		request: CreateCircuitRequest
+	): Promise<CreateCircuitResponse> => {
+		try {
+			const response = await axios.post<CreateCircuitResponse>(
+				'http://localhost:8000/circuits/',
+				request
+			)
+			return response.data
+		} catch (error) {
+			console.error('Ошибка при создании схемы:', error)
+			throw error
+		}
+	},
+
+	// Сгенерировать изображение схемы
+	generateCircuitImage: async (
+		request: GenerateImageRequest
+	): Promise<GenerateImageResponse> => {
+		try {
+			const response = await axios.post<GenerateImageResponse>(
+				'http://localhost:8000/circuits/generate-image/',
+				request
+			)
+			return response.data
+		} catch (error) {
+			console.error('Ошибка при генерации изображения схемы:', error)
+			throw error
+		}
+	},
+
+	// Получить схемы по топологии
+	getCircuitsByTopology: async (
+		topologyId: number,
+		skip: number = 0,
+		limit: number = 100
+	): Promise<Circuit[]> => {
+		try {
+			const response = await axios.get<Circuit[]>(
+				`http://localhost:8000/circuits/topologies/${topologyId}/circuits/?skip=${skip}&limit=${limit}`
+			)
+			return response.data
+		} catch (error) {
+			console.error('Ошибка при получении схем по топологии:', error)
+			throw error
+		}
+	},
+
+	// Удалить топологию
+	deleteTopology: async (topologyId: number): Promise<void> => {
+		try {
+			await axios.delete(
+				`http://localhost:8000/circuits/topologies/${topologyId}`
+			)
+		} catch (error) {
+			console.error('Ошибка при удалении топологии:', error)
+			throw error
+		}
+	},
+
+	// Удалить схему
+	deleteCircuit: async (circuitId: number): Promise<void> => {
+		try {
+			await axios.delete(`http://localhost:8000/circuits/${circuitId}`)
+		} catch (error) {
+			console.error('Ошибка при удалении схемы:', error)
 			throw error
 		}
 	},

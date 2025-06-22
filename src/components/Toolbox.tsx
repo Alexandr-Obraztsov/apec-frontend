@@ -4,7 +4,12 @@ import { ElementType, Node as CircuitNode } from '../types'
 import { useCircuitStore } from '../store/circuitStore'
 import GenerateChainModal, { ChainOptions } from './GenerateChainModal'
 import CircuitSolutionModal from './CircuitSolutionModal'
-import { circuitApi, CircuitSolutionResult } from '../services/api'
+import {
+	circuitApi,
+	CircuitSolutionResult,
+	formatCircuitToLCapy,
+} from '../services/api'
+import SaveCircuitModal from './SaveCircuitModal'
 
 // Label mapping
 const ELEMENT_LABELS: Record<ElementType, string> = {
@@ -479,40 +484,30 @@ const Toolbox: React.FC = () => {
 		}
 	}
 
-	// Функция для копирования цепи без значений
-	const handleCopyCircuit = async () => {
-		if (elements.length === 0) {
-			return // Нет элементов для копирования
-		}
+	// Состояние для модального окна сохранения
+	const [isSaveModalOpen, setIsSaveModalOpen] = useState(false)
+	const [circuitImage, setCircuitImage] = useState<string | undefined>(
+		undefined
+	)
 
+	// Функция для сохранения цепи
+	const handleSaveCircuit = async () => {
 		try {
-			// Создаем копию цепи без значений элементов
-			const circuitWithoutValues = elements
-				.map(element => {
-					const startNode = nodes.find(n => n.id === element.startNodeId)
-					const endNode = nodes.find(n => n.id === element.endNodeId)
+			// Преобразуем схему в строковый формат
+			const circuit = formatCircuitToLCapy(nodes, elements)
 
-					if (!startNode || !endNode) return ''
+			// Получаем изображение схемы с сервера
+			const response = await circuitApi.generateCircuitImage({
+				circuit_string: circuit.circuitString,
+			})
 
-					if (element.type === 'switch') {
-						return `${element.name} ${startNode.name} ${endNode.name} ${
-							element.isOpen ? 'no' : 'nc'
-						}; ${element.direction}`
-					} else if (element.type === 'wire') {
-						return `W ${startNode.name} ${endNode.name}; ${element.direction}`
-					} else {
-						return `${element.name} ${startNode.name} ${endNode.name}; ${element.direction}`
-					}
-				})
-				.filter(line => line !== '')
-				.join('\n')
-
-			// Копируем в буфер обмена
-			await navigator.clipboard.writeText(circuitWithoutValues)
-
-			console.log('Цепь скопирована в буфер обмена:', circuitWithoutValues)
+			setCircuitImage(response.image_base64)
+			setIsSaveModalOpen(true)
 		} catch (error) {
-			console.error('Ошибка при копировании цепи:', error)
+			console.error('Ошибка при создании изображения схемы:', error)
+			// Открываем модальное окно даже без изображения
+			setCircuitImage(undefined)
+			setIsSaveModalOpen(true)
 		}
 	}
 
@@ -647,10 +642,10 @@ const Toolbox: React.FC = () => {
 				</SolveButton>
 
 				<CopyButton
-					onClick={handleCopyCircuit}
+					onClick={handleSaveCircuit}
 					disabled={elements.length === 0}
 				>
-					Копировать цепь
+					Сохранить цепь
 				</CopyButton>
 			</Section>
 
@@ -666,6 +661,14 @@ const Toolbox: React.FC = () => {
 				isLoading={isLoading}
 				error={error}
 				solutionEquations={solutionEquations}
+			/>
+
+			<SaveCircuitModal
+				isOpen={isSaveModalOpen}
+				onClose={() => setIsSaveModalOpen(false)}
+				nodes={nodes}
+				elements={elements}
+				circuitImage={circuitImage}
 			/>
 		</ToolboxContainer>
 	)

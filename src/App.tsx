@@ -5,6 +5,7 @@ import Toolbox from './components/Toolbox'
 import PropertiesPanel from './components/PropertiesPanel'
 import Header from './components/Header'
 import TaskGenerator from './components/TaskGenerator'
+import TopologyManager from './components/TopologyManager'
 
 const AppContainer = styled.div`
 	display: flex;
@@ -33,7 +34,9 @@ const MemoizedToolbox = memo(Toolbox)
 const MemoizedPropertiesPanel = memo(PropertiesPanel)
 
 function App() {
-	const [activeTab, setActiveTab] = useState<'circuit' | 'tasks'>('circuit')
+	const [activeTab, setActiveTab] = useState<
+		'circuit' | 'tasks' | 'topologies'
+	>('circuit')
 
 	return (
 		<AppContainer>
@@ -49,6 +52,7 @@ function App() {
 					</>
 				)}
 				{activeTab === 'tasks' && <TaskGenerator />}
+				{activeTab === 'topologies' && <TopologyManager />}
 			</MainContent>
 		</AppContainer>
 	)

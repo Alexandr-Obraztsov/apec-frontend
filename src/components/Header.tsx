@@ -59,8 +59,8 @@ const TabButton = styled.button<{ isActive: boolean }>`
 `
 
 interface HeaderProps {
-	activeTab: 'circuit' | 'tasks'
-	onTabChange: (tab: 'circuit' | 'tasks') => void
+	activeTab: 'circuit' | 'tasks' | 'topologies'
+	onTabChange: (tab: 'circuit' | 'tasks' | 'topologies') => void
 }
 
 const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange }) => {
@@ -111,6 +111,12 @@ const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange }) => {
 					onClick={() => onTabChange('tasks')}
 				>
 					Генерация задач
+				</TabButton>
+				<TabButton
+					isActive={activeTab === 'topologies'}
+					onClick={() => onTabChange('topologies')}
+				>
+					Топологии
 				</TabButton>
 			</div>
 		</Navbar>

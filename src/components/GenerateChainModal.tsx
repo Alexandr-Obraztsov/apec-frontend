@@ -1,6 +1,11 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import styled from 'styled-components'
-import { circuitApi, RootType, DifficultyLevel } from '../services/api'
+import {
+	circuitApi,
+	RootType,
+	DifficultyLevel,
+	Topology,
+} from '../services/api'
 import { createPortal } from 'react-dom'
 
 const ModalBackground = styled.div`
@@ -158,6 +163,26 @@ const Input = styled.input`
 	}
 `
 
+const Select = styled.select`
+	width: 100%;
+	padding: 8px;
+	border-radius: var(--radius-sm);
+	border: 1px solid var(--border-color);
+	background-color: var(--bg-color);
+	color: var(--text-primary);
+	font-size: 0.9rem;
+
+	&:focus {
+		outline: none;
+		border-color: var(--primary-color);
+	}
+
+	&:disabled {
+		opacity: 0.7;
+		cursor: not-allowed;
+	}
+`
+
 interface GenerateChainModalProps {
 	isOpen: boolean
 	onClose: () => void
@@ -170,6 +195,7 @@ export interface ChainOptions {
 	difficulty?: DifficultyLevel
 	resistors_count?: number
 	circuit: string
+	topology_id?: number
 }
 
 const GenerateChainModal: React.FC<GenerateChainModalProps> = ({
@@ -185,6 +211,35 @@ const GenerateChainModal: React.FC<GenerateChainModalProps> = ({
 	const [resistorsCount, setResistorsCount] = useState<number>(3)
 	const [isLoading, setIsLoading] = useState(false)
 	const [error, setError] = useState<string | null>(null)
+
+	// Новые состояния для топологий
+	const [availableTopologies, setAvailableTopologies] = useState<Topology[]>([])
+	const [selectedTopologyId, setSelectedTopologyId] = useState<number | null>(
+		null
+	)
+	const [isLoadingTopologies, setIsLoadingTopologies] = useState(false)
+
+	// Загружаем топологии при изменении порядка
+	useEffect(() => {
+		const loadTopologies = async () => {
+			try {
+				setIsLoadingTopologies(true)
+				const orderValue = order === 'first' ? 1 : 2
+				const topologies = await circuitApi.getTopologiesWithOrder(orderValue)
+				setAvailableTopologies(topologies)
+				setSelectedTopologyId(null) // Сбрасываем выбранную топологию
+			} catch (error) {
+				console.error('Ошибка при загрузке топологий:', error)
+				setAvailableTopologies([])
+			} finally {
+				setIsLoadingTopologies(false)
+			}
+		}
+
+		if (isOpen) {
+			loadTopologies()
+		}
+	}, [order, isOpen])
 
 	if (!isOpen) return null
 
@@ -203,6 +258,7 @@ const GenerateChainModal: React.FC<GenerateChainModalProps> = ({
 				difficulty: difficulty,
 				resistors_count:
 					difficulty === DifficultyLevel.ADVANCED ? resistorsCount : undefined,
+				topology_id: selectedTopologyId || undefined, // Передаем ID топологии
 			})
 
 			if (response.status === 'success' && response.circuit) {
@@ -216,6 +272,7 @@ const GenerateChainModal: React.FC<GenerateChainModalProps> = ({
 							? resistorsCount
 							: undefined,
 					circuit: response.circuit,
+					topology_id: selectedTopologyId || undefined, // Передаем ID топологии
 				})
 				onClose() // Закрываем модальное окно после успешной генерации
 			} else {
@@ -346,6 +403,31 @@ const GenerateChainModal: React.FC<GenerateChainModalProps> = ({
 							/>
 						</OptionGroup>
 					)}
+
+					{/* Выбор топологии */}
+					<OptionGroup>
+						<Label>Топология:</Label>
+						{isLoadingTopologies ? (
+							<div>Загрузка топологий...</div>
+						) : (
+							<Select
+								value={selectedTopologyId || ''}
+								onChange={e =>
+									setSelectedTopologyId(
+										e.target.value ? Number(e.target.value) : null
+									)
+								}
+								disabled={isLoading}
+							>
+								<option value=''>Любая топология</option>
+								{availableTopologies.map(topology => (
+									<option key={topology.id} value={topology.id}>
+										Топология {topology.id}
+									</option>
+								))}
+							</Select>
+						)}
+					</OptionGroup>
 				</Content>
 
 				<ButtonGroup>
