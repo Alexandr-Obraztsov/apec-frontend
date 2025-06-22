@@ -30,13 +30,13 @@ export const htmlService = {
 						const elementSolution = task.detailedSolution.elements[elementName]
 						if (elementSolution) {
 							if (!acc[elementName]) {
-								acc[elementName] = { 'i(t)': '', 'U(t)': '' }
+								acc[elementName] = { 'i(t)': '', 'V(t)': '' }
 							}
 							if (values.current && elementSolution.type === 'i') {
 								acc[elementName]['i(t)'] = elementSolution.expr
 							}
 							if (values.voltage && elementSolution.type === 'v') {
-								acc[elementName]['U(t)'] = elementSolution.expr
+								acc[elementName]['V(t)'] = elementSolution.expr
 							}
 						}
 					}
@@ -205,7 +205,7 @@ export const htmlService = {
 								answer += `<div class="answer-item"><strong>Ток i(t) для ${elementName}:</strong> $$${elemSolution.expr}$$ <span>${steadyStateHtml}</span></div>`
 							}
 							if (params.voltage && elemSolution.type === 'v') {
-								answer += `<div class="answer-item"><strong>Напряжение U(t) для ${elementName}:</strong> $$${elemSolution.expr}$$ <span>${steadyStateHtml}</span></div>`
+								answer += `<div class="answer-item"><strong>Напряжение V(t) для ${elementName}:</strong> $$${elemSolution.expr}$$ <span>${steadyStateHtml}</span></div>`
 							}
 						}
 						return answer

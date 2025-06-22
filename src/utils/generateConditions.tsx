@@ -8,21 +8,44 @@ export const generateConditions = (task: Task) => {
 	for (const [element, solution] of Object.entries(
 		task.detailedSolution.elements
 	)) {
-		if (
-			task.requiredParameters[element]?.current &&
-			task.requiredParameters[element]?.voltage
-		) {
-			conditions.push(`Ток i(t) и напряжение U(t) для ${element}`)
-		} else if (
-			task.requiredParameters[element]?.current &&
-			solution.type === 'i'
-		) {
-			conditions.push(`Ток i(t) для ${element}`)
-		} else if (
-			task.requiredParameters[element]?.voltage &&
-			solution.type === 'v'
-		) {
-			conditions.push(`Напряжение U(t) для ${element}`)
+		const params = task.requiredParameters[element]
+
+		if (!params) continue
+
+		// Пропускаем элементы, которые не должны показываться в условиях
+		if (params.show_in_conditions === false) continue
+
+		// Если есть готовое описание, используем его
+		if (params.description) {
+			conditions.push(params.description)
+			continue
+		}
+
+		// Иначе генерируем описание на основе параметров
+		if (params.current && params.voltage) {
+			if (params.at_time !== undefined) {
+				conditions.push(
+					`Ток i(${params.at_time}) и напряжение V(${params.at_time}) для ${element} в момент времени t = ${params.at_time} с`
+				)
+			} else {
+				conditions.push(`Ток i(t) и напряжение V(t) для ${element}`)
+			}
+		} else if (params.current && solution.type === 'i') {
+			if (params.at_time !== undefined) {
+				conditions.push(
+					`Ток i(${params.at_time}) для ${element} в момент времени t = ${params.at_time} с`
+				)
+			} else {
+				conditions.push(`Ток i(t) для ${element}`)
+			}
+		} else if (params.voltage && solution.type === 'v') {
+			if (params.at_time !== undefined) {
+				conditions.push(
+					`Напряжение V(${params.at_time}) для ${element} в момент времени t = ${params.at_time} с`
+				)
+			} else {
+				conditions.push(`Напряжение V(t) для ${element}`)
+			}
 		}
 	}
 

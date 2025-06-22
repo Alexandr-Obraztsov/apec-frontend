@@ -86,19 +86,13 @@ const SolutionContent = styled.div`
 	gap: 1.5rem;
 `
 
-const InitialSolutionGrid = styled.div`
-	display: grid;
-	grid-template-columns: repeat(3, 1fr);
-	gap: 1rem;
-	margin-bottom: 1.25rem;
-`
-
-const SolutionBlock = styled.div`
+const PolynomialBlock = styled.div`
 	background: var(--background-color);
 	border-radius: var(--radius-md);
 	padding: 1rem;
 	border: 1px solid var(--border-color);
 	font-size: 0.95rem;
+	margin-bottom: 1.5rem;
 
 	h3 {
 		color: var(--primary-color);
@@ -106,18 +100,10 @@ const SolutionBlock = styled.div`
 		font-size: 1rem;
 		font-weight: 500;
 	}
-`
 
-const PolynomialBlock = styled(SolutionBlock)`
 	.equation-wrapper {
 		padding: 0.5rem 0;
 	}
-`
-
-const RootsBlock = styled(SolutionBlock)`
-	display: flex;
-	flex-direction: column;
-	gap: 0.5rem;
 `
 
 const Answer = styled.div`
@@ -231,90 +217,149 @@ export const TaskModal: React.FC<TaskModalProps> = ({
 					<Section>
 						<h4>Решение:</h4>
 						<SolutionContent>
-							<InitialSolutionGrid>
-								<PolynomialBlock>
-									<h3>Характеристический многочлен</h3>
-									<div className='equation-wrapper'>
-										<EquationDisplay equation={task.detailedSolution.poly} />
-									</div>
-								</PolynomialBlock>
-								<RootsBlock>
-									<h3>Корни уравнения</h3>
-									{task.detailedSolution.roots.map((root, index) => (
-										<ElementEquation key={index}>
-											<span>p{index + 1} = </span>
-											<EquationDisplay equation={root} />
-										</ElementEquation>
-									))}
-								</RootsBlock>
-								<SolutionBlock>
-									<h3>Начальные значения</h3>
-									<CoefficientsTable>
-										<tbody>
-											{Object.entries(task.detailedSolution.initial_values).map(
-												([element, value]) => (
-													<tr key={element}>
-														<td>{element}</td>
-														<td>
-															{value} {element.startsWith('L') ? 'А' : 'В'}
-														</td>
-													</tr>
-												)
-											)}
-										</tbody>
-									</CoefficientsTable>
-								</SolutionBlock>
-							</InitialSolutionGrid>
-							{Object.entries(task.detailedSolution.elements).map(
-								([element, solution]) => (
-									<Answer key={element}>
-										<strong>{element}:</strong>
-										<ElementSolution>
-											<SteadyStateValue>
-												<span>Установившееся значение:</span>
-												{solution.steady_state}{' '}
-												{solution.type === 'i' ? 'А' : 'В'}
-											</SteadyStateValue>
-											{solution.coefficients.length > 0 && (
-												<CoefficientsSection>
-													<CoefficientsTitle>Коэффициенты:</CoefficientsTitle>
-													<CoefficientsTable>
-														<thead>
-															<tr>
-																<th>Тип</th>
-																<th>Значение</th>
-															</tr>
-														</thead>
-														<tbody>
-															{solution.coefficients.map((coef, idx) => (
-																<tr key={idx}>
-																	<td>
-																		{coef.type === 'A' ? 'Амплитуда' : 'Фаза'}
-																	</td>
-																	<td>
-																		{coef.value}{' '}
-																		{coef.type === 'A'
-																			? solution.type === 'i'
-																				? 'А'
-																				: 'В'
-																			: 'рад'}
-																	</td>
-																</tr>
-															))}
-														</tbody>
-													</CoefficientsTable>
-												</CoefficientsSection>
-											)}
-											<ElementEquation>
-												<span>
-													{solution.type === 'i' ? 'i(t)' : 'U(t)'} ={' '}
-												</span>
-												<EquationDisplay equation={solution.expr} />
-											</ElementEquation>
-										</ElementSolution>
-									</Answer>
-								)
-							)}
+							<PolynomialBlock>
+								<h3>Характеристический многочлен</h3>
+								<div className='equation-wrapper'>
+									<EquationDisplay equation={task.detailedSolution.poly} />
+								</div>
+							</PolynomialBlock>
+							{task.detailedSolution.roots &&
+								task.detailedSolution.roots.length > 0 && (
+									<PolynomialBlock>
+										<h3>Корни характеристического уравнения</h3>
+										<div className='equation-wrapper'>
+											{task.detailedSolution.roots.map((root, index) => (
+												<div
+													key={index}
+													style={{
+														marginBottom: '0.75rem',
+														display: 'flex',
+														alignItems: 'center',
+														gap: '0.5rem',
+														fontSize: '1rem',
+													}}
+												>
+													<span style={{ fontWeight: '500' }}>
+														s<sub>{index + 1}</sub> =
+													</span>
+													<EquationDisplay equation={root} />
+												</div>
+											))}
+										</div>
+									</PolynomialBlock>
+								)}
+							{Object.entries(task.detailedSolution.elements)
+								.filter(([element]) => {
+									// Фильтруем элементы по флагу show_in_conditions
+									const params = task.requiredParameters?.[element]
+									const isReactive =
+										element.startsWith('L') || element.startsWith('C')
+									return params?.show_in_conditions === true || isReactive
+								})
+								.sort((a, b) => {
+									const isReactiveA =
+										a[0].startsWith('L') || a[0].startsWith('C')
+									const isReactiveB =
+										b[0].startsWith('L') || b[0].startsWith('C')
+									return isReactiveA ? 1 : isReactiveB ? -1 : 0
+								})
+								.map(([element, solution]) => {
+									const isReactive =
+										element.startsWith('L') || element.startsWith('C')
+									const isResistor = element.startsWith('R')
+
+									return (
+										<Answer key={element}>
+											<strong>{element}:</strong>
+											<ElementSolution>
+												{isReactive && (
+													<>
+														{/* Для L и C: установившееся → начальное → коэффициенты → уравнение */}
+														<SteadyStateValue>
+															<span>1. Установившееся значение:</span>
+															{solution.steady_state}{' '}
+															{solution.type === 'i' ? 'А' : 'В'}
+														</SteadyStateValue>
+
+														<SteadyStateValue>
+															<span>2. Начальное значение:</span>
+															{
+																task.detailedSolution.initial_values[element]
+															}{' '}
+															{element.startsWith('L') ? 'А' : 'В'}
+														</SteadyStateValue>
+
+														{solution.coefficients.length > 0 && (
+															<CoefficientsSection>
+																<CoefficientsTitle>
+																	3. Коэффициенты:
+																</CoefficientsTitle>
+																<CoefficientsTable>
+																	<thead>
+																		<tr>
+																			<th>Тип</th>
+																			<th>Значение</th>
+																		</tr>
+																	</thead>
+																	<tbody>
+																		{solution.coefficients.map((coef, idx) => (
+																			<tr key={idx}>
+																				<td>
+																					{coef.type === 'A'
+																						? 'Амплитуда'
+																						: 'Фаза'}
+																				</td>
+																				<td>
+																					{coef.value}{' '}
+																					{coef.type === 'A'
+																						? solution.type === 'i'
+																							? 'А'
+																							: 'В'
+																						: 'рад'}
+																				</td>
+																			</tr>
+																		))}
+																	</tbody>
+																</CoefficientsTable>
+															</CoefficientsSection>
+														)}
+
+														<ElementEquation>
+															<span>
+																4. {solution.type === 'i' ? 'i(t)' : 'V(t)'} ={' '}
+															</span>
+															<EquationDisplay equation={solution.expr} />
+														</ElementEquation>
+													</>
+												)}
+
+												{isResistor && (
+													<>
+														{/* Для резисторов: уравнение → значение в момент времени */}
+														<ElementEquation>
+															<span>
+																1. {solution.type === 'i' ? 'i(t)' : 'V(t)'} ={' '}
+															</span>
+															<EquationDisplay equation={solution.expr} />
+														</ElementEquation>
+
+														{solution.at_time !== undefined &&
+															solution.value_at_time !== undefined && (
+																<SteadyStateValue>
+																	<span>
+																		2. Значение в момент t = {solution.at_time}{' '}
+																		с:
+																	</span>
+																	{solution.value_at_time}{' '}
+																	{solution.type === 'i' ? 'А' : 'В'}
+																</SteadyStateValue>
+															)}
+													</>
+												)}
+											</ElementSolution>
+										</Answer>
+									)
+								})}
 						</SolutionContent>
 					</Section>
 				)}

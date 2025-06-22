@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import styled from 'styled-components'
-import { circuitApi, RootType } from '../services/api'
+import { circuitApi, RootType, DifficultyLevel } from '../services/api'
 import { createPortal } from 'react-dom'
 import { useTasksStore, Task } from '../store/tasksStore'
 import { AxiosError } from 'axios'
@@ -171,6 +171,10 @@ const GenerateMultipleTasksModal: React.FC<GenerateMultipleTasksModalProps> = ({
 }) => {
 	const [order, setOrder] = useState<'first' | 'second'>('second')
 	const [rootType, setRootType] = useState<RootType>(RootType.DIFFERENT)
+	const [difficulty, setDifficulty] = useState<DifficultyLevel>(
+		DifficultyLevel.BASIC
+	)
+	const [resistorsCount, setResistorsCount] = useState<number>(3)
 	const [quantity, setQuantity] = useState(5)
 	const [isLoading, setIsLoading] = useState(false)
 	const [errors, setErrors] = useState<string[]>([])
@@ -191,6 +195,11 @@ const GenerateMultipleTasksModal: React.FC<GenerateMultipleTasksModalProps> = ({
 				const response = await circuitApi.generateTask({
 					order: orderValue,
 					rootType: order === 'second' ? rootType : undefined,
+					difficulty: difficulty,
+					resistors_count:
+						difficulty === DifficultyLevel.ADVANCED
+							? resistorsCount
+							: undefined,
 				})
 
 				const newTask: Task = {
@@ -292,6 +301,54 @@ const GenerateMultipleTasksModal: React.FC<GenerateMultipleTasksModalProps> = ({
 							</RadioGroup>
 						</OptionGroup>
 					)}
+					<OptionGroup>
+						<Label>Уровень сложности:</Label>
+						<RadioGroup>
+							<RadioButton>
+								<input
+									type='radio'
+									name='difficulty-multiple'
+									value={DifficultyLevel.BASIC}
+									checked={difficulty === DifficultyLevel.BASIC}
+									onChange={() => setDifficulty(DifficultyLevel.BASIC)}
+									disabled={isLoading}
+								/>
+								<span>
+									Базовый (токи на индуктивностях, напряжения на катушках)
+								</span>
+							</RadioButton>
+							<RadioButton>
+								<input
+									type='radio'
+									name='difficulty-multiple'
+									value={DifficultyLevel.ADVANCED}
+									checked={difficulty === DifficultyLevel.ADVANCED}
+									onChange={() => setDifficulty(DifficultyLevel.ADVANCED)}
+									disabled={isLoading}
+								/>
+								<span>
+									Продвинутый (токи и напряжения на резисторах в момент времени)
+								</span>
+							</RadioButton>
+						</RadioGroup>
+					</OptionGroup>
+
+					{difficulty === DifficultyLevel.ADVANCED && (
+						<OptionGroup>
+							<Label>Количество резисторов для исследования:</Label>
+							<Input
+								type='number'
+								value={resistorsCount}
+								onChange={e =>
+									setResistorsCount(Math.max(1, parseInt(e.target.value) || 1))
+								}
+								disabled={isLoading}
+								min='1'
+								max='3'
+							/>
+						</OptionGroup>
+					)}
+
 					<OptionGroup>
 						<Label>Количество задач:</Label>
 						<Input

@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { ElementParameters } from '../services/api'
 
 interface DetailedSolution {
 	roots: string[]
@@ -15,6 +16,8 @@ interface ElementSolution {
 		type: 'phi' | 'A'
 		value: number
 	}>
+	at_time?: number
+	value_at_time?: number
 }
 
 export interface Task {
@@ -22,12 +25,7 @@ export interface Task {
 	imageUrl: string
 	componentValues: Record<string, number>
 	detailedSolution: DetailedSolution
-	requiredParameters: {
-		[key: string]: {
-			current: boolean
-			voltage: boolean
-		}
-	}
+	requiredParameters: Record<string, ElementParameters>
 }
 
 interface TasksState {

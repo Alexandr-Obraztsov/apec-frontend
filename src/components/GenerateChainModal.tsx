@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import styled from 'styled-components'
-import { circuitApi, RootType } from '../services/api'
+import { circuitApi, RootType, DifficultyLevel } from '../services/api'
 import { createPortal } from 'react-dom'
 
 const ModalBackground = styled.div`
@@ -143,6 +143,21 @@ const ErrorMessage = styled.div`
 	font-size: 0.9rem;
 `
 
+const Input = styled.input`
+	width: 100px;
+	padding: 8px;
+	border-radius: var(--radius-sm);
+	border: 1px solid var(--border-color);
+	background-color: var(--bg-color);
+	color: var(--text-primary);
+	font-size: 0.9rem;
+
+	&:focus {
+		outline: none;
+		border-color: var(--primary-color);
+	}
+`
+
 interface GenerateChainModalProps {
 	isOpen: boolean
 	onClose: () => void
@@ -152,6 +167,8 @@ interface GenerateChainModalProps {
 export interface ChainOptions {
 	order: 'first' | 'second'
 	rootType?: RootType
+	difficulty?: DifficultyLevel
+	resistors_count?: number
 	circuit: string
 }
 
@@ -162,6 +179,10 @@ const GenerateChainModal: React.FC<GenerateChainModalProps> = ({
 }) => {
 	const [order, setOrder] = useState<'first' | 'second'>('first')
 	const [rootType, setRootType] = useState<RootType>(RootType.DIFFERENT)
+	const [difficulty, setDifficulty] = useState<DifficultyLevel>(
+		DifficultyLevel.BASIC
+	)
+	const [resistorsCount, setResistorsCount] = useState<number>(3)
 	const [isLoading, setIsLoading] = useState(false)
 	const [error, setError] = useState<string | null>(null)
 
@@ -179,6 +200,9 @@ const GenerateChainModal: React.FC<GenerateChainModalProps> = ({
 			const response = await circuitApi.generateCircuit({
 				order: orderValue,
 				rootType: order === 'second' ? rootType : undefined,
+				difficulty: difficulty,
+				resistors_count:
+					difficulty === DifficultyLevel.ADVANCED ? resistorsCount : undefined,
 			})
 
 			if (response.status === 'success' && response.circuit) {
@@ -186,6 +210,11 @@ const GenerateChainModal: React.FC<GenerateChainModalProps> = ({
 				onGenerate({
 					order,
 					rootType: order === 'second' ? rootType : undefined,
+					difficulty: difficulty,
+					resistors_count:
+						difficulty === DifficultyLevel.ADVANCED
+							? resistorsCount
+							: undefined,
 					circuit: response.circuit,
 				})
 				onClose() // Закрываем модальное окно после успешной генерации
@@ -271,6 +300,50 @@ const GenerateChainModal: React.FC<GenerateChainModalProps> = ({
 									<span>Комплексные</span>
 								</RadioButton>
 							</RadioGroup>
+						</OptionGroup>
+					)}
+
+					<OptionGroup>
+						<Label>Уровень сложности:</Label>
+						<RadioGroup>
+							<RadioButton>
+								<input
+									type='radio'
+									name='difficulty'
+									value={DifficultyLevel.BASIC}
+									checked={difficulty === DifficultyLevel.BASIC}
+									onChange={() => setDifficulty(DifficultyLevel.BASIC)}
+									disabled={isLoading}
+								/>
+								<span>Базовый</span>
+							</RadioButton>
+							<RadioButton>
+								<input
+									type='radio'
+									name='difficulty'
+									value={DifficultyLevel.ADVANCED}
+									checked={difficulty === DifficultyLevel.ADVANCED}
+									onChange={() => setDifficulty(DifficultyLevel.ADVANCED)}
+									disabled={isLoading}
+								/>
+								<span>Продвинутый</span>
+							</RadioButton>
+						</RadioGroup>
+					</OptionGroup>
+
+					{difficulty === DifficultyLevel.ADVANCED && (
+						<OptionGroup>
+							<Label>Количество резисторов для исследования:</Label>
+							<Input
+								type='number'
+								value={resistorsCount}
+								onChange={e =>
+									setResistorsCount(Math.max(1, parseInt(e.target.value) || 1))
+								}
+								disabled={isLoading}
+								min='1'
+								max='10'
+							/>
 						</OptionGroup>
 					)}
 				</Content>

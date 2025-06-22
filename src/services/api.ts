@@ -21,7 +21,7 @@ export interface SolutionItem {
 // Интерфейс для уравнений элемента
 export interface ElementEquations {
 	'i(t)': string
-	'U(t)': string
+	'V(t)': string
 	[key: string]: string
 }
 
@@ -41,10 +41,18 @@ export enum RootType {
 	DIFFERENT = '>',
 }
 
+// Новое перечисление для уровня сложности
+export enum DifficultyLevel {
+	BASIC = 'basic', // Поиск токов на индуктивностях и напряжений на катушках
+	ADVANCED = 'advanced', // Поиск токов и напряжений на резисторах в определенный момент времени
+}
+
 // Интерфейс для запроса генерации цепи
 export interface GenerateCircuitRequest {
 	rootType?: RootType
 	order: number
+	difficulty?: DifficultyLevel // Добавляем параметр сложности
+	resistors_count?: number // Количество резисторов для исследования (только для advanced)
 }
 
 // Интерфейс для запроса генерации PDF с множественными цепями
@@ -59,6 +67,15 @@ export interface GenerateCircuitResponse {
 	status?: string
 	circuit?: string
 	message?: string
+}
+
+// Интерфейс для параметров элемента с временными условиями
+export interface ElementParameters {
+	current: boolean
+	voltage: boolean
+	at_time?: number
+	description?: string
+	show_in_conditions?: boolean
 }
 
 // Интерфейс для ответа с генерацией задачи
@@ -80,10 +97,12 @@ export interface GenerateTaskResponse {
 					type: 'phi' | 'A'
 					value: number
 				}>
+				at_time?: number
+				value_at_time?: number
 			}
 		>
 	} | null
-	requiredParameters: Record<string, { current: boolean; voltage: boolean }>
+	requiredParameters: Record<string, ElementParameters>
 }
 
 // Функция для проверки, содержит ли строка только число

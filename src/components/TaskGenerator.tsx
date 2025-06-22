@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import styled from 'styled-components'
-import { circuitApi, RootType } from '../services/api'
+import { circuitApi, RootType, DifficultyLevel } from '../services/api'
 import { AxiosError } from 'axios'
 import { MathJaxContext } from 'better-react-mathjax'
 import { TaskCard } from './TaskCard'
@@ -94,6 +94,39 @@ const RadioLabel = styled.label`
 	}
 `
 
+const InputGroup = styled.div`
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+`
+
+const InputLabel = styled.label`
+	color: var(--text-primary);
+	font-size: 0.95rem;
+	font-weight: 500;
+`
+
+const NumberInput = styled.input`
+	padding: 0.5rem;
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-sm);
+	background: var(--surface-color);
+	color: var(--text-primary);
+	font-size: 0.95rem;
+	width: 100px;
+
+	&:focus {
+		outline: none;
+		border-color: var(--primary-color);
+		box-shadow: 0 0 0 2px var(--primary-color) 20;
+	}
+
+	&:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+`
+
 const ButtonContainer = styled.div`
 	display: flex;
 	gap: 1rem;
@@ -172,6 +205,10 @@ const TaskListContainer = styled.div`
 const TaskGenerator: React.FC = () => {
 	const [order, setOrder] = useState<'first' | 'second'>('second')
 	const [rootType, setRootType] = useState<RootType>(RootType.DIFFERENT)
+	const [difficulty, setDifficulty] = useState<DifficultyLevel>(
+		DifficultyLevel.BASIC
+	)
+	const [resistorsCount, setResistorsCount] = useState<number>(3)
 	const [isLoading, setIsLoading] = useState(false)
 	const [error, setError] = useState<string | null>(null)
 	const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
@@ -192,6 +229,9 @@ const TaskGenerator: React.FC = () => {
 			const response = await circuitApi.generateTask({
 				order: orderValue,
 				rootType: order === 'second' ? rootType : undefined,
+				difficulty: difficulty,
+				resistors_count:
+					difficulty === DifficultyLevel.ADVANCED ? resistorsCount : undefined,
 			})
 
 			const newTask: Task = {
@@ -296,6 +336,53 @@ const TaskGenerator: React.FC = () => {
 								</RadioGroup>
 							</OptionCard>
 						)}
+
+						<OptionCard>
+							<OptionTitle>Уровень сложности</OptionTitle>
+							<RadioGroup>
+								<RadioLabel>
+									<input
+										type='radio'
+										name='difficulty'
+										value={DifficultyLevel.BASIC}
+										checked={difficulty === DifficultyLevel.BASIC}
+										onChange={() => setDifficulty(DifficultyLevel.BASIC)}
+										disabled={isLoading}
+									/>
+									Базовый (токи на индуктивностях, напряжения на катушках)
+								</RadioLabel>
+								<RadioLabel>
+									<input
+										type='radio'
+										name='difficulty'
+										value={DifficultyLevel.ADVANCED}
+										checked={difficulty === DifficultyLevel.ADVANCED}
+										onChange={() => setDifficulty(DifficultyLevel.ADVANCED)}
+										disabled={isLoading}
+									/>
+									Продвинутый (токи и напряжения на резисторах в момент времени)
+								</RadioLabel>
+							</RadioGroup>
+
+							{difficulty === DifficultyLevel.ADVANCED && (
+								<InputGroup style={{ marginTop: '1rem' }}>
+									<InputLabel htmlFor='resistors-count'>
+										Количество резисторов для исследования:
+									</InputLabel>
+									<NumberInput
+										id='resistors-count'
+										type='number'
+										min='1'
+										max='10'
+										value={resistorsCount}
+										onChange={e =>
+											setResistorsCount(parseInt(e.target.value) || 1)
+										}
+										disabled={isLoading}
+									/>
+								</InputGroup>
+							)}
+						</OptionCard>
 					</OptionsGrid>
 
 					<ButtonContainer>
