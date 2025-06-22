@@ -11,7 +11,7 @@ export const PopupOverlay = styled.div`
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	z-index: 2000;
+	z-index: 10000;
 	backdrop-filter: blur(2px);
 `
 
@@ -44,7 +44,7 @@ export const PopupHeader = styled.div`
 	font-size: 18px;
 	font-weight: 600;
 	padding: 18px 20px;
-	background: linear-gradient(135deg, #3a8040 0%, #4daf53 100%);
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 	color: white;
 	display: flex;
 	justify-content: space-between;
@@ -72,6 +72,10 @@ export const PopupCloseButton = styled.button`
 	color: white;
 	border-radius: 50%;
 	transition: all 0.2s;
+
+	&:hover {
+		background-color: rgba(255, 255, 255, 0.2);
+	}
 `
 
 // Стили для таблицы результатов
@@ -83,7 +87,7 @@ export const ResultTable = styled.table`
 
 export const ResultRow = styled.tr`
 	&:nth-child(odd) {
-		background-color: rgba(0, 128, 0, 0.05);
+		background-color: rgba(102, 126, 234, 0.05);
 	}
 `
 
@@ -94,8 +98,8 @@ export const ResultCell = styled.td`
 
 export const ResultHeader = styled.th`
 	padding: 10px;
-	background-color: rgba(0, 128, 0, 0.1);
-	color: #006400;
+	background-color: rgba(102, 126, 234, 0.1);
+	color: #667eea;
 	font-weight: 500;
 	text-align: left;
 	border: 1px solid #ddd;
@@ -122,8 +126,8 @@ export const LoadingSpinner = styled.div`
 	display: inline-block;
 	width: 50px;
 	height: 50px;
-	border: 4px solid rgba(75, 175, 80, 0.1);
-	border-top: 4px solid #4baf50;
+	border: 4px solid rgba(102, 126, 234, 0.1);
+	border-top: 4px solid #667eea;
 	border-radius: 50%;
 	animation: spin 1.2s cubic-bezier(0.5, 0.1, 0.5, 0.9) infinite;
 

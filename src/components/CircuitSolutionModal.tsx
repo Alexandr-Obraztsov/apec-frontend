@@ -1,4 +1,5 @@
 import React from 'react'
+import { createPortal } from 'react-dom'
 import { MathJaxContext } from 'better-react-mathjax'
 import { CircuitSolutionResult } from '../services/api'
 import { mathJaxConfig } from '../utils/mathConfig'
@@ -35,10 +36,10 @@ const CircuitSolutionModal: React.FC<CircuitSolutionModalProps> = ({
 }) => {
 	if (!isOpen) return null
 
-	return (
+	return createPortal(
 		<MathJaxContext config={mathJaxConfig}>
-			<PopupOverlay>
-				<PopupContent>
+			<PopupOverlay onClick={onClose}>
+				<PopupContent onClick={e => e.stopPropagation()}>
 					<PopupHeader>
 						<div>{isLoading ? 'Расчет схемы' : 'Результаты расчета'}</div>
 						<PopupCloseButton onClick={onClose}>×</PopupCloseButton>
@@ -54,7 +55,8 @@ const CircuitSolutionModal: React.FC<CircuitSolutionModalProps> = ({
 					</PopupBody>
 				</PopupContent>
 			</PopupOverlay>
-		</MathJaxContext>
+		</MathJaxContext>,
+		document.body
 	)
 }
 

@@ -25,10 +25,12 @@ const ModalContainer = styled.div`
 	background-color: var(--surface-color);
 	border-radius: var(--radius-md);
 	box-shadow: var(--shadow-lg);
-	width: 500px;
+	width: 600px;
 	max-width: 90%;
+	max-height: 90vh;
 	padding: 24px;
 	margin-bottom: 8px;
+	overflow-y: auto;
 `
 
 const ModalHeader = styled.div`
@@ -163,23 +165,124 @@ const Input = styled.input`
 	}
 `
 
-const Select = styled.select`
-	width: 100%;
-	padding: 8px;
-	border-radius: var(--radius-sm);
-	border: 1px solid var(--border-color);
-	background-color: var(--bg-color);
-	color: var(--text-primary);
-	font-size: 0.9rem;
+// Стили для выбора топологий
+const TopologySection = styled.div`
+	margin-bottom: 20px;
+`
 
-	&:focus {
-		outline: none;
-		border-color: var(--primary-color);
+const TopologyGrid = styled.div`
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+	gap: 1rem;
+	max-height: 200px;
+	overflow-y: auto;
+	padding: 1rem;
+	background: white;
+	border-radius: 12px;
+	border: 1px solid #e2e8f0;
+
+	&::-webkit-scrollbar {
+		width: 6px;
 	}
 
-	&:disabled {
-		opacity: 0.7;
-		cursor: not-allowed;
+	&::-webkit-scrollbar-track {
+		background: #f1f5f9;
+		border-radius: 3px;
+	}
+
+	&::-webkit-scrollbar-thumb {
+		background: #cbd5e1;
+		border-radius: 3px;
+	}
+
+	&::-webkit-scrollbar-thumb:hover {
+		background: #94a3b8;
+	}
+`
+
+const TopologyOption = styled.div<{ selected?: boolean }>`
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 0.8rem;
+	border: 2px solid ${props => (props.selected ? '#667eea' : '#e2e8f0')};
+	border-radius: 12px;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	background: ${props =>
+		props.selected ? 'rgba(102, 126, 234, 0.1)' : 'white'};
+	height: 100px;
+	position: relative;
+
+	&:hover {
+		border-color: #667eea;
+		background: rgba(102, 126, 234, 0.05);
+		transform: translateY(-2px);
+		box-shadow: 0 8px 25px -8px rgba(102, 126, 234, 0.3);
+	}
+
+	${props =>
+		props.selected &&
+		`
+		&::after {
+			content: '✓';
+			position: absolute;
+			top: 0.4rem;
+			right: 0.4rem;
+			width: 18px;
+			height: 18px;
+			background: #667eea;
+			color: white;
+			border-radius: 50%;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-size: 0.7rem;
+			font-weight: bold;
+		}
+	`}
+`
+
+const TopologyImage = styled.img`
+	width: 100%;
+	height: 60px;
+	object-fit: contain;
+	border-radius: 6px;
+	background: white;
+`
+
+const TopologyLabel = styled.span`
+	color: var(--text-secondary);
+	text-align: center;
+	font-size: 0.7rem;
+	font-weight: 500;
+	margin-top: 0.4rem;
+`
+
+const LoadingTopologies = styled.div`
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 2rem;
+	color: var(--text-secondary);
+	font-size: 0.9rem;
+	gap: 1rem;
+`
+
+const TopologyLoadingSpinner = styled.div`
+	width: 24px;
+	height: 24px;
+	border: 2px solid #e2e8f0;
+	border-radius: 50%;
+	border-top-color: #667eea;
+	animation: spin 1s linear infinite;
+
+	@keyframes spin {
+		to {
+			transform: rotate(360deg);
+		}
 	}
 `
 
@@ -404,30 +507,56 @@ const GenerateChainModal: React.FC<GenerateChainModalProps> = ({
 						</OptionGroup>
 					)}
 
-					{/* Выбор топологии */}
-					<OptionGroup>
-						<Label>Топология:</Label>
+					{/* Выбор топологии с картинками */}
+					<TopologySection>
+						<Label>Выбор топологии:</Label>
 						{isLoadingTopologies ? (
-							<div>Загрузка топологий...</div>
+							<LoadingTopologies>
+								<TopologyLoadingSpinner />
+								<span>Загрузка доступных топологий...</span>
+							</LoadingTopologies>
 						) : (
-							<Select
-								value={selectedTopologyId || ''}
-								onChange={e =>
-									setSelectedTopologyId(
-										e.target.value ? Number(e.target.value) : null
-									)
-								}
-								disabled={isLoading}
-							>
-								<option value=''>Любая топология</option>
+							<TopologyGrid>
+								{/* Опция "Любая топология" */}
+								<TopologyOption
+									selected={selectedTopologyId === null}
+									onClick={() => setSelectedTopologyId(null)}
+								>
+									<div
+										style={{
+											display: 'flex',
+											alignItems: 'center',
+											justifyContent: 'center',
+											height: '60px',
+											fontSize: '1.5rem',
+										}}
+									>
+										🎲
+									</div>
+									<TopologyLabel>Любая</TopologyLabel>
+								</TopologyOption>
+
+								{/* Конкретные топологии */}
 								{availableTopologies.map(topology => (
-									<option key={topology.id} value={topology.id}>
-										Топология {topology.id}
-									</option>
+									<TopologyOption
+										key={topology.id}
+										selected={selectedTopologyId === topology.id}
+										onClick={() => setSelectedTopologyId(topology.id)}
+									>
+										<TopologyImage
+											src={topology.image_base64}
+											alt={`Топология ${topology.id}`}
+											onError={e => {
+												const target = e.target as HTMLImageElement
+												target.style.display = 'none'
+											}}
+										/>
+										<TopologyLabel>Топология {topology.id}</TopologyLabel>
+									</TopologyOption>
 								))}
-							</Select>
+							</TopologyGrid>
 						)}
-					</OptionGroup>
+					</TopologySection>
 				</Content>
 
 				<ButtonGroup>

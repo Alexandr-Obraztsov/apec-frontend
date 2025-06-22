@@ -877,7 +877,7 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 			if (state.removeNode) state.removeNode(node.id)
 		})
 
-		const SPACING = 200 // Уменьшим расстояние для более компактной схемы
+		const SPACING = 200 // Расстояние между узлами
 
 		// 1. Парсер строки конфигурации
 		const circuitLines = options.circuit.split('\n').filter(line => line.trim())
@@ -902,7 +902,7 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 			return { name, type, startNodeNum, endNodeNum, direction, value }
 		})
 
-		// 2. Расчет позиций узлов (DFS)
+		// 2. Расчет позиций узлов (DFS) - аналогично build_circuit_png
 		const connections = new Map<number, { next: number; dir: string }[]>()
 		parsedElements.forEach(({ startNodeNum, endNodeNum, direction }) => {
 			if (!connections.has(startNodeNum)) connections.set(startNodeNum, [])
@@ -960,19 +960,43 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 			})
 		}
 
-		// 3. Нормализация и смещение позиций
+		// 3. Нормализация координат и центрирование
+		if (relativePositions.size === 0) return
+
+		// Находим границы схемы
 		let minX = Infinity,
-			minY = Infinity
+			maxX = -Infinity
+		let minY = Infinity,
+			maxY = -Infinity
+
 		for (const pos of relativePositions.values()) {
 			if (pos.x < minX) minX = pos.x
+			if (pos.x > maxX) maxX = pos.x
 			if (pos.y < minY) minY = pos.y
+			if (pos.y > maxY) maxY = pos.y
 		}
+
+		// Размеры схемы
+		const schemaWidth = maxX - minX
+		const schemaHeight = maxY - minY
+
+		// Размеры области CircuitBoard (примерные размеры видимой области)
+		const boardWidth = window.innerWidth - 280 - 300 // Вычитаем ширину Toolbox и PropertiesPanel
+		const boardHeight = window.innerHeight - 70 // Вычитаем высоту Header
+
+		// Центрируем схему в середине доступной области
+		const centerX = boardWidth / 2
+		const centerY = boardHeight / 2
+
+		// Смещение для центрирования схемы
+		const offsetX = centerX - schemaWidth / 2
+		const offsetY = centerY - schemaHeight / 2
 
 		const finalPositions = new Map<number, Position>()
 		relativePositions.forEach((pos, key) => {
 			finalPositions.set(key, {
-				x: pos.x - minX + 500,
-				y: pos.y - minY + 300,
+				x: pos.x - minX + offsetX,
+				y: pos.y - minY + offsetY,
 			})
 		})
 

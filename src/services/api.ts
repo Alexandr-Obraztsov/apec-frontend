@@ -534,8 +534,34 @@ export const circuitApi = {
 				params
 			)
 
-			// Отправляем запрос напрямую на бекенд
-			// Бекенд сам определит, откуда брать схему (из БД или конфига)
+			// Если указана конкретная топология, используем схему из базы данных
+			if (params.topology_id) {
+				console.log(
+					'Используем схему из базы данных для топологии:',
+					params.topology_id
+				)
+
+				const circuit = await circuitApi.getCircuitFromDB(
+					params.topology_id,
+					params.order
+				)
+
+				if (circuit) {
+					console.log('Найдена схема в базе данных:', circuit)
+					// Отправляем запрос на генерацию задачи с конкретной схемой
+					const response = await axios.post<GenerateTaskResponse>(
+						`${API_BASE_URL}/generate_task`,
+						{
+							...params,
+							circuit_string: circuit.circuit_string, // Передаем строку схемы
+						}
+					)
+					return response.data
+				} else {
+					console.log('Схема не найдена в базе данных, используем генерацию')
+				}
+			}
+
 			const response = await axios.post<GenerateTaskResponse>(
 				`${API_BASE_URL}/generate_task`,
 				params
