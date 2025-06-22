@@ -25,7 +25,7 @@ const DEFAULT_VALUES = {
 	capacitor: { value: 0.00001, unit: 'Ф' },
 	inductor: { value: 0.001, unit: 'Гн' },
 	voltage: { value: 5, unit: 'В' },
-	current: { value: 0.01, unit: 'А' }, // Источник тока, 10 мА по умолчанию
+
 	switch: { value: 0, unit: '', isOpen: true },
 }
 
@@ -117,8 +117,7 @@ const convertElementType = (shortType: string): ElementType => {
 			return 'inductor'
 		case 'V':
 			return 'voltage'
-		case 'I':
-			return 'current'
+
 		case 'W':
 			return 'wire'
 		case 'S':
@@ -131,7 +130,6 @@ const convertElementType = (shortType: string): ElementType => {
 					'capacitor',
 					'inductor',
 					'voltage',
-					'current',
 					'wire',
 					'switch',
 				].includes(shortType)
@@ -168,7 +166,7 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 			capacitor: 0,
 			inductor: 0,
 			voltage: 0,
-			current: 0,
+
 			switch: 0,
 		},
 		nodes: -1,
@@ -650,17 +648,6 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 					direction,
 					isOpen: true, // true = разомкнут (ВЫКЛ)
 				} as SwitchElement
-			} else if (elementType === 'current') {
-				newElement = {
-					type: 'current',
-					startNodeId,
-					endNodeId,
-					rotation,
-					value: DEFAULT_VALUES[elementType].value,
-					unit: DEFAULT_VALUES[elementType].unit,
-					name: elementName,
-					direction,
-				}
 			} else {
 				newElement = {
 					type: 'voltage',
@@ -822,7 +809,6 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 			capacitor: [],
 			inductor: [],
 			voltage: [],
-			current: [],
 			switch: [],
 		}
 

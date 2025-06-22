@@ -13,7 +13,7 @@ const ELEMENT_LABELS: Record<ElementType, string> = {
 	capacitor: 'Конденсатор (C)',
 	inductor: 'Катушка (L)',
 	voltage: 'Источник напряжения (V)',
-	current: 'Источник тока (I)',
+
 	switch: 'Ключ (SW)',
 }
 
@@ -335,31 +335,6 @@ const VoltageIcon = () => (
 	</svg>
 )
 
-const CurrentIcon = () => (
-	<svg
-		width='28'
-		height='28'
-		viewBox='0 0 24 24'
-		fill='none'
-		xmlns='http://www.w3.org/2000/svg'
-	>
-		<circle cx='12' cy='12' r='7' stroke='currentColor' strokeWidth='2' />
-		<path
-			d='M8 12H16'
-			stroke='currentColor'
-			strokeWidth='2'
-			strokeLinecap='round'
-		/>
-		<path
-			d='M14 10L16 12L14 14'
-			stroke='currentColor'
-			strokeWidth='2'
-			strokeLinecap='round'
-			strokeLinejoin='round'
-		/>
-	</svg>
-)
-
 const SwitchIcon = () => (
 	<svg
 		width='28'
@@ -412,7 +387,7 @@ const ELEMENT_ICONS: Record<ElementType, React.ReactNode> = {
 	capacitor: <CapacitorIcon />,
 	inductor: <InductorIcon />,
 	voltage: <VoltageIcon />,
-	current: <CurrentIcon />,
+
 	switch: <SwitchIcon />,
 }
 
@@ -638,14 +613,7 @@ const Toolbox: React.FC = () => {
 						}
 						onClick={handleItemClick}
 					/>
-					<ToolboxItem
-						type='current'
-						label={ELEMENT_LABELS.current}
-						isActive={
-							placementMode.active && placementMode.elementType === 'current'
-						}
-						onClick={handleItemClick}
-					/>
+
 					<ToolboxItem
 						type='switch'
 						label={ELEMENT_LABELS.switch}
