@@ -1,42 +1,190 @@
 #root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+	width: 100%;
+	height: 100vh;
+	margin: 0;
+	padding: 0;
+	background: linear-gradient(
+		135deg,
+		rgba(124, 58, 237, 0.03) 0%,
+		rgba(139, 92, 246, 0.03) 25%,
+		rgba(59, 130, 246, 0.03) 50%,
+		rgba(30, 64, 175, 0.03) 75%,
+		rgba(37, 99, 235, 0.03) 100%
+	);
+	position: relative;
+	overflow: hidden;
+}
+
+#root::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: radial-gradient(
+			circle at 10% 20%,
+			rgba(124, 58, 237, 0.02) 0%,
+			transparent 50%
+		),
+		radial-gradient(
+			circle at 90% 80%,
+			rgba(59, 130, 246, 0.02) 0%,
+			transparent 50%
+		),
+		radial-gradient(
+			circle at 50% 50%,
+			rgba(139, 92, 246, 0.01) 0%,
+			transparent 50%
+		);
+	pointer-events: none;
+	z-index: 0;
+}
+
+/* Обеспечиваем правильную z-index для содержимого */
+#root > * {
+	position: relative;
+	z-index: 1;
+}
+
+/* Улучшенные стили для кнопок */
+button {
+	font-family: inherit;
+	font-size: inherit;
+	line-height: inherit;
+	border: none;
+	outline: none;
+	background: none;
+	cursor: pointer;
+}
+
+/* Улучшенные стили для инпутов */
+input {
+	font-family: inherit;
+	font-size: inherit;
+	line-height: inherit;
+	border: none;
+	outline: none;
+	background: none;
+}
+
+/* Удаляем стандартные отступы */
+* {
+	box-sizing: border-box;
+}
+
+/* Скрываем скроллбары но сохраняем функциональность */
+::-webkit-scrollbar {
+	width: 6px;
+	height: 6px;
+}
+
+::-webkit-scrollbar-track {
+	background: rgba(124, 58, 237, 0.1);
+	border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+	background: rgba(124, 58, 237, 0.3);
+	border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: rgba(124, 58, 237, 0.5);
+}
+
+/* Стили для модальных окон */
+.modal-overlay {
+	backdrop-filter: blur(8px);
+}
+
+/* Анимации */
+@keyframes shimmer {
+	0% {
+		background-position: -200% 0;
+	}
+	100% {
+		background-position: 200% 0;
+	}
+}
+
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+		transform: translateY(10px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes slideIn {
+	from {
+		opacity: 0;
+		transform: translateX(-20px);
+	}
+	to {
+		opacity: 1;
+		transform: translateX(0);
+	}
+}
+
+/* Утилитарные классы для анимаций */
+.fade-in {
+	animation: fadeIn 0.3s ease-out;
+}
+
+.slide-in {
+	animation: slideIn 0.3s ease-out;
+}
+
+/* Стили для загрузки */
+.loading-spinner {
+	animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+	from {
+		transform: rotate(0deg);
+	}
+	to {
+		transform: rotate(360deg);
+	}
 }
 
 .logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
+	height: 6em;
+	padding: 1.5em;
+	will-change: filter;
+	transition: filter 300ms;
 }
 .logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
+	filter: drop-shadow(0 0 2em #646cffaa);
 }
 .logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+	filter: drop-shadow(0 0 2em #61dafbaa);
 }
 
 @keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+	from {
+		transform: rotate(0deg);
+	}
+	to {
+		transform: rotate(360deg);
+	}
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+	a:nth-of-type(2) .logo {
+		animation: logo-spin infinite 20s linear;
+	}
 }
 
 .card {
-  padding: 2em;
+	padding: 2em;
 }
 
 .read-the-docs {
-  color: #888;
+	color: #888;
 }

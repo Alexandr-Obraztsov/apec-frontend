@@ -6,34 +6,81 @@ import { ElementType } from '../types'
 const PanelContainer = styled.div`
 	position: fixed;
 	right: 0;
-	top: 60px;
+	top: 70px;
 	width: 280px;
-	height: calc(100vh - 60px);
-	background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-	border-left: 1px solid var(--border-color);
-	box-shadow: -4px 0 20px rgba(0, 0, 0, 0.08);
-	padding: 20px;
+	height: calc(100vh - 70px);
+	background: rgba(255, 255, 255, 0.95);
+	backdrop-filter: blur(20px);
+	border-left: 1px solid rgba(102, 126, 234, 0.2);
+	box-shadow: -4px 0 32px rgba(102, 126, 234, 0.15);
+	padding: 24px;
 	overflow: hidden;
 	display: flex;
 	flex-direction: column;
 	z-index: 200;
+
+	&::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background: radial-gradient(
+				circle at 20% 50%,
+				rgba(124, 58, 237, 0.1) 0%,
+				transparent 50%
+			),
+			radial-gradient(
+				circle at 80% 20%,
+				rgba(139, 92, 246, 0.1) 0%,
+				transparent 50%
+			),
+			radial-gradient(
+				circle at 40% 80%,
+				rgba(59, 130, 246, 0.1) 0%,
+				transparent 50%
+			);
+		pointer-events: none;
+		z-index: 0;
+	}
+
+	> * {
+		position: relative;
+		z-index: 1;
+	}
 `
 
 const PanelHeader = styled.div`
-	margin-bottom: 20px;
-	padding-bottom: 16px;
-	border-bottom: 2px solid var(--border-color);
+	margin-bottom: 24px;
+	padding: 20px;
+	background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+	border: 1px solid #e2e8f0;
+	border-radius: 16px;
+	box-shadow: 0 8px 32px rgba(102, 126, 234, 0.1);
+	position: relative;
+	overflow: hidden;
+
+	&::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 4px;
+		background: linear-gradient(90deg, #667eea, #764ba2);
+	}
 `
 
 const Title = styled.h3`
 	margin: 0;
-	color: var(--text-primary);
-	font-size: 1.3rem;
+	font-size: 1.4rem;
 	font-weight: 700;
-	background: linear-gradient(135deg, #1e40af, #3b82f6);
+	background: linear-gradient(135deg, #667eea, #764ba2);
 	-webkit-background-clip: text;
 	-webkit-text-fill-color: transparent;
 	background-clip: text;
+	text-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
 `
 
 const SubTitle = styled.p`
@@ -44,7 +91,7 @@ const SubTitle = styled.p`
 `
 
 const TitleInfo = styled.span`
-	color: var(--primary-color);
+	color: #667eea;
 	font-weight: 600;
 `
 
@@ -54,65 +101,93 @@ const PanelContent = styled.div`
 `
 
 const FormGroup = styled.div`
-	margin-bottom: 16px;
+	margin-bottom: 20px;
 `
 
 const Label = styled.label`
 	display: block;
-	margin-bottom: 6px;
-	font-weight: 500;
+	margin-bottom: 8px;
+	font-weight: 600;
 	font-size: 0.9rem;
-	color: var(--text-secondary);
+	color: var(--text-primary);
 `
 
 const Input = styled.input`
 	width: 100%;
-	padding: 10px 12px;
-	border: 1px solid var(--border-color);
-	border-radius: var(--radius-sm);
+	padding: 12px 16px;
+	background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+	border: 1px solid #e2e8f0;
+	border-radius: 12px;
 	font-size: 0.9rem;
-	transition: var(--transition);
+	color: var(--text-primary);
+	transition: all 0.3s ease;
+	box-shadow: 0 4px 16px rgba(102, 126, 234, 0.1);
 
 	&:focus {
-		border-color: var(--primary-color);
-		box-shadow: 0 0 0 3px var(--primary-light);
+		border-color: #667eea;
+		box-shadow: 0 8px 32px rgba(102, 126, 234, 0.2);
 		outline: none;
 	}
 
 	&:disabled,
 	&[readonly] {
-		background-color: var(--bg-color);
+		background: #f1f5f9;
+		color: var(--text-secondary);
+		cursor: not-allowed;
+	}
+
+	&::placeholder {
 		color: var(--text-secondary);
 	}
 `
 
 const ElementIcon = styled.div`
-	width: 40px;
-	height: 40px;
+	width: 48px;
+	height: 48px;
 	border-radius: 50%;
-	background: var(--primary-light);
-	color: var(--primary-color);
+	background: linear-gradient(135deg, #667eea, #764ba2);
+	color: white;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	font-size: 1.2rem;
-	margin-right: 12px;
+	font-size: 1.4rem;
+	margin-right: 16px;
+	box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
 `
 
 const ElementHeader = styled.div`
 	display: flex;
 	align-items: center;
-	margin-bottom: 20px;
+	margin-bottom: 24px;
+	padding: 16px;
+	background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+	border: 1px solid #e2e8f0;
+	border-radius: 12px;
+	box-shadow: 0 4px 16px rgba(102, 126, 234, 0.1);
+	position: relative;
+	overflow: hidden;
+
+	&::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 4px;
+		background: linear-gradient(90deg, #667eea, #764ba2);
+	}
 `
 
 const ElementTitle = styled.div`
 	h4 {
 		margin: 0;
-		font-size: 1rem;
+		font-size: 1.1rem;
+		font-weight: 600;
+		color: var(--text-primary);
 	}
 
 	p {
-		margin: 2px 0 0 0;
+		margin: 4px 0 0 0;
 		font-size: 0.8rem;
 		color: var(--text-secondary);
 	}
@@ -120,26 +195,65 @@ const ElementTitle = styled.div`
 
 const Button = styled.button`
 	width: 100%;
-	padding: 12px;
-	background-color: var(--danger-color);
+	padding: 14px 16px;
+	background: linear-gradient(135deg, #ef4444, #dc2626);
 	color: white;
 	border: none;
-	border-radius: var(--radius-sm);
+	border-radius: 12px;
 	cursor: pointer;
-	margin-top: 8px;
-	transition: var(--transition);
-	font-weight: 500;
+	margin-top: 12px;
+	transition: all 0.3s ease;
+	font-weight: 600;
+	font-size: 0.9rem;
+	position: relative;
+	overflow: hidden;
+	backdrop-filter: blur(20px);
+	border: 1px solid rgba(239, 68, 68, 0.3);
+	box-shadow: 0 8px 32px rgba(239, 68, 68, 0.2),
+		inset 0 1px 0 rgba(255, 255, 255, 0.2);
+
+	&::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: -100%;
+		width: 100%;
+		height: 100%;
+		background: linear-gradient(
+			90deg,
+			transparent,
+			rgba(255, 255, 255, 0.2),
+			transparent
+		);
+		transition: left 0.5s ease;
+	}
 
 	&:hover {
-		background-color: #c0392b;
+		transform: translateY(-2px);
+		box-shadow: 0 12px 40px rgba(239, 68, 68, 0.3),
+			inset 0 1px 0 rgba(255, 255, 255, 0.2);
+
+		&::before {
+			left: 100%;
+		}
+	}
+
+	&:active {
+		transform: translateY(0);
 	}
 `
 
 const Message = styled.div`
-	padding: 20px;
+	padding: 24px;
 	text-align: center;
-	color: var(--text-secondary);
+	color: rgba(124, 58, 237, 0.7);
 	font-size: 0.9rem;
+	background: rgba(255, 255, 255, 0.1);
+	backdrop-filter: blur(20px);
+	border: 1px solid rgba(124, 58, 237, 0.2);
+	border-radius: 12px;
+	box-shadow: 0 4px 16px rgba(124, 58, 237, 0.1),
+		inset 0 1px 0 rgba(255, 255, 255, 0.1);
 `
 
 const ElementList = styled.ul`
@@ -149,37 +263,60 @@ const ElementList = styled.ul`
 `
 
 const ElementListItem = styled.li`
-	padding: 10px 0;
-	border-bottom: 1px solid var(--border-color);
+	padding: 16px;
+	border-bottom: 1px solid rgba(124, 58, 237, 0.1);
 	display: flex;
 	align-items: center;
 	font-size: 0.9rem;
+	background: rgba(255, 255, 255, 0.05);
+	backdrop-filter: blur(20px);
+	margin-bottom: 8px;
+	border-radius: 8px;
+	transition: all 0.3s ease;
+	box-shadow: 0 2px 8px rgba(124, 58, 237, 0.05),
+		inset 0 1px 0 rgba(255, 255, 255, 0.1);
 
 	&:last-child {
 		border-bottom: none;
 	}
 
+	&:hover {
+		background: rgba(255, 255, 255, 0.1);
+		transform: translateY(-1px);
+		box-shadow: 0 4px 16px rgba(124, 58, 237, 0.1),
+			inset 0 1px 0 rgba(255, 255, 255, 0.2);
+	}
+
 	.icon {
-		width: 24px;
-		height: 24px;
-		border-radius: 4px;
-		background: var(--primary-light);
-		color: var(--primary-color);
+		width: 32px;
+		height: 32px;
+		border-radius: 8px;
+		background: linear-gradient(
+			135deg,
+			rgba(124, 58, 237, 0.2),
+			rgba(59, 130, 246, 0.2)
+		);
+		color: #7c3aed;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		margin-right: 10px;
-		font-size: 0.7rem;
+		margin-right: 12px;
+		font-size: 0.8rem;
+		font-weight: 600;
+		box-shadow: 0 2px 8px rgba(124, 58, 237, 0.1),
+			inset 0 1px 0 rgba(255, 255, 255, 0.2);
 	}
 
 	.details {
 		flex: 1;
 		display: flex;
 		justify-content: space-between;
+		color: rgba(124, 58, 237, 0.9);
 	}
 
 	.value {
-		color: var(--text-secondary);
+		color: rgba(124, 58, 237, 0.7);
+		font-weight: 500;
 	}
 `
 
@@ -187,8 +324,21 @@ const SwitchLabel = styled.label`
 	display: flex;
 	align-items: center;
 	cursor: pointer;
-	margin-bottom: 16px;
+	margin-bottom: 20px;
 	user-select: none;
+	padding: 12px;
+	background: rgba(255, 255, 255, 0.1);
+	backdrop-filter: blur(20px);
+	border: 1px solid rgba(124, 58, 237, 0.2);
+	border-radius: 12px;
+	transition: all 0.3s ease;
+	box-shadow: 0 4px 16px rgba(124, 58, 237, 0.1),
+		inset 0 1px 0 rgba(255, 255, 255, 0.1);
+
+	&:hover {
+		background: rgba(255, 255, 255, 0.15);
+		border-color: rgba(124, 58, 237, 0.3);
+	}
 `
 
 const SwitchInput = styled.input`
@@ -198,43 +348,46 @@ const SwitchInput = styled.input`
 	position: absolute;
 `
 
-const SwitchSlider = styled.span`
+const SwitchSlider = styled.span<{ $checked: boolean }>`
 	position: relative;
 	display: inline-block;
-	width: 44px;
+	width: 48px;
 	height: 24px;
-	background-color: var(--bg-color);
+	background: ${props =>
+		props.$checked
+			? 'linear-gradient(135deg, #10B981, #059669)'
+			: 'rgba(124, 58, 237, 0.2)'};
 	border-radius: 24px;
-	border: 1px solid var(--border-color);
-	transition: var(--transition);
-	margin-right: 10px;
+	margin-right: 12px;
+	transition: all 0.3s ease;
+	cursor: pointer;
+	backdrop-filter: blur(20px);
+	border: 1px solid
+		${props =>
+			props.$checked ? 'rgba(16, 185, 129, 0.3)' : 'rgba(124, 58, 237, 0.3)'};
+	box-shadow: 0 4px 16px
+			${props =>
+				props.$checked ? 'rgba(16, 185, 129, 0.2)' : 'rgba(124, 58, 237, 0.1)'},
+		inset 0 1px 0 rgba(255, 255, 255, 0.2);
 
-	&:before {
-		position: absolute;
+	&::before {
 		content: '';
+		position: absolute;
 		height: 18px;
 		width: 18px;
-		left: 2px;
-		bottom: 2px;
-		background-color: white;
+		left: ${props => (props.$checked ? '26px' : '3px')};
+		top: 2px;
+		background: white;
 		border-radius: 50%;
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-		transition: var(--transition);
-	}
-
-	input:checked + & {
-		background-color: var(--success-color);
-		border-color: var(--success-color);
-	}
-
-	input:checked + &:before {
-		transform: translateX(20px);
+		transition: all 0.3s ease;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 	}
 `
 
 const SwitchText = styled.span`
 	font-size: 0.9rem;
-	color: var(--text-primary);
+	font-weight: 500;
+	color: rgba(124, 58, 237, 0.9);
 `
 
 // Component titles mapping
@@ -244,7 +397,6 @@ const ELEMENT_TITLES: Record<ElementType, string> = {
 	capacitor: 'Конденсатор',
 	inductor: 'Катушка индуктивности',
 	voltage: 'Источник напряжения',
-	current: 'Источник тока',
 	switch: 'Ключ',
 }
 
@@ -255,7 +407,6 @@ const ELEMENT_ICON_CHARS: Record<ElementType, string> = {
 	capacitor: 'C',
 	inductor: 'L',
 	voltage: 'V',
-	current: 'I',
 	switch: 'S',
 }
 
@@ -420,7 +571,7 @@ const PropertiesPanel: React.FC = () => {
 								checked={switchState}
 								onChange={handleSwitchChange}
 							/>
-							<SwitchSlider />
+							<SwitchSlider $checked={switchState} />
 							<SwitchText>{switchState ? 'Включен' : 'Выключен'}</SwitchText>
 						</SwitchLabel>
 					</FormGroup>

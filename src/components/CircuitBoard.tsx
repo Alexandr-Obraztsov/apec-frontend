@@ -12,15 +12,52 @@ const BoardContainer = styled.div`
 	flex: 1;
 	position: relative;
 	overflow: hidden;
-	background: var(--surface-color);
+	background: linear-gradient(
+		135deg,
+		rgba(124, 58, 237, 0.05) 0%,
+		rgba(139, 92, 246, 0.05) 25%,
+		rgba(59, 130, 246, 0.05) 50%,
+		rgba(30, 64, 175, 0.05) 75%,
+		rgba(37, 99, 235, 0.05) 100%
+	);
 	margin-right: 300px;
+
+	&::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background: radial-gradient(
+				circle at 20% 20%,
+				rgba(124, 58, 237, 0.03) 0%,
+				transparent 50%
+			),
+			radial-gradient(
+				circle at 80% 80%,
+				rgba(59, 130, 246, 0.03) 0%,
+				transparent 50%
+			),
+			radial-gradient(
+				circle at 50% 50%,
+				rgba(139, 92, 246, 0.02) 0%,
+				transparent 50%
+			);
+		pointer-events: none;
+	}
+
+	> * {
+		position: relative;
+		z-index: 1;
+	}
 `
 
 const SVGCanvas = styled.svg<{ $panX: number; $panY: number }>`
 	width: 5000px;
 	height: 5000px;
 	display: block;
-	background: var(--surface-color);
+	background: transparent;
 	transform: translate(${props => props.$panX}px, ${props => props.$panY}px);
 `
 
@@ -29,16 +66,182 @@ const Tooltip = styled.div`
 	bottom: 100%;
 	left: 50%;
 	transform: translateX(-50%);
-	background: var(--surface-color);
-	border: 1px solid var(--border-color);
-	border-radius: 6px;
+	background: rgba(255, 255, 255, 0.95);
+	backdrop-filter: blur(20px);
+	border: 1px solid rgba(124, 58, 237, 0.2);
+	border-radius: 8px;
 	padding: 8px 12px;
 	font-size: 12px;
-	color: var(--text-secondary);
+	color: rgba(124, 58, 237, 0.9);
 	white-space: nowrap;
-	box-shadow: var(--shadow-sm);
+	box-shadow: 0 8px 32px rgba(124, 58, 237, 0.15),
+		inset 0 1px 0 rgba(255, 255, 255, 0.2);
 	z-index: 20;
 	margin-bottom: 8px;
+	font-weight: 500;
+`
+
+const WelcomeScreen = styled.div`
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	background: linear-gradient(
+		135deg,
+		rgba(124, 58, 237, 0.03) 0%,
+		rgba(139, 92, 246, 0.03) 25%,
+		rgba(59, 130, 246, 0.03) 50%,
+		rgba(30, 64, 175, 0.03) 75%,
+		rgba(37, 99, 235, 0.03) 100%
+	);
+	z-index: 10;
+	pointer-events: none;
+
+	&::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background: radial-gradient(
+				circle at 30% 30%,
+				rgba(124, 58, 237, 0.05) 0%,
+				transparent 50%
+			),
+			radial-gradient(
+				circle at 70% 70%,
+				rgba(59, 130, 246, 0.05) 0%,
+				transparent 50%
+			),
+			radial-gradient(
+				circle at 50% 50%,
+				rgba(139, 92, 246, 0.03) 0%,
+				transparent 50%
+			);
+		pointer-events: none;
+	}
+
+	> * {
+		position: relative;
+		z-index: 1;
+	}
+`
+
+const WelcomeContent = styled.div`
+	text-align: center;
+	max-width: 600px;
+	padding: 40px;
+	background: rgba(255, 255, 255, 0.1);
+	backdrop-filter: blur(20px);
+	border: 1px solid rgba(124, 58, 237, 0.2);
+	border-radius: 20px;
+	box-shadow: 0 16px 64px rgba(124, 58, 237, 0.1),
+		inset 0 1px 0 rgba(255, 255, 255, 0.2);
+	animation: fadeIn 0.8s ease-out;
+`
+
+const WelcomeIcon = styled.div`
+	width: 120px;
+	height: 120px;
+	margin: 0 auto 24px;
+	background: linear-gradient(
+		135deg,
+		rgba(124, 58, 237, 0.2),
+		rgba(59, 130, 246, 0.2)
+	);
+	backdrop-filter: blur(20px);
+	border: 2px solid rgba(124, 58, 237, 0.3);
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 48px;
+	color: #7c3aed;
+	box-shadow: 0 16px 64px rgba(124, 58, 237, 0.2),
+		inset 0 2px 0 rgba(255, 255, 255, 0.3);
+	animation: float 3s ease-in-out infinite;
+
+	@keyframes float {
+		0%,
+		100% {
+			transform: translateY(0px);
+		}
+		50% {
+			transform: translateY(-10px);
+		}
+	}
+`
+
+const WelcomeTitle = styled.h1`
+	font-size: 2.5rem;
+	font-weight: 700;
+	margin: 0 0 16px 0;
+	background: linear-gradient(135deg, #7c3aed, #8b5cf6, #3b82f6);
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	background-clip: text;
+	text-shadow: 0 4px 8px rgba(124, 58, 237, 0.2);
+`
+
+const WelcomeSubtitle = styled.p`
+	font-size: 1.2rem;
+	color: rgba(124, 58, 237, 0.8);
+	margin: 0 0 32px 0;
+	line-height: 1.6;
+	font-weight: 500;
+`
+
+const WelcomeFeatures = styled.div`
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	gap: 20px;
+	margin-top: 32px;
+`
+
+const FeatureCard = styled.div`
+	padding: 20px;
+	background: rgba(255, 255, 255, 0.05);
+	backdrop-filter: blur(20px);
+	border: 1px solid rgba(124, 58, 237, 0.1);
+	border-radius: 12px;
+	text-align: center;
+	transition: all 0.3s ease;
+	box-shadow: 0 4px 16px rgba(124, 58, 237, 0.05),
+		inset 0 1px 0 rgba(255, 255, 255, 0.1);
+
+	&:hover {
+		transform: translateY(-2px);
+		background: rgba(255, 255, 255, 0.1);
+		border-color: rgba(124, 58, 237, 0.2);
+		box-shadow: 0 8px 32px rgba(124, 58, 237, 0.1),
+			inset 0 1px 0 rgba(255, 255, 255, 0.2);
+	}
+`
+
+const FeatureIcon = styled.div`
+	font-size: 24px;
+	margin-bottom: 12px;
+	color: #7c3aed;
+`
+
+const FeatureTitle = styled.h3`
+	font-size: 1rem;
+	font-weight: 600;
+	margin: 0 0 8px 0;
+	color: rgba(124, 58, 237, 0.9);
+`
+
+const FeatureDescription = styled.p`
+	font-size: 0.85rem;
+	color: rgba(124, 58, 237, 0.7);
+	margin: 0;
+	line-height: 1.4;
 `
 
 const CircuitBoard: React.FC = () => {
@@ -533,6 +736,42 @@ const CircuitBoard: React.FC = () => {
 					</Tooltip>
 				)}
 			</BoardContainer>
+
+			{!placementMode.active && elements.length === 0 && (
+				<WelcomeScreen>
+					<WelcomeContent>
+						<WelcomeIcon>🌟</WelcomeIcon>
+						<WelcomeTitle>Добро пожаловать!</WelcomeTitle>
+						<WelcomeSubtitle>
+							Создайте свою первую электрическую цепь с помощью нашего
+							инструмента.
+						</WelcomeSubtitle>
+						<WelcomeFeatures>
+							<FeatureCard>
+								<FeatureIcon>🔌</FeatureIcon>
+								<FeatureTitle>Простая установка</FeatureTitle>
+								<FeatureDescription>
+									Легко добавляйте и соединяйте элементы.
+								</FeatureDescription>
+							</FeatureCard>
+							<FeatureCard>
+								<FeatureIcon>🔍</FeatureIcon>
+								<FeatureTitle>Точный анализ</FeatureTitle>
+								<FeatureDescription>
+									Проверяйте состояние цепи в реальном времени.
+								</FeatureDescription>
+							</FeatureCard>
+							<FeatureCard>
+								<FeatureIcon>💡</FeatureIcon>
+								<FeatureTitle>Эффективное управление</FeatureTitle>
+								<FeatureDescription>
+									Управляйте цепью с помощью наших функций.
+								</FeatureDescription>
+							</FeatureCard>
+						</WelcomeFeatures>
+					</WelcomeContent>
+				</WelcomeScreen>
+			)}
 		</>
 	)
 }

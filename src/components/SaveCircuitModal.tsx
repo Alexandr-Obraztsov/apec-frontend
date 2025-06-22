@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import styled from 'styled-components'
-import { Topology, circuitApi, formatCircuitToString } from '../services/api'
+import { Topology, circuitApi, formatCircuitToLCapy } from '../services/api'
 import { Node, AnyCircuitElement } from '../types'
 
 interface SaveCircuitModalProps {
@@ -279,7 +279,7 @@ const SaveCircuitModal: React.FC<SaveCircuitModalProps> = ({
 			}
 
 			// Преобразуем схему в строковый формат
-			const circuitString = formatCircuitToString(nodes, elements)
+			const circuit = formatCircuitToLCapy(nodes, elements, false)
 
 			let topologyId: number
 
@@ -306,7 +306,7 @@ const SaveCircuitModal: React.FC<SaveCircuitModalProps> = ({
 			// Создаем схему
 			await circuitApi.createCircuit({
 				topology_id: topologyId,
-				circuit_string: circuitString,
+				circuit_string: circuit.circuitString,
 				order: order,
 			})
 

@@ -25,31 +25,48 @@ const ELEMENT_LABELS: Record<ElementType, string> = {
 const ToolboxContainer = styled.div`
 	width: 280px;
 	height: 100%;
-	background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-	border-right: 1px solid var(--border-color);
-	box-shadow: 4px 0 20px rgba(0, 0, 0, 0.08);
-	padding: 20px;
+	background: rgba(255, 255, 255, 0.95);
+	backdrop-filter: blur(20px);
+	border-right: 1px solid rgba(102, 126, 234, 0.2);
+	box-shadow: 4px 0 32px rgba(102, 126, 234, 0.15);
+	padding: 24px;
 	display: flex;
 	flex-direction: column;
 	overflow-y: auto;
 	flex-shrink: 0;
+	position: relative;
 `
 
 const ToolboxHeader = styled.div`
-	margin-bottom: 20px;
-	padding-bottom: 16px;
-	border-bottom: 2px solid var(--border-color);
+	margin-bottom: 24px;
+	padding: 20px;
+	background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+	border: 1px solid #e2e8f0;
+	border-radius: 16px;
+	box-shadow: 0 8px 32px rgba(102, 126, 234, 0.1);
+	position: relative;
+	overflow: hidden;
+
+	&::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 4px;
+		background: linear-gradient(90deg, #667eea, #764ba2);
+	}
 `
 
 const Title = styled.h3`
 	margin: 0;
-	color: var(--text-primary);
-	font-size: 1.3rem;
+	font-size: 1.4rem;
 	font-weight: 700;
-	background: linear-gradient(135deg, #1e40af, #3b82f6);
+	background: linear-gradient(135deg, #667eea, #764ba2);
 	-webkit-background-clip: text;
 	-webkit-text-fill-color: transparent;
 	background-clip: text;
+	text-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
 `
 
 const SubTitle = styled.p`
@@ -64,21 +81,34 @@ const Section = styled.div`
 `
 
 const SectionTitle = styled.h4`
-	margin: 0 0 12px 0;
-	color: var(--text-primary);
-	font-size: 1rem;
+	margin: 0 0 16px 0;
+	font-size: 1.1rem;
 	font-weight: 600;
 	display: flex;
 	align-items: center;
 	gap: 8px;
+	color: var(--text-primary);
 `
 
 const ErrorsContainer = styled.div`
-	background-color: rgba(239, 68, 68, 0.1);
-	border: 1px solid rgba(239, 68, 68, 0.3);
-	border-radius: 8px;
+	background: linear-gradient(135deg, #fef2f2, #fee2e2);
+	border: 1px solid #fecaca;
+	border-radius: 12px;
 	padding: 16px;
 	margin-bottom: 20px;
+	box-shadow: 0 8px 32px rgba(239, 68, 68, 0.1);
+	position: relative;
+	overflow: hidden;
+
+	&::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 4px;
+		background: linear-gradient(90deg, #ef4444, #dc2626);
+	}
 `
 
 const ErrorTitle = styled.div`
@@ -105,9 +135,9 @@ const ErrorItem = styled.li`
 `
 
 const SuccessContainer = styled.div`
-	background-color: rgba(34, 197, 94, 0.1);
-	border: 1px solid rgba(34, 197, 94, 0.3);
-	border-radius: 8px;
+	background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+	border: 1px solid #bbf7d0;
+	border-radius: 12px;
 	padding: 16px;
 	margin-bottom: 20px;
 	display: flex;
@@ -116,134 +146,209 @@ const SuccessContainer = styled.div`
 	color: #059669;
 	font-weight: 600;
 	font-size: 0.95rem;
+	box-shadow: 0 8px 32px rgba(34, 197, 94, 0.1);
+	position: relative;
+	overflow: hidden;
+
+	&::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 4px;
+		background: linear-gradient(90deg, #10b981, #059669);
+	}
 `
 
 const ToolGrid = styled.div`
 	display: grid;
 	grid-template-columns: 1fr 1fr;
-	gap: 10px;
+	gap: 12px;
 `
 
-const GenerateButton = styled.button`
+const BaseButton = styled.button`
 	width: 100%;
-	padding: 12px;
-	background-color: #0066cc;
-	color: white;
+	padding: 14px 16px;
 	border: none;
-	border-radius: var(--radius-sm);
-	font-weight: 500;
+	border-radius: 12px;
+	font-weight: 600;
+	font-size: 0.9rem;
 	cursor: pointer;
-	transition: background-color 0.2s;
+	transition: all 0.3s ease;
 	display: flex;
 	align-items: center;
 	justify-content: center;
+	gap: 8px;
+	position: relative;
+	overflow: hidden;
+	backdrop-filter: blur(20px);
+	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 
-	&:hover {
-		background-color: #0052a3;
+	&::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: -100%;
+		width: 100%;
+		height: 100%;
+		background: linear-gradient(
+			90deg,
+			transparent,
+			rgba(255, 255, 255, 0.2),
+			transparent
+		);
+		transition: left 0.5s ease;
 	}
-`
 
-const SolveButton = styled.button`
-	width: 100%;
-	padding: 12px;
-	background-color: #008000;
-	color: white;
-	border: none;
-	border-radius: var(--radius-sm);
-	font-weight: 500;
-	cursor: pointer;
-	transition: background-color 0.2s;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	margin-top: 10px;
-
-	&:hover {
-		background-color: #006400;
+	&:hover::before {
+		left: 100%;
 	}
 
 	&:disabled {
-		background-color: #9dbb9d;
+		opacity: 0.6;
 		cursor: not-allowed;
+
+		&:hover::before {
+			left: -100%;
+		}
 	}
 `
 
-const CopyButton = styled.button`
-	width: 100%;
-	padding: 12px;
-	background-color: #6366f1;
+const GenerateButton = styled(BaseButton)`
+	background: linear-gradient(135deg, #3b82f6, #1e40af);
 	color: white;
-	border: none;
-	border-radius: var(--radius-sm);
-	font-weight: 500;
-	cursor: pointer;
-	transition: background-color 0.2s;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	margin-top: 10px;
+	border: 1px solid rgba(59, 130, 246, 0.3);
 
-	&:hover {
-		background-color: #4f46e5;
+	&:hover:not(:disabled) {
+		transform: translateY(-2px);
+		box-shadow: 0 12px 40px rgba(59, 130, 246, 0.3),
+			inset 0 1px 0 rgba(255, 255, 255, 0.2);
 	}
 
-	&:disabled {
-		background-color: #a5b4fc;
-		cursor: not-allowed;
+	&:active:not(:disabled) {
+		transform: translateY(0);
+	}
+`
+
+const SolveButton = styled(BaseButton)`
+	background: linear-gradient(135deg, #10b981, #059669);
+	color: white;
+	border: 1px solid rgba(16, 185, 129, 0.3);
+	margin-top: 12px;
+
+	&:hover:not(:disabled) {
+		transform: translateY(-2px);
+		box-shadow: 0 12px 40px rgba(16, 185, 129, 0.3),
+			inset 0 1px 0 rgba(255, 255, 255, 0.2);
+	}
+
+	&:active:not(:disabled) {
+		transform: translateY(0);
+	}
+`
+
+const CopyButton = styled(BaseButton)`
+	background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+	color: white;
+	border: 1px solid rgba(139, 92, 246, 0.3);
+	margin-top: 12px;
+
+	&:hover:not(:disabled) {
+		transform: translateY(-2px);
+		box-shadow: 0 12px 40px rgba(139, 92, 246, 0.3),
+			inset 0 1px 0 rgba(255, 255, 255, 0.2);
+	}
+
+	&:active:not(:disabled) {
+		transform: translateY(0);
 	}
 `
 
 const ToolItem = styled.div<{ $isActive: boolean }>`
-	padding: 14px 10px;
-	background-color: ${props =>
-		props.$isActive ? 'var(--primary-light)' : 'var(--surface-color)'};
+	padding: 16px 12px;
+	background: ${props =>
+		props.$isActive
+			? 'linear-gradient(135deg, rgba(124, 58, 237, 0.2), rgba(59, 130, 246, 0.2))'
+			: 'rgba(255, 255, 255, 0.1)'};
+	backdrop-filter: blur(20px);
 	border: 1px solid
 		${props =>
-			props.$isActive ? 'var(--primary-color)' : 'var(--border-color)'};
-	border-radius: var(--radius-sm);
+			props.$isActive ? 'rgba(124, 58, 237, 0.4)' : 'rgba(124, 58, 237, 0.2)'};
+	border-radius: 12px;
 	cursor: pointer;
-	user-select: none;
-	transition: var(--transition);
+	transition: all 0.3s ease;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	justify-content: center;
-	color: ${props =>
-		props.$isActive ? 'var(--primary-color)' : 'var(--text-primary)'};
-	box-shadow: ${props =>
-		props.$isActive ? '0 0 0 1px var(--primary-color)' : 'none'};
+	gap: 8px;
+	text-align: center;
+	position: relative;
+	overflow: hidden;
+	box-shadow: 0 4px 16px rgba(124, 58, 237, 0.1),
+		inset 0 1px 0 rgba(255, 255, 255, 0.1);
+
+	&::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: -100%;
+		width: 100%;
+		height: 100%;
+		background: linear-gradient(
+			90deg,
+			transparent,
+			rgba(255, 255, 255, 0.1),
+			transparent
+		);
+		transition: left 0.5s ease;
+	}
 
 	&:hover {
-		background-color: ${props =>
-			props.$isActive ? 'var(--primary-light)' : 'var(--bg-color)'};
-		border-color: ${props =>
-			props.$isActive ? 'var(--primary-color)' : 'var(--primary-light)'};
+		transform: translateY(-2px);
+		border-color: rgba(124, 58, 237, 0.4);
+		box-shadow: 0 8px 32px rgba(124, 58, 237, 0.2),
+			inset 0 1px 0 rgba(255, 255, 255, 0.2);
+
+		&::before {
+			left: 100%;
+		}
+	}
+
+	&:active {
+		transform: translateY(0);
 	}
 `
 
-const IconWrapper = styled.div`
-	width: 36px;
-	height: 36px;
+const ToolIcon = styled.div`
+	width: 32px;
+	height: 32px;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	margin-bottom: 8px;
+	color: #7c3aed;
+	font-size: 1.2rem;
 `
 
-const Label = styled.span`
+const ToolLabel = styled.span`
 	font-size: 0.8rem;
 	font-weight: 500;
-	text-align: center;
+	color: rgba(124, 58, 237, 0.9);
+	line-height: 1.2;
 `
 
 const ToolTip = styled.div`
-	font-size: 0.75rem;
-	color: var(--text-secondary);
-	margin-top: 8px;
-	text-align: center;
-	padding: 10px;
-	background-color: var(--bg-color);
-	border-radius: var(--radius-sm);
+	margin-top: 12px;
+	padding: 12px;
+	background: rgba(59, 130, 246, 0.1);
+	backdrop-filter: blur(20px);
+	border: 1px solid rgba(59, 130, 246, 0.2);
+	border-radius: 8px;
+	font-size: 0.8rem;
+	color: rgba(59, 130, 246, 0.9);
+	line-height: 1.4;
+	box-shadow: 0 4px 16px rgba(59, 130, 246, 0.1),
+		inset 0 1px 0 rgba(255, 255, 255, 0.1);
 `
 
 // Компоненты иконок для элементов
@@ -411,8 +516,8 @@ const ToolboxItem: React.FC<ToolItemProps> = ({
 }) => {
 	return (
 		<ToolItem $isActive={isActive} onClick={() => onClick(type)}>
-			<IconWrapper>{ELEMENT_ICONS[type]}</IconWrapper>
-			<Label>{label}</Label>
+			<ToolIcon>{ELEMENT_ICONS[type]}</ToolIcon>
+			<ToolLabel>{label}</ToolLabel>
 		</ToolItem>
 	)
 }

@@ -236,16 +236,6 @@ const Button = styled.button`
 	}
 `
 
-const ViewButton = styled(Button)`
-	background: var(--background-color);
-	color: var(--text-primary);
-	border: 1px solid var(--border-color);
-
-	&:hover:not(:disabled) {
-		background: var(--border-color);
-	}
-`
-
 const DeleteButton = styled(Button)`
 	background: #ef4444;
 	color: white;
@@ -437,11 +427,6 @@ const TopologyDetailModal: React.FC<TopologyDetailModalProps> = ({
 		}
 	}
 
-	const handleViewCircuit = (circuit: Circuit) => {
-		// Здесь можно добавить логику для просмотра деталей схемы
-		console.log('Просмотр схемы:', circuit)
-	}
-
 	const formatDate = (dateString: string) => {
 		return new Date(dateString).toLocaleDateString('ru-RU', {
 			year: 'numeric',
@@ -569,12 +554,6 @@ const TopologyDetailModal: React.FC<TopologyDetailModalProps> = ({
 										</CircuitMeta>
 
 										<CircuitActions>
-											<ViewButton
-												onClick={() => handleViewCircuit(circuit)}
-												disabled={deletingId === circuit.id}
-											>
-												Просмотр
-											</ViewButton>
 											<DeleteButton
 												onClick={() => handleDeleteCircuit(circuit.id)}
 												disabled={deletingId === circuit.id}
