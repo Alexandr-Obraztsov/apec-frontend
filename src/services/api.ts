@@ -541,7 +541,7 @@ export const circuitApi = {
 					params.topology_id
 				)
 
-				const circuit = await circuitApi.getCircuitFromDB(
+				const circuit = await circuitApi.getRandomCircuitFromDB(
 					params.topology_id,
 					params.order
 				)
