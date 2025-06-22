@@ -1,13 +1,11 @@
-import React, { useRef, useState, useEffect, useMemo, useCallback } from 'react'
+import React, { useCallback, useState, useRef, useEffect, useMemo } from 'react'
 import styled from 'styled-components'
 import { useCircuitStore } from '../store/circuitStore'
-import { Position } from '../types'
+import { Position, Direction, getEndPosition } from '../types'
 import {
 	NodesRenderer,
 	ElementsRenderer,
-	TempNode,
-	WireSnapPoint,
-	PlacementLineComponent,
+	DirectionIndicators,
 } from './BoardElements'
 
 const BoardContainer = styled.div`
@@ -15,56 +13,32 @@ const BoardContainer = styled.div`
 	position: relative;
 	overflow: hidden;
 	background: var(--surface-color);
-	background-image: linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
-		linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
-		linear-gradient(rgba(0, 0, 0, 0.02) 1px, transparent 1px),
-		linear-gradient(90deg, rgba(0, 0, 0, 0.02) 1px, transparent 1px);
-	background-size: 20px 20px, 20px 20px, 5px 5px, 5px 5px;
-	width: 100%;
-	height: 100%;
-	user-select: none;
-	cursor: default;
+	margin-right: 300px;
 `
 
-const SVGCanvas = styled.svg`
-	width: 100%;
-	height: 100%;
-`
-
-const StatusBar = styled.div`
-	position: fixed;
-	bottom: 0;
-	left: 0;
-	right: 0;
-	height: 40px;
-	background-color: var(--surface-color);
-	border-top: 1px solid var(--border-color);
-	display: flex;
-	align-items: center;
-	padding: 0 20px;
-	font-size: 14px;
-	color: var(--text-secondary);
-	z-index: 1000;
-	box-shadow: var(--shadow-sm);
+const SVGCanvas = styled.svg<{ $panX: number; $panY: number }>`
+	width: 5000px;
+	height: 5000px;
+	display: block;
+	background: var(--surface-color);
+	transform: translate(${props => props.$panX}px, ${props => props.$panY}px);
 `
 
 const Tooltip = styled.div`
 	position: absolute;
-	bottom: 50px;
+	bottom: 100%;
 	left: 50%;
 	transform: translateX(-50%);
 	background: var(--surface-color);
-	color: var(--text-primary);
-	padding: 12px 16px;
-	border-radius: var(--radius-md);
-	box-shadow: var(--shadow-md);
-	font-size: 14px;
-	pointer-events: none;
-	opacity: 0.9;
-	max-width: 320px;
-	text-align: center;
-	z-index: 1000;
-	transition: opacity 0.2s ease-in-out;
+	border: 1px solid var(--border-color);
+	border-radius: 6px;
+	padding: 8px 12px;
+	font-size: 12px;
+	color: var(--text-secondary);
+	white-space: nowrap;
+	box-shadow: var(--shadow-sm);
+	z-index: 20;
+	margin-bottom: 8px;
 `
 
 const CircuitBoard: React.FC = () => {
@@ -82,8 +56,6 @@ const CircuitBoard: React.FC = () => {
 	// Use individual action functions instead of destructuring them all
 	const addNode = useCircuitStore(state => state.addNode)
 	const findNodeAtPosition = useCircuitStore(state => state.findNodeAtPosition)
-	const findClosestWire = useCircuitStore(state => state.findClosestWire)
-	const addNodeOnWire = useCircuitStore(state => state.addNodeOnWire)
 	const selectElement = useCircuitStore(state => state.selectElement)
 	const selectNode = useCircuitStore(state => state.selectNode)
 	const removeElement = useCircuitStore(state => state.removeElement)
@@ -91,28 +63,130 @@ const CircuitBoard: React.FC = () => {
 	const setPlacementStartNode = useCircuitStore(
 		state => state.setPlacementStartNode
 	)
-	const placeElement = useCircuitStore(state => state.placeElement)
+	const placeElementInDirection = useCircuitStore(
+		state => state.placeElementInDirection
+	)
+	const getAvailableDirections = useCircuitStore(
+		state => state.getAvailableDirections
+	)
 
 	const boardRef = useRef<HTMLDivElement>(null)
 	const [hoverNodeId, setHoverNodeId] = useState<string | null>(null)
-	const [tempNodePosition, setTempNodePosition] = useState<Position | null>(
+	const [hoveredDirection, setHoveredDirection] = useState<Direction | null>(
 		null
 	)
-	const [wireSnapPoint, setWireSnapPoint] = useState<Position | null>(null)
-	const [hoveredWireId, setHoveredWireId] = useState<string | null>(null)
+	const [previewDirection, setPreviewDirection] = useState<Direction | null>(
+		null
+	)
+
+	// Состояния для panning (перемещения по доске)
+	const [panOffset, setPanOffset] = useState<Position>({ x: -2500, y: -2500 })
+	const [isPanning, setIsPanning] = useState(false)
+	const [panStart, setPanStart] = useState<Position>({ x: 0, y: 0 })
+	const [lastPanOffset, setLastPanOffset] = useState<Position>({
+		x: -2500,
+		y: -2500,
+	})
+	const [wasDragging, setWasDragging] = useState(false)
 
 	// Получить координаты относительно доски - мемоизируем функцию
-	const getBoardCoordinates = useCallback((e: React.MouseEvent): Position => {
-		if (!boardRef.current) {
-			return { x: 0, y: 0 }
-		}
+	const getBoardCoordinates = useCallback(
+		(e: React.MouseEvent): Position => {
+			if (!boardRef.current) {
+				return { x: 0, y: 0 }
+			}
 
-		const rect = boardRef.current.getBoundingClientRect()
-		return {
-			x: e.clientX - rect.left,
-			y: e.clientY - rect.top,
+			const rect = boardRef.current.getBoundingClientRect()
+			return {
+				x: e.clientX - rect.left - panOffset.x,
+				y: e.clientY - rect.top - panOffset.y,
+			}
+		},
+		[panOffset]
+	)
+
+	// Обработчики для panning
+	const handleMouseDown = useCallback(
+		(e: React.MouseEvent) => {
+			// Если в режиме размещения, не активируем panning
+			if (placementMode.active) {
+				return
+			}
+
+			// Если это левая кнопка мыши, начинаем panning
+			if (e.button === 0) {
+				e.preventDefault()
+				setIsPanning(true)
+				setPanStart({ x: e.clientX, y: e.clientY })
+				setLastPanOffset(panOffset)
+				return
+			}
+		},
+		[panOffset, placementMode.active]
+	)
+
+	const handleMouseMoveGlobal = useCallback(
+		(e: MouseEvent) => {
+			if (isPanning) {
+				const deltaX = e.clientX - panStart.x
+				const deltaY = e.clientY - panStart.y
+
+				// Если перемещение больше 5 пикселей, считаем это драгом
+				if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+					setWasDragging(true)
+				}
+
+				setPanOffset({
+					x: lastPanOffset.x + deltaX,
+					y: lastPanOffset.y + deltaY,
+				})
+			}
+		},
+		[isPanning, panStart, lastPanOffset]
+	)
+
+	const handleMouseUpGlobal = useCallback(() => {
+		if (isPanning) {
+			setIsPanning(false)
+			// Сбрасываем флаг драга через небольшую задержку
+			setTimeout(() => setWasDragging(false), 10)
 		}
-	}, [])
+	}, [isPanning])
+
+	// Добавляем глобальные обработчики для panning
+	useEffect(() => {
+		if (isPanning) {
+			document.addEventListener('mousemove', handleMouseMoveGlobal)
+			document.addEventListener('mouseup', handleMouseUpGlobal)
+			document.body.style.cursor = 'grabbing'
+
+			return () => {
+				document.removeEventListener('mousemove', handleMouseMoveGlobal)
+				document.removeEventListener('mouseup', handleMouseUpGlobal)
+				document.body.style.cursor = 'auto'
+			}
+		}
+	}, [isPanning, handleMouseMoveGlobal, handleMouseUpGlobal])
+
+	// Функция для определения направления на основе позиции мыши относительно узла
+	const getDirectionFromMouse = useCallback(
+		(nodePosition: Position, mousePos: Position): Direction | null => {
+			const dx = mousePos.x - nodePosition.x
+			const dy = mousePos.y - nodePosition.y
+			const distance = Math.sqrt(dx * dx + dy * dy)
+
+			// Минимальное расстояние для определения направления
+			if (distance < 30) return null
+
+			// Определяем основное направление
+			if (Math.abs(dx) > Math.abs(dy)) {
+				return dx > 0 ? 'right' : 'left'
+			} else {
+				return dy > 0 ? 'down' : 'up'
+			}
+		},
+		[]
+	)
 
 	// Обработчик клика по доске - мемоизируем функцию
 	const handleBoardClick = useCallback(
@@ -120,141 +194,126 @@ const CircuitBoard: React.FC = () => {
 			// Отменяем всплытие события, чтобы не вызывать обработчики узлов
 			e.stopPropagation()
 
+			// Не обрабатываем клики во время panning или если было перетаскивание
+			if (isPanning || wasDragging) {
+				return
+			}
+
 			const position = getBoardCoordinates(e)
 
-			// Если не в режиме размещения, проверяем клик по проводу
+			// Если не в режиме размещения, снимаем выделение
 			if (!placementMode.active) {
-				// Проверяем, есть ли рядом провод для выделения
-				const nearWire = findClosestWire(position, 10)
-				if (nearWire && nearWire.wire) {
-					// Если провод найден, выделяем его
-					selectElement(nearWire.wire.id)
-					return
-				}
-
-				// Если провода нет, снимаем выделение
 				selectElement(null)
 				selectNode(null)
 				return
 			}
 
-			// Ищем узел рядом с кликом (имеет приоритет)
+			// Если в режиме размещения и есть предварительное направление, размещаем элемент
+			if (placementMode.startNodeId && previewDirection) {
+				placeElementInDirection(previewDirection)
+				setPreviewDirection(null)
+				return
+			}
+
+			// Ищем узел рядом с кликом
 			const existingNode = findNodeAtPosition(position)
 
-			// Если мы в режиме размещения и нашли узел
 			if (existingNode) {
 				if (!placementMode.startNodeId) {
 					// Если это первый клик, устанавливаем найденный узел как начальный
 					setPlacementStartNode(existingNode.id)
 				} else {
-					// Если это второй клик, завершаем размещение с найденным узлом
-					placeElement(existingNode.id)
+					// Если уже выбран начальный узел, отменяем размещение
+					cancelPlacement()
 				}
 				return
 			}
 
-			// Проверяем, есть ли точка магнитного притяжения к проводу
-			if (wireSnapPoint && hoveredWireId) {
-				// Создаем узел в точке пересечения с проводом и разбиваем провод на два
-				const newNodeId = addNodeOnWire(wireSnapPoint, hoveredWireId)
-
-				if (!placementMode.startNodeId) {
-					// Если это первый клик, устанавливаем созданный узел как начальный
-					setPlacementStartNode(newNodeId)
-				} else {
-					// Если это второй клик, завершаем размещение
-					placeElement(newNodeId)
-				}
-				return
-			}
-
-			// Если это первый клик и узла рядом нет, создаем новый узел
-			if (!placementMode.startNodeId) {
+			// Если нет узлов и это первый элемент в цепи, создаем начальный узел
+			if (elements.length === 0 && !placementMode.startNodeId) {
 				const newNodeId = addNode(position)
 				setPlacementStartNode(newNodeId)
 				return
 			}
 
-			// Если это второй клик и узла рядом нет, создаем новый узел и завершаем размещение
-			const endNodeId = addNode(position)
-			placeElement(endNodeId)
+			// В остальных случаях ничего не делаем - элементы можно создавать только от существующих узлов
 		},
 		[
 			placementMode.active,
 			placementMode.startNodeId,
+			previewDirection,
+			elements.length,
+			isPanning,
+			wasDragging,
 			findNodeAtPosition,
-			findClosestWire,
-			wireSnapPoint,
-			hoveredWireId,
-			addNodeOnWire,
 			setPlacementStartNode,
 			addNode,
-			placeElement,
 			selectElement,
 			selectNode,
+			cancelPlacement,
+			placeElementInDirection,
 			getBoardCoordinates,
 		]
+	)
+
+	// Обработчик клика по направлению
+	const handleDirectionClick = useCallback(
+		(direction: Direction) => {
+			if (placementMode.active && placementMode.startNodeId) {
+				placeElementInDirection(direction)
+				setPreviewDirection(null)
+			}
+		},
+		[placementMode.active, placementMode.startNodeId, placeElementInDirection]
 	)
 
 	// Отслеживаем перемещение мыши - мемоизируем функцию
 	const handleMouseMove = useCallback(
 		(e: React.MouseEvent) => {
+			// Не обрабатываем движение мыши во время panning
+			if (isPanning) {
+				return
+			}
+
 			const position = getBoardCoordinates(e)
 
-			// Сначала проверяем ближайший узел
+			// Проверяем ближайший узел
 			const nearbyNode = findNodeAtPosition(position)
 
-			// Если в режиме размещения
-			if (placementMode.active) {
-				if (nearbyNode) {
-					// Если узел найден, приоритезируем его
-					setTempNodePosition(null)
-					setHoverNodeId(nearbyNode.id)
-					setWireSnapPoint(null)
-					setHoveredWireId(null)
-				} else {
-					// Если узел не найден, проверяем магнитное притяжение к проводам
-					const closestWire = findClosestWire(position)
+			if (nearbyNode) {
+				setHoverNodeId(nearbyNode.id)
+			} else {
+				setHoverNodeId(null)
+			}
 
-					if (closestWire && closestWire.wire) {
-						setWireSnapPoint(closestWire.point)
-						setHoveredWireId(closestWire.wire.id)
-						setHoverNodeId(null)
-						setTempNodePosition(null)
+			// Если в режиме размещения и выбран узел, определяем направление
+			if (placementMode.active && placementMode.startNodeId) {
+				const startNode = nodes.find(n => n.id === placementMode.startNodeId)
+				if (startNode) {
+					const direction = getDirectionFromMouse(startNode.position, position)
+					if (direction) {
+						const availableDirections = getAvailableDirections(startNode.id)
+						if (availableDirections.includes(direction)) {
+							setPreviewDirection(direction)
+						} else {
+							setPreviewDirection(null)
+						}
 					} else {
-						// Ни узла, ни провода рядом нет - показываем временный узел
-						setWireSnapPoint(null)
-						setHoveredWireId(null)
-						setHoverNodeId(null)
-						setTempNodePosition(position)
+						setPreviewDirection(null)
 					}
 				}
-
-				// Если в режиме размещения с выбранным начальным узлом
-				if (placementMode.startNodeId) {
-					// Логика уже обработана выше
-				}
 			} else {
-				// Если не в режиме размещения
-				// Проверяем наведение на провод для выделения
-				const closestWire = findClosestWire(position, 10)
-
-				if (closestWire && closestWire.wire) {
-					setHoveredWireId(closestWire.wire.id)
-				} else {
-					setHoveredWireId(null)
-				}
-
-				// В обычном режиме не показываем temporary node
-				setHoverNodeId(null)
-				setTempNodePosition(null)
-				setWireSnapPoint(null)
+				setPreviewDirection(null)
 			}
 		},
 		[
 			placementMode.active,
+			placementMode.startNodeId,
+			nodes,
+			isPanning,
 			findNodeAtPosition,
-			findClosestWire,
+			getDirectionFromMouse,
+			getAvailableDirections,
 			getBoardCoordinates,
 		]
 	)
@@ -266,9 +325,8 @@ const CircuitBoard: React.FC = () => {
 			if (placementMode.active) {
 				cancelPlacement()
 				setHoverNodeId(null)
-				setTempNodePosition(null)
-				setWireSnapPoint(null)
-				setHoveredWireId(null)
+				setHoveredDirection(null)
+				setPreviewDirection(null)
 			}
 		},
 		[placementMode.active, cancelPlacement]
@@ -283,36 +341,52 @@ const CircuitBoard: React.FC = () => {
 		[nodes, placementMode.startNodeId]
 	)
 
-	// Получаем конечный узел для отображения предпросмотра
-	const previewEndNode = useMemo(
-		() => (hoverNodeId ? nodes.find(node => node.id === hoverNodeId) : null),
-		[nodes, hoverNodeId]
-	)
-
-	// Вычисляем позицию конечной точки для линии предпросмотра
-	const previewEndPosition = useMemo(() => {
-		if (previewEndNode) {
-			return previewEndNode.position
-		} else if (wireSnapPoint) {
-			return wireSnapPoint
-		} else if (tempNodePosition) {
-			return tempNodePosition
+	// Получаем доступные направления для выбранного узла
+	const availableDirections = useMemo(() => {
+		if (placementMode.active && placementMode.startNodeId) {
+			return getAvailableDirections(placementMode.startNodeId)
 		}
-		return null
-	}, [previewEndNode, wireSnapPoint, tempNodePosition])
+		return []
+	}, [placementMode.active, placementMode.startNodeId, getAvailableDirections])
 
-	// Текст статуса
-	const statusText = useMemo(() => {
-		if (placementMode.active) {
-			if (placementMode.startNodeId) {
-				return 'Кликните для размещения конца элемента. Наведите курсор на узел или провод для соединения.'
-			} else {
-				return 'Кликните для начала размещения элемента. Наведите курсор на узел или провод для соединения.'
-			}
-		} else {
-			return 'Используйте панель элементов слева для размещения компонентов. Del/Backspace для удаления выбранных элементов.'
+	// Вычисляем предварительный элемент для отображения
+	const previewElement = useMemo(() => {
+		if (
+			!placementMode.active ||
+			!placementMode.startNodeId ||
+			!previewDirection ||
+			!startNode
+		) {
+			return null
 		}
-	}, [placementMode.active, placementMode.startNodeId])
+
+		const endPosition = getEndPosition(startNode.position, previewDirection)
+
+		return {
+			startPosition: startNode.position,
+			endPosition,
+			direction: previewDirection,
+			elementType: placementMode.elementType!,
+		}
+	}, [
+		placementMode.active,
+		placementMode.startNodeId,
+		placementMode.elementType,
+		previewDirection,
+		startNode,
+	])
+
+	// Курсор в зависимости от режима
+	const cursor = useMemo(() => {
+		if (isPanning) {
+			return 'grabbing'
+		}
+		return placementMode.active
+			? placementMode.startNodeId
+				? 'crosshair'
+				: 'cell'
+			: 'grab'
+	}, [placementMode.active, placementMode.startNodeId, isPanning])
 
 	// Обработка нажатий клавиш Delete и Backspace для удаления выбранных элементов
 	useEffect(() => {
@@ -345,14 +419,15 @@ const CircuitBoard: React.FC = () => {
 		}
 	}, [selectedElementId, removeElement])
 
-	// Курсор в зависимости от режима
-	const cursor = useMemo(() => {
-		return placementMode.active
-			? placementMode.startNodeId
-				? 'crosshair'
-				: 'cell'
-			: 'default'
-	}, [placementMode.active, placementMode.startNodeId])
+	// Обработчик колесика мыши для сброса panning
+	const handleWheel = useCallback((e: React.WheelEvent) => {
+		// Если зажат Ctrl, сбрасываем panning в центр
+		if (e.ctrlKey) {
+			e.preventDefault()
+			setPanOffset({ x: -2500, y: -2500 })
+			setLastPanOffset({ x: -2500, y: -2500 })
+		}
+	}, [])
 
 	return (
 		<>
@@ -361,9 +436,42 @@ const CircuitBoard: React.FC = () => {
 				onClick={handleBoardClick}
 				onMouseMove={handleMouseMove}
 				onContextMenu={handleRightClick}
+				onMouseDown={handleMouseDown}
+				onWheel={handleWheel}
 				style={{ cursor }}
 			>
-				<SVGCanvas>
+				<SVGCanvas $panX={panOffset.x} $panY={panOffset.y}>
+					{/* Сетка */}
+					<defs>
+						<pattern
+							id='grid'
+							width='20'
+							height='20'
+							patternUnits='userSpaceOnUse'
+						>
+							<path
+								d='M 20 0 L 0 0 0 20'
+								fill='none'
+								stroke='rgba(0, 0, 0, 0.1)'
+								strokeWidth='1'
+							/>
+						</pattern>
+					</defs>
+					<rect width='100%' height='100%' fill='url(#grid)' />
+
+					{/* Границы рабочей области */}
+					<rect
+						x={0}
+						y={0}
+						width={5000}
+						height={5000}
+						fill='none'
+						stroke='var(--primary-color)'
+						strokeWidth={3}
+						strokeDasharray='10 5'
+						opacity={0.6}
+					/>
+
 					{/* Используем мемоизированные компоненты */}
 					<ElementsRenderer
 						elements={elements}
@@ -378,17 +486,30 @@ const CircuitBoard: React.FC = () => {
 						highlightedNodeId={highlightedNodeId}
 					/>
 
-					{/* Временный узел при размещении */}
-					<TempNode position={tempNodePosition} />
+					{/* Предварительный элемент */}
+					{previewElement && (
+						<g opacity={0.5}>
+							{/* Здесь будет рендериться предварительный элемент */}
+							<line
+								x1={previewElement.startPosition.x}
+								y1={previewElement.startPosition.y}
+								x2={previewElement.endPosition.x}
+								y2={previewElement.endPosition.y}
+								stroke='var(--primary-color)'
+								strokeWidth={2}
+								strokeDasharray='5 5'
+							/>
+						</g>
+					)}
 
-					{/* Точка притяжения к проводу */}
-					<WireSnapPoint position={wireSnapPoint} />
-
-					{/* Линия предпросмотра при размещении */}
-					{placementMode.active && (
-						<PlacementLineComponent
-							startNode={startNode}
-							endPosition={previewEndPosition}
+					{/* Индикаторы направлений для размещения элементов */}
+					{placementMode.active && startNode && (
+						<DirectionIndicators
+							centerPosition={startNode.position}
+							availableDirections={availableDirections}
+							hoveredDirection={hoveredDirection}
+							onDirectionClick={handleDirectionClick}
+							onDirectionHover={setHoveredDirection}
 						/>
 					)}
 				</SVGCanvas>
@@ -396,12 +517,22 @@ const CircuitBoard: React.FC = () => {
 				{placementMode.active && (
 					<Tooltip>
 						{placementMode.startNodeId
-							? 'Разместите конец элемента. Правый клик для отмены.'
-							: 'Выберите начальную точку элемента. Правый клик для отмены.'}
+							? previewDirection
+								? `Кликните для размещения в направлении ${previewDirection}`
+								: 'Наведите мышь на доступное направление'
+							: elements.length === 0
+							? 'Кликните для создания первого узла.'
+							: 'Кликните на узел для начала размещения.'}
+					</Tooltip>
+				)}
+
+				{!placementMode.active && elements.length === 0 && (
+					<Tooltip>
+						Зажмите и перетащите для перемещения по доске. Ctrl+колесико для
+						возврата в центр.
 					</Tooltip>
 				)}
 			</BoardContainer>
-			<StatusBar>{statusText}</StatusBar>
 		</>
 	)
 }

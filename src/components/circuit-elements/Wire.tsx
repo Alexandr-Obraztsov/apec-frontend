@@ -33,19 +33,28 @@ const Wire: React.FC<WireProps> = ({
 	isHighlighted = false,
 }) => {
 	// Вычисляем форматированное значение и угол для отображения
-	const { formattedValue, angle } = useMemo(() => {
-		// Вычисляем угол между узлами для отображения значения
-		const dx = endNode.position.x - startNode.position.x
-		const dy = endNode.position.y - startNode.position.y
-		const angle = parseFloat(((Math.atan2(dy, dx) * 180) / Math.PI).toFixed(2))
+	const { formattedValue, angle, centerX, centerY } = useMemo(() => {
+		// Вычисляем центр между узлами для отображения значения
+		const centerX = (startNode.position.x + endNode.position.x) / 2
+		const centerY = (startNode.position.y + endNode.position.y) / 2
+
+		// Используем угол поворота из элемента (уже рассчитан по направлению)
+		const angle = element.rotation
 
 		// Получаем форматированное значение с именем
 		const formattedValue = `${formatValue(element.value, element.unit)} ${
 			element.name
 		}`
 
-		return { formattedValue, angle }
-	}, [startNode, endNode, element.value, element.unit, element.name])
+		return { formattedValue, angle, centerX, centerY }
+	}, [
+		startNode,
+		endNode,
+		element.rotation,
+		element.value,
+		element.unit,
+		element.name,
+	])
 
 	return (
 		<>
@@ -57,8 +66,8 @@ const Wire: React.FC<WireProps> = ({
 			{selected && (
 				<>
 					<circle
-						cx={(startNode.position.x + endNode.position.x) / 2}
-						cy={(startNode.position.y + endNode.position.y) / 2}
+						cx={centerX}
+						cy={centerY}
 						r={5}
 						fill='var(--primary-color)'
 						opacity={0.7}

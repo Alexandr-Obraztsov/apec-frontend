@@ -36,7 +36,8 @@ export const usePlacementActions = () => {
 		startPlacement: state.startPlacement,
 		cancelPlacement: state.cancelPlacement,
 		setPlacementStartNode: state.setPlacementStartNode,
-		placeElement: state.placeElement,
+		placeElementInDirection: state.placeElementInDirection,
+		getAvailableDirections: state.getAvailableDirections,
 	}))
 }
 
@@ -44,7 +45,6 @@ export const usePlacementActions = () => {
 export const useNodeActions = () => {
 	return useCircuitStore(state => ({
 		addNode: state.addNode,
-		updateNodePosition: state.updateNodePosition,
 		findNodeAtPosition: state.findNodeAtPosition,
 		selectNode: state.selectNode,
 		getNodeById: state.getNodeById,
@@ -68,8 +68,6 @@ export const useElementActions = () => {
 		removeElement: state.removeElement,
 		updateElementValue: state.updateElementValue,
 		selectElement: state.selectElement,
-		findClosestWire: state.findClosestWire,
-		addNodeOnWire: state.addNodeOnWire,
 	}))
 }
 

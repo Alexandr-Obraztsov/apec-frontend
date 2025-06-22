@@ -1,8 +1,10 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import styled from 'styled-components'
-import { ElementType } from '../types'
+import { ElementType, Node as CircuitNode } from '../types'
 import { useCircuitStore } from '../store/circuitStore'
 import GenerateChainModal, { ChainOptions } from './GenerateChainModal'
+import CircuitSolutionModal from './CircuitSolutionModal'
+import { circuitApi, CircuitSolutionResult } from '../services/api'
 
 // Label mapping
 const ELEMENT_LABELS: Record<ElementType, string> = {
@@ -16,62 +18,105 @@ const ELEMENT_LABELS: Record<ElementType, string> = {
 }
 
 const ToolboxContainer = styled.div`
-	position: fixed;
-	left: 20px;
-	top: 80px;
-	width: 220px;
-	background-color: var(--surface-color);
-	border-radius: var(--radius-md);
-	box-shadow: var(--shadow-md);
+	width: 280px;
+	height: 100%;
+	background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+	border-right: 1px solid var(--border-color);
+	box-shadow: 4px 0 20px rgba(0, 0, 0, 0.08);
 	padding: 20px;
-	z-index: 100;
 	display: flex;
 	flex-direction: column;
-	gap: 10px;
+	overflow-y: auto;
+	flex-shrink: 0;
 `
 
 const ToolboxHeader = styled.div`
-	margin-bottom: 12px;
-	border-bottom: 1px solid var(--border-color);
-	padding-bottom: 12px;
+	margin-bottom: 20px;
+	padding-bottom: 16px;
+	border-bottom: 2px solid var(--border-color);
 `
 
 const Title = styled.h3`
 	margin: 0;
 	color: var(--text-primary);
-	font-size: 1.1rem;
-	font-weight: 600;
+	font-size: 1.3rem;
+	font-weight: 700;
+	background: linear-gradient(135deg, #1e40af, #3b82f6);
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	background-clip: text;
 `
 
 const SubTitle = styled.p`
-	margin: 5px 0 0 0;
+	margin: 8px 0 0 0;
 	color: var(--text-secondary);
+	font-size: 0.9rem;
+	font-weight: 500;
+`
+
+const Section = styled.div`
+	margin-bottom: 24px;
+`
+
+const SectionTitle = styled.h4`
+	margin: 0 0 12px 0;
+	color: var(--text-primary);
+	font-size: 1rem;
+	font-weight: 600;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+`
+
+const ErrorsContainer = styled.div`
+	background-color: rgba(239, 68, 68, 0.1);
+	border: 1px solid rgba(239, 68, 68, 0.3);
+	border-radius: 8px;
+	padding: 16px;
+	margin-bottom: 20px;
+`
+
+const ErrorTitle = styled.div`
+	font-weight: 600;
+	font-size: 0.95rem;
+	margin-bottom: 12px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	color: #dc2626;
+`
+
+const ErrorList = styled.ul`
+	margin: 0;
+	padding-left: 16px;
 	font-size: 0.85rem;
+	line-height: 1.4;
+	color: #991b1b;
+`
+
+const ErrorItem = styled.li`
+	margin-bottom: 6px;
+	font-weight: 500;
+`
+
+const SuccessContainer = styled.div`
+	background-color: rgba(34, 197, 94, 0.1);
+	border: 1px solid rgba(34, 197, 94, 0.3);
+	border-radius: 8px;
+	padding: 16px;
+	margin-bottom: 20px;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	color: #059669;
+	font-weight: 600;
+	font-size: 0.95rem;
 `
 
 const ToolGrid = styled.div`
 	display: grid;
 	grid-template-columns: 1fr 1fr;
 	gap: 10px;
-`
-
-const Divider = styled.div`
-	margin: 20px 0;
-	height: 1px;
-	background-color: var(--border-color);
-	position: relative;
-
-	&:after {
-		content: 'или';
-		position: absolute;
-		left: 50%;
-		top: 50%;
-		transform: translate(-50%, -50%);
-		background-color: var(--surface-color);
-		padding: 0 10px;
-		color: var(--text-secondary);
-		font-size: 0.9rem;
-	}
 `
 
 const GenerateButton = styled.button`
@@ -90,6 +135,56 @@ const GenerateButton = styled.button`
 
 	&:hover {
 		background-color: #0052a3;
+	}
+`
+
+const SolveButton = styled.button`
+	width: 100%;
+	padding: 12px;
+	background-color: #008000;
+	color: white;
+	border: none;
+	border-radius: var(--radius-sm);
+	font-weight: 500;
+	cursor: pointer;
+	transition: background-color 0.2s;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	margin-top: 10px;
+
+	&:hover {
+		background-color: #006400;
+	}
+
+	&:disabled {
+		background-color: #9dbb9d;
+		cursor: not-allowed;
+	}
+`
+
+const CopyButton = styled.button`
+	width: 100%;
+	padding: 12px;
+	background-color: #6366f1;
+	color: white;
+	border: none;
+	border-radius: var(--radius-sm);
+	font-weight: 500;
+	cursor: pointer;
+	transition: background-color 0.2s;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	margin-top: 10px;
+
+	&:hover {
+		background-color: #4f46e5;
+	}
+
+	&:disabled {
+		background-color: #a5b4fc;
+		cursor: not-allowed;
 	}
 `
 
@@ -347,14 +442,30 @@ const Toolbox: React.FC = () => {
 	const startPlacement = useCircuitStore(state => state.startPlacement)
 	const cancelPlacement = useCircuitStore(state => state.cancelPlacement)
 	const generateChain = useCircuitStore(state => state.generateChain)
+	const nodes = useCircuitStore(state => state.nodes)
+	const elements = useCircuitStore(state => state.elements)
+
 	const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false)
+	const [isSolveModalOpen, setIsSolveModalOpen] = useState(false)
+	const [isLoading, setIsLoading] = useState(false)
+	const [error, setError] = useState<string | null>(null)
+	const [solutionEquations, setSolutionEquations] =
+		useState<CircuitSolutionResult | null>(null)
+	const [unconnectedNodes, setUnconnectedNodes] = useState<CircuitNode[]>([])
+
+	// Проверяем узлы на наличие соединений
+	useEffect(() => {
+		const badNodes = nodes.filter(node => node.connectedElements.length < 2)
+		setUnconnectedNodes(badNodes)
+	}, [nodes])
+
+	// Проверяем, можно ли решить цепь
+	const canSolveCircuit = nodes.length > 0 && unconnectedNodes.length === 0
 
 	const handleItemClick = (type: ElementType) => {
 		if (placementMode.active && placementMode.elementType === type) {
-			// Если выбран тот же элемент, отменяем размещение
 			cancelPlacement()
 		} else {
-			// Иначе начинаем размещение нового элемента
 			startPlacement(type)
 		}
 	}
@@ -364,89 +475,229 @@ const Toolbox: React.FC = () => {
 		setIsGenerateModalOpen(false)
 	}
 
+	const handleSolveCircuit = async () => {
+		setError(null)
+		setSolutionEquations(null)
+		setIsLoading(true)
+		setIsSolveModalOpen(true)
+
+		try {
+			const response = await circuitApi.solveCircuit({
+				nodes: nodes,
+				elements: elements,
+			})
+
+			if (response.status === 'success' && response.solution) {
+				setSolutionEquations(response.solution)
+			}
+		} catch {
+			setError('Ошибка при решении цепи')
+		} finally {
+			setIsLoading(false)
+		}
+	}
+
+	const handleCloseSolveModal = () => {
+		setIsSolveModalOpen(false)
+		if (isLoading) {
+			setIsLoading(false)
+		}
+	}
+
+	// Функция для копирования цепи без значений
+	const handleCopyCircuit = async () => {
+		if (elements.length === 0) {
+			return // Нет элементов для копирования
+		}
+
+		try {
+			// Создаем копию цепи без значений элементов
+			const circuitWithoutValues = elements
+				.map(element => {
+					const startNode = nodes.find(n => n.id === element.startNodeId)
+					const endNode = nodes.find(n => n.id === element.endNodeId)
+
+					if (!startNode || !endNode) return ''
+
+					if (element.type === 'switch') {
+						return `${element.name} ${startNode.name} ${endNode.name} ${
+							element.isOpen ? 'no' : 'nc'
+						}; ${element.direction}`
+					} else if (element.type === 'wire') {
+						return `W ${startNode.name} ${endNode.name}; ${element.direction}`
+					} else {
+						return `${element.name} ${startNode.name} ${endNode.name}; ${element.direction}`
+					}
+				})
+				.filter(line => line !== '')
+				.join('\n')
+
+			// Копируем в буфер обмена
+			await navigator.clipboard.writeText(circuitWithoutValues)
+
+			console.log('Цепь скопирована в буфер обмена:', circuitWithoutValues)
+		} catch (error) {
+			console.error('Ошибка при копировании цепи:', error)
+		}
+	}
+
+	// Компонент для отображения статуса цепи
+	const CircuitStatus = () => {
+		if (nodes.length === 0) {
+			return null
+		}
+
+		if (unconnectedNodes.length > 0) {
+			return (
+				<ErrorsContainer>
+					<ErrorTitle>
+						<span>⚠️</span>
+						<span>Неполные соединения</span>
+					</ErrorTitle>
+					{unconnectedNodes.length < 5 ? (
+						<ErrorList>
+							{unconnectedNodes.map(node => (
+								<ErrorItem key={node.id}>
+									Узел {node.name} имеет только {node.connectedElements.length}{' '}
+									соединение{node.connectedElements.length === 1 ? '' : 'я'}
+								</ErrorItem>
+							))}
+						</ErrorList>
+					) : (
+						<ErrorList>
+							<ErrorItem>
+								Узлы {unconnectedNodes.map(node => node.name).join(', ')} имеют
+								только одно соединение
+							</ErrorItem>
+						</ErrorList>
+					)}
+				</ErrorsContainer>
+			)
+		}
+
+		return (
+			<SuccessContainer>
+				<span>✓</span>
+				<span>Схема корректна</span>
+			</SuccessContainer>
+		)
+	}
+
 	return (
 		<ToolboxContainer>
 			<ToolboxHeader>
 				<Title>Элементы схемы</Title>
-				<SubTitle>Выберите элемент для размещения</SubTitle>
+				<SubTitle>Создание и анализ электрических цепей</SubTitle>
 			</ToolboxHeader>
 
-			<ToolGrid>
-				<ToolboxItem
-					type='wire'
-					label={ELEMENT_LABELS.wire}
-					isActive={
-						placementMode.active && placementMode.elementType === 'wire'
-					}
-					onClick={handleItemClick}
-				/>
-				<ToolboxItem
-					type='resistor'
-					label={ELEMENT_LABELS.resistor}
-					isActive={
-						placementMode.active && placementMode.elementType === 'resistor'
-					}
-					onClick={handleItemClick}
-				/>
-				<ToolboxItem
-					type='capacitor'
-					label={ELEMENT_LABELS.capacitor}
-					isActive={
-						placementMode.active && placementMode.elementType === 'capacitor'
-					}
-					onClick={handleItemClick}
-				/>
-				<ToolboxItem
-					type='inductor'
-					label={ELEMENT_LABELS.inductor}
-					isActive={
-						placementMode.active && placementMode.elementType === 'inductor'
-					}
-					onClick={handleItemClick}
-				/>
-				<ToolboxItem
-					type='voltage'
-					label={ELEMENT_LABELS.voltage}
-					isActive={
-						placementMode.active && placementMode.elementType === 'voltage'
-					}
-					onClick={handleItemClick}
-				/>
-				<ToolboxItem
-					type='current'
-					label={ELEMENT_LABELS.current}
-					isActive={
-						placementMode.active && placementMode.elementType === 'current'
-					}
-					onClick={handleItemClick}
-				/>
-				<ToolboxItem
-					type='switch'
-					label={ELEMENT_LABELS.switch}
-					isActive={
-						placementMode.active && placementMode.elementType === 'switch'
-					}
-					onClick={handleItemClick}
-				/>
-			</ToolGrid>
+			<CircuitStatus />
 
-			{placementMode.active && (
-				<ToolTip>
-					Поместите курсор над узлом, чтобы начать соединение. Затем выберите
-					второй узел для завершения.
-				</ToolTip>
-			)}
+			<Section>
+				<SectionTitle>
+					<span>🔧</span>
+					Компоненты
+				</SectionTitle>
+				<ToolGrid>
+					<ToolboxItem
+						type='wire'
+						label={ELEMENT_LABELS.wire}
+						isActive={
+							placementMode.active && placementMode.elementType === 'wire'
+						}
+						onClick={handleItemClick}
+					/>
+					<ToolboxItem
+						type='resistor'
+						label={ELEMENT_LABELS.resistor}
+						isActive={
+							placementMode.active && placementMode.elementType === 'resistor'
+						}
+						onClick={handleItemClick}
+					/>
+					<ToolboxItem
+						type='capacitor'
+						label={ELEMENT_LABELS.capacitor}
+						isActive={
+							placementMode.active && placementMode.elementType === 'capacitor'
+						}
+						onClick={handleItemClick}
+					/>
+					<ToolboxItem
+						type='inductor'
+						label={ELEMENT_LABELS.inductor}
+						isActive={
+							placementMode.active && placementMode.elementType === 'inductor'
+						}
+						onClick={handleItemClick}
+					/>
+					<ToolboxItem
+						type='voltage'
+						label={ELEMENT_LABELS.voltage}
+						isActive={
+							placementMode.active && placementMode.elementType === 'voltage'
+						}
+						onClick={handleItemClick}
+					/>
+					<ToolboxItem
+						type='current'
+						label={ELEMENT_LABELS.current}
+						isActive={
+							placementMode.active && placementMode.elementType === 'current'
+						}
+						onClick={handleItemClick}
+					/>
+					<ToolboxItem
+						type='switch'
+						label={ELEMENT_LABELS.switch}
+						isActive={
+							placementMode.active && placementMode.elementType === 'switch'
+						}
+						onClick={handleItemClick}
+					/>
+				</ToolGrid>
 
-			<Divider />
+				{placementMode.active && (
+					<ToolTip>
+						Поместите курсор над узлом, чтобы начать соединение. Затем выберите
+						второй узел для завершения.
+					</ToolTip>
+				)}
+			</Section>
 
-			<GenerateButton onClick={() => setIsGenerateModalOpen(true)}>
-				Сгенерировать цепь
-			</GenerateButton>
+			<Section>
+				<SectionTitle>
+					<span>⚡</span>
+					Действия
+				</SectionTitle>
+
+				<GenerateButton onClick={() => setIsGenerateModalOpen(true)}>
+					Сгенерировать цепь
+				</GenerateButton>
+
+				<SolveButton onClick={handleSolveCircuit} disabled={!canSolveCircuit}>
+					Решить цепь
+				</SolveButton>
+
+				<CopyButton
+					onClick={handleCopyCircuit}
+					disabled={elements.length === 0}
+				>
+					Копировать цепь
+				</CopyButton>
+			</Section>
 
 			<GenerateChainModal
 				isOpen={isGenerateModalOpen}
 				onClose={() => setIsGenerateModalOpen(false)}
 				onGenerate={handleGenerateChain}
+			/>
+
+			<CircuitSolutionModal
+				isOpen={isSolveModalOpen}
+				onClose={handleCloseSolveModal}
+				isLoading={isLoading}
+				error={error}
+				solutionEquations={solutionEquations}
 			/>
 		</ToolboxContainer>
 	)

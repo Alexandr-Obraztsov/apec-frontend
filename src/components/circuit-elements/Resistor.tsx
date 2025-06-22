@@ -1,6 +1,6 @@
 import React, { memo, useMemo } from 'react'
 import styled from 'styled-components'
-import { ResistorElement, Node } from '../../types'
+import { ResistorElement, Node, FIXED_ELEMENT_LENGTH } from '../../types'
 import CircuitValue from '../CircuitValue'
 import { formatValue } from '../../utils/formatters'
 
@@ -23,33 +23,18 @@ const Resistor: React.FC<ResistorProps> = memo(
 	({ element, startNode, endNode, selected }) => {
 		// Вычисляем все характеристики элемента с мемоизацией
 		const elementProps = useMemo(() => {
-			// Вычисляем угол между узлами
-			const dx = endNode.position.x - startNode.position.x
-			const dy = endNode.position.y - startNode.position.y
+			// Вычисляем центр для размещения резистора
+			const centerX = (startNode.position.x + endNode.position.x) / 2
+			const centerY = (startNode.position.y + endNode.position.y) / 2
 
-			// Округляем угол до 2 знаков после запятой
-			const angle = parseFloat(
-				((Math.atan2(dy, dx) * 180) / Math.PI).toFixed(2)
-			)
-
-			// Вычисляем центр для размещения резистора (округляем для стабильности)
-			const centerX = parseFloat(
-				((startNode.position.x + endNode.position.x) / 2).toFixed(1)
-			)
-			const centerY = parseFloat(
-				((startNode.position.y + endNode.position.y) / 2).toFixed(1)
-			)
-
-			// Расчет длины линии (расстояние между узлами)
-			const length = Math.sqrt(dx * dx + dy * dy)
+			// Используем угол поворота из элемента (уже рассчитан по направлению)
+			const angle = element.rotation
 
 			// Размер тела резистора
 			const resistorBodySize = 30
 
-			// Вычисляем длину проводов по обе стороны от тела резистора (с округлением)
-			const wireLength = parseFloat(
-				((length - resistorBodySize) / 2).toFixed(1)
-			)
+			// Вычисляем длину проводов по обе стороны от тела резистора
+			const wireLength = (FIXED_ELEMENT_LENGTH - resistorBodySize) / 2
 
 			// Создаем трансформацию для поворота компонента
 			const transform = `translate(${centerX}, ${centerY}) rotate(${angle})`
@@ -67,6 +52,7 @@ const Resistor: React.FC<ResistorProps> = memo(
 			startNode.position.y,
 			endNode.position.x,
 			endNode.position.y,
+			element.rotation,
 		])
 
 		// Мемоизируем форматированное значение

@@ -1,20 +1,33 @@
 import { create } from 'zustand'
-
 import { v4 as uuidv4 } from 'uuid'
+import {
+	AnyCircuitElement,
+	Node,
+	Position,
+	ElementType,
+	WireElement,
+	SwitchElement,
+	Direction,
+	getEndPosition,
+	getRotationByDirection,
+	getOppositeDirection,
+} from '../types'
 
 // Импортируем интерфейс с параметрами для генерации цепи
 import { ChainOptions } from '../components/GenerateChainModal'
 
-import {
-	AnyCircuitElement,
-	Position,
-	ELEMENT_NAME_PREFIXES,
-	NODE_NAME_PREFIX,
-	WireElement,
-	SwitchElement,
-	ElementType,
-	Node,
-} from '../types'
+import { ELEMENT_NAME_PREFIXES, NODE_NAME_PREFIX } from '../types'
+
+// Дефолтные значения для компонентов в единицах СИ
+const DEFAULT_VALUES = {
+	wire: { value: 0.1, unit: 'м' },
+	resistor: { value: 1000, unit: 'Ом' },
+	capacitor: { value: 0.00001, unit: 'Ф' },
+	inductor: { value: 0.001, unit: 'Гн' },
+	voltage: { value: 5, unit: 'В' },
+	current: { value: 0.01, unit: 'А' }, // Источник тока, 10 мА по умолчанию
+	switch: { value: 0, unit: '', isOpen: true },
+}
 
 interface CircuitState {
 	elements: AnyCircuitElement[]
@@ -28,6 +41,7 @@ interface CircuitState {
 		active: boolean
 		elementType: ElementType | null
 		startNodeId: string | null
+		availableDirections: Direction[] // Доступные направления для размещения
 	}
 	// Счетчики для генерации имен
 	nameCounters: {
@@ -44,6 +58,7 @@ interface CircuitState {
 		value?: string
 		startNodeId: string
 		endNodeId: string
+		direction: Direction
 		isOpen?: boolean
 	}) => void
 	removeElement: (id: string) => void
@@ -60,28 +75,17 @@ interface CircuitState {
 
 	// Узлы
 	addNode: (position: Position) => string
-	addNodeOnWire: (position: Position, wireId: string) => string
-	updateNodePosition: (id: string, position: Position) => void
 	getNodeById: (id: string) => Node | undefined
 
-	// Размещение элементов
+	// Размещение элементов с направлениями
 	startPlacement: (elementType: ElementType) => void
 	cancelPlacement: () => void
 	setPlacementStartNode: (nodeId: string) => void
-	placeElement: (endNodeId: string) => void
+	placeElementInDirection: (direction: Direction) => void
+	getAvailableDirections: (nodeId: string) => Direction[]
 
 	// Поиск ближайшего узла
 	findNodeAtPosition: (position: Position, threshold?: number) => Node | null
-
-	// Добавляем метод для поиска ближайшей точки на линии (проводе)
-	findClosestWire: (
-		position: Position,
-		threshold?: number
-	) => {
-		wire: AnyCircuitElement
-		point: Position
-		distance: number
-	} | null
 
 	// Добавляем методы для управления подсветкой
 	setHighlightedElement: (id: string | null) => void
@@ -97,80 +101,9 @@ interface CircuitState {
 	generateChain: (options: ChainOptions) => void
 }
 
-// Функция для расчета угла между двумя узлами
-const calculateAngle = (
-	nodes: Node[],
-	startNodeId: string,
-	endNodeId: string
-): number => {
-	const startNode = nodes.find(node => node.id === startNodeId)
-	const endNode = nodes.find(node => node.id === endNodeId)
-
-	if (!startNode || !endNode) return 0
-
-	const dx = endNode.position.x - startNode.position.x
-	const dy = endNode.position.y - startNode.position.y
-
-	// Округляем значение до 2-х знаков, чтобы избежать проблем с точностью вычислений
-	// и предотвратить ошибки при отрисовке с атрибутом transform
-	const angle = parseFloat(((Math.atan2(dy, dx) * 180) / Math.PI).toFixed(2))
-	return angle
-}
-
-// Дефолтные значения для компонентов в единицах СИ
-const DEFAULT_VALUES = {
-	wire: { value: 0.1, unit: 'м' },
-	resistor: { value: 1000, unit: 'Ом' },
-	capacitor: { value: 0.00001, unit: 'Ф' },
-	inductor: { value: 0.001, unit: 'Гн' },
-	voltage: { value: 5, unit: 'В' },
-	current: { value: 0.01, unit: 'А' }, // Источник тока, 10 мА по умолчанию
-	switch: { value: 0, unit: '', isOpen: true },
-}
-
 // Функция для вычисления расстояния между двумя точками
 const distanceBetween = (p1: Position, p2: Position): number => {
-	const dx = p2.x - p1.x
-	const dy = p2.y - p1.y
-	return Math.sqrt(dx * dx + dy * dy)
-}
-
-// Функция для нахождения ближайшей точки на линии (проводе)
-const findClosestPointOnLine = (
-	lineStart: Position,
-	lineEnd: Position,
-	point: Position
-): Position => {
-	const dx = lineEnd.x - lineStart.x
-	const dy = lineEnd.y - lineStart.y
-	const lineLength = Math.sqrt(dx * dx + dy * dy)
-
-	// Проекция точки на линию
-	const t = Math.max(
-		0,
-		Math.min(
-			1,
-			((point.x - lineStart.x) * dx + (point.y - lineStart.y) * dy) /
-				(lineLength * lineLength)
-		)
-	)
-
-	return {
-		x: lineStart.x + t * dx,
-		y: lineStart.y + t * dy,
-	}
-}
-
-// Функция для вычисления расстояния от точки до линии (провода)
-const distanceToLine = (
-	lineStart: Position,
-	lineEnd: Position,
-	point: Position
-): { distance: number; closestPoint: Position } => {
-	const closestPoint = findClosestPointOnLine(lineStart, lineEnd, point)
-	const distance = distanceBetween(point, closestPoint)
-
-	return { distance, closestPoint }
+	return Math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2)
 }
 
 // Функция для преобразования короткого типа элемента в полный
@@ -225,6 +158,7 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 		active: false,
 		elementType: null,
 		startNodeId: null,
+		availableDirections: [],
 	},
 	// Инициализация счетчиков имен
 	nameCounters: {
@@ -556,171 +490,6 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 		return nodeId
 	},
 
-	// Добавление узла на провод с разбиением провода на два
-	addNodeOnWire: (position, wireId) => {
-		const state = get()
-		const wire = state.elements.find(el => el.id === wireId) as
-			| WireElement
-			| undefined
-
-		if (!wire || wire.type !== 'wire') {
-			// Если провод не найден или это не провод, просто добавляем обычный узел
-			return get().addNode(position)
-		}
-
-		// Увеличиваем счетчик узлов
-		const nodeCounter = state.nameCounters.nodes + 1
-		// Создаем имя для узла (теперь начиная с 0)
-		const nodeName = `${NODE_NAME_PREFIX}${nodeCounter}`
-
-		// Создаем новый узел
-		const nodeId = uuidv4()
-
-		// Получаем начальный и конечный узлы провода
-		const startNode = state.nodes.find(node => node.id === wire.startNodeId)
-		const endNode = state.nodes.find(node => node.id === wire.endNodeId)
-
-		if (!startNode || !endNode) {
-			return get().addNode(position)
-		}
-
-		// Увеличиваем счетчик для проводов
-		const wireCounter = state.nameCounters.elements.wire + 2 // +2 так как создаем два новых провода
-
-		// Создаем два новых провода
-		const wire1Id = uuidv4()
-		const wire2Id = uuidv4()
-
-		const rotation1 = calculateAngle(
-			[
-				startNode,
-				{ id: nodeId, position, connectedElements: [], name: nodeName },
-			],
-			startNode.id,
-			nodeId
-		)
-
-		const rotation2 = calculateAngle(
-			[
-				{ id: nodeId, position, connectedElements: [], name: nodeName },
-				endNode,
-			],
-			nodeId,
-			endNode.id
-		)
-
-		const wire1: WireElement = {
-			id: wire1Id,
-			type: 'wire',
-			startNodeId: wire.startNodeId,
-			endNodeId: nodeId,
-			rotation: rotation1,
-			value: wire.value,
-			unit: wire.unit,
-			name: `${ELEMENT_NAME_PREFIXES.wire}${wireCounter - 1}`,
-		}
-
-		const wire2: WireElement = {
-			id: wire2Id,
-			type: 'wire',
-			startNodeId: nodeId,
-			endNodeId: wire.endNodeId,
-			rotation: rotation2,
-			value: wire.value,
-			unit: wire.unit,
-			name: `${ELEMENT_NAME_PREFIXES.wire}${wireCounter}`,
-		}
-
-		// Обновляем состояние
-		set(state => {
-			// Обновляем существующие узлы
-			const updatedNodes = state.nodes.map(node => {
-				if (node.id === wire.startNodeId) {
-					// В начальном узле заменяем старый провод на первый новый
-					return {
-						...node,
-						connectedElements: node.connectedElements
-							.filter(id => id !== wireId)
-							.concat(wire1Id),
-					}
-				}
-				if (node.id === wire.endNodeId) {
-					// В конечном узле заменяем старый провод на второй новый
-					return {
-						...node,
-						connectedElements: node.connectedElements
-							.filter(id => id !== wireId)
-							.concat(wire2Id),
-					}
-				}
-				return node
-			})
-
-			// Добавляем новый узел
-			const newNode = {
-				id: nodeId,
-				position,
-				connectedElements: [wire1Id, wire2Id],
-				name: nodeName,
-			}
-
-			// Удаляем старый провод и добавляем два новых
-			const updatedElements = state.elements
-				.filter(element => element.id !== wireId)
-				.concat([wire1, wire2])
-
-			return {
-				elements: updatedElements,
-				nodes: [...updatedNodes, newNode],
-				// Выделяем новый узел, если мы находимся в режиме размещения элементов
-				selectedElementId:
-					state.selectedElementId === wireId ? null : state.selectedElementId,
-				selectedNodeId: state.placementMode.active
-					? null
-					: state.selectedNodeId,
-				// Обновляем счетчики
-				nameCounters: {
-					...state.nameCounters,
-					nodes: nodeCounter,
-					elements: {
-						...state.nameCounters.elements,
-						wire: wireCounter,
-					},
-				},
-			}
-		})
-
-		// Вызываем переименование узлов после каждого добавления узла
-		setTimeout(() => {
-			get().renameNodes()
-			get().renameElements()
-		}, 0)
-
-		return nodeId
-	},
-
-	updateNodePosition: (id, position) =>
-		set(state => {
-			// Проверяем, изменилась ли позиция существенно
-			const currentNode = state.nodes.find(node => node.id === id)
-
-			// Проверяем наличие узла
-			if (!currentNode) return state
-
-			// Создаем копию позиции для предотвращения мутации
-			const newPosition = {
-				x: position.x,
-				y: position.y,
-			}
-
-			// Обновляем позицию узла
-			const updatedNodes = state.nodes.map(node =>
-				node.id === id ? { ...node, position: newPosition } : node
-			)
-
-			return { nodes: updatedNodes }
-		}),
-
 	getNodeById: id => {
 		return get().nodes.find(node => node.id === id)
 	},
@@ -732,6 +501,7 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 				active: true,
 				elementType,
 				startNodeId: null,
+				availableDirections: [],
 			},
 		}),
 
@@ -741,6 +511,7 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 				active: false,
 				elementType: null,
 				startNodeId: null,
+				availableDirections: [],
 			},
 		}),
 
@@ -752,7 +523,7 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 			},
 		})),
 
-	placeElement: endNodeId => {
+	placeElementInDirection: direction => {
 		set(state => {
 			if (
 				!state.placementMode.active ||
@@ -765,19 +536,60 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 			const elementType = state.placementMode.elementType
 			const startNodeId = state.placementMode.startNodeId
 
-			// Проверяем, что начальный и конечный узлы не совпадают
-			if (startNodeId === endNodeId) {
+			// Получаем начальный узел
+			const startNode = state.nodes.find(node => node.id === startNodeId)
+			if (!startNode) {
 				return state
 			}
 
+			// Вычисляем конечную позицию по направлению
+			const endPosition = getEndPosition(startNode.position, direction)
+
+			// Проверяем, есть ли уже узел в конечной позиции (с небольшим допуском)
+			const existingEndNode = state.nodes.find(node => {
+				const distance = Math.sqrt(
+					Math.pow(node.position.x - endPosition.x, 2) +
+						Math.pow(node.position.y - endPosition.y, 2)
+				)
+				return distance < 10 // Допуск 10 пикселей
+			})
+
+			let endNodeId: string
+			let endNodeName: string
+			let nodeCounter: number
+			let updatedNodes: Node[]
+
+			if (existingEndNode) {
+				// Используем существующий узел
+				endNodeId = existingEndNode.id
+				endNodeName = existingEndNode.name
+				nodeCounter = state.nameCounters.nodes
+				updatedNodes = state.nodes
+			} else {
+				// Создаем новый узел в конечной позиции
+				endNodeId = uuidv4()
+				nodeCounter = state.nameCounters.nodes + 1
+				endNodeName = `${NODE_NAME_PREFIX}${nodeCounter}`
+
+				// Создаем новый конечный узел
+				const endNode: Node = {
+					id: endNodeId,
+					position: endPosition,
+					connectedElements: [],
+					name: endNodeName,
+				}
+
+				updatedNodes = [...state.nodes, endNode]
+			}
+
 			// Увеличиваем счетчик для типа элемента
-			const counter = state.nameCounters.elements[elementType] + 1
+			const elementCounter = state.nameCounters.elements[elementType] + 1
 
 			// Создаем имя для элемента
-			const elementName = `${ELEMENT_NAME_PREFIXES[elementType]}${counter}`
+			const elementName = `${ELEMENT_NAME_PREFIXES[elementType]}${elementCounter}`
 
-			// Создаем новый элемент
-			const rotation = calculateAngle(state.nodes, startNodeId, endNodeId)
+			// Получаем угол поворота по направлению
+			const rotation = getRotationByDirection(direction)
 
 			let newElement: Omit<AnyCircuitElement, 'id'>
 
@@ -791,6 +603,7 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 					value: DEFAULT_VALUES[elementType].value,
 					unit: DEFAULT_VALUES[elementType].unit,
 					name: elementName,
+					direction,
 				} as WireElement
 			} else if (elementType === 'resistor') {
 				newElement = {
@@ -801,6 +614,7 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 					value: DEFAULT_VALUES[elementType].value,
 					unit: DEFAULT_VALUES[elementType].unit,
 					name: elementName,
+					direction,
 				}
 			} else if (elementType === 'capacitor') {
 				newElement = {
@@ -811,6 +625,7 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 					value: DEFAULT_VALUES[elementType].value,
 					unit: DEFAULT_VALUES[elementType].unit,
 					name: elementName,
+					direction,
 				}
 			} else if (elementType === 'inductor') {
 				newElement = {
@@ -821,10 +636,9 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 					value: DEFAULT_VALUES[elementType].value,
 					unit: DEFAULT_VALUES[elementType].unit,
 					name: elementName,
+					direction,
 				}
 			} else if (elementType === 'switch') {
-				// Создаем ключ по умолчанию в выключенном состоянии
-				// isOpen = true (разомкнут) соответствует value = 0 (выключен)
 				newElement = {
 					type: 'switch',
 					startNodeId,
@@ -833,6 +647,7 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 					value: 0, // 0 - выключен
 					unit: '',
 					name: elementName,
+					direction,
 					isOpen: true, // true = разомкнут (ВЫКЛ)
 				} as SwitchElement
 			} else if (elementType === 'current') {
@@ -844,6 +659,7 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 					value: DEFAULT_VALUES[elementType].value,
 					unit: DEFAULT_VALUES[elementType].unit,
 					name: elementName,
+					direction,
 				}
 			} else {
 				newElement = {
@@ -854,12 +670,19 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 					value: DEFAULT_VALUES[elementType].value,
 					unit: DEFAULT_VALUES[elementType].unit,
 					name: elementName,
+					direction,
 				}
 			}
 
-			// Обновляем узлы, добавляя к ним ссылку на новый элемент
+			// Создаем новый элемент с ID
 			const newElementId = uuidv4()
-			const updatedNodes = state.nodes.map(node => {
+			const elementWithId = {
+				...newElement,
+				id: newElementId,
+			} as AnyCircuitElement
+
+			// Обновляем узлы, добавляя к ним ссылку на новый элемент
+			const finalNodes = updatedNodes.map(node => {
 				if (node.id === startNodeId || node.id === endNodeId) {
 					return {
 						...node,
@@ -869,32 +692,34 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 				return node
 			})
 
-			// Обновляем счетчик
+			// Обновляем счетчики
 			const updatedCounters = {
 				...state.nameCounters,
+				nodes: nodeCounter,
 				elements: {
 					...state.nameCounters.elements,
-					[elementType]: counter,
+					[elementType]: elementCounter,
 				},
 			}
 
 			return {
-				elements: [
-					...state.elements,
-					{ ...newElement, id: newElementId } as AnyCircuitElement,
-				],
-				nodes: updatedNodes,
+				elements: [...state.elements, elementWithId],
+				nodes: finalNodes,
 				placementMode: {
 					active: false,
 					elementType: null,
 					startNodeId: null,
+					availableDirections: [],
 				},
 				nameCounters: updatedCounters,
 			}
 		})
 
 		// После добавления элемента, переименовываем элементы
-		setTimeout(() => get().renameElements(), 0)
+		setTimeout(() => {
+			get().renameNodes()
+			get().renameElements()
+		}, 0)
 	},
 
 	findNodeAtPosition: (position, threshold = 15) => {
@@ -905,50 +730,6 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 			}
 		}
 		return null
-	},
-
-	// Добавляем метод для поиска ближайшего провода
-	findClosestWire: (position: Position, threshold = 10) => {
-		const elements = get().elements
-		const nodes = get().nodes
-
-		// Сначала проверяем, есть ли рядом узел
-		const nearbyNode = get().findNodeAtPosition(position, threshold)
-
-		// Если узел найден, приоритезируем его и не ищем провода
-		if (nearbyNode) {
-			return null
-		}
-
-		let closestWire = null
-		let minDistance = threshold
-		let closestPoint = null
-
-		// Ищем только провода
-		const wires = elements.filter(element => element.type === 'wire')
-
-		for (const wire of wires) {
-			const startNode = nodes.find(node => node.id === wire.startNodeId)
-			const endNode = nodes.find(node => node.id === wire.endNodeId)
-
-			if (!startNode || !endNode) continue
-
-			const { distance, closestPoint: point } = distanceToLine(
-				startNode.position,
-				endNode.position,
-				position
-			)
-
-			if (distance < minDistance) {
-				minDistance = distance
-				closestWire = wire
-				closestPoint = point
-			}
-		}
-
-		return closestWire && closestPoint
-			? { wire: closestWire, point: closestPoint, distance: minDistance }
-			: null
 	},
 
 	// Добавляем методы для управления подсветкой
@@ -1232,6 +1013,7 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 				startNodeId: string
 				endNodeId: string
 				value: string
+				direction: Direction
 				isOpen?: boolean
 			}
 
@@ -1240,6 +1022,7 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 				startNodeId,
 				endNodeId,
 				value: value || DEFAULT_VALUES[elementType]?.value.toString() || '0',
+				direction: 'right', // По умолчанию направление вправо
 			}
 
 			if (elementType === 'switch') {
@@ -1253,5 +1036,37 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
 		// Переименовываем узлы и элементы
 		get().renameNodes()
 		get().renameElements()
+	},
+
+	// Функция для получения доступных направлений от узла
+	getAvailableDirections: (nodeId: string) => {
+		const state = get()
+		const node = state.nodes.find(n => n.id === nodeId)
+		if (!node) return []
+
+		// Получаем все занятые направления от данного узла
+		const occupiedDirections: Direction[] = []
+
+		// Проверяем все элементы, подключенные к узлу
+		for (const elementId of node.connectedElements) {
+			const element = state.elements.find(el => el.id === elementId)
+			if (element && 'direction' in element) {
+				// Если элемент начинается от этого узла, добавляем его направление
+				if (element.startNodeId === nodeId) {
+					occupiedDirections.push(element.direction as Direction)
+				}
+				// Если элемент заканчивается в этом узле, добавляем противоположное направление
+				else if (element.endNodeId === nodeId) {
+					const oppositeDirection = getOppositeDirection(
+						element.direction as Direction
+					)
+					occupiedDirections.push(oppositeDirection)
+				}
+			}
+		}
+
+		// Возвращаем все направления, которые не заняты
+		const allDirections: Direction[] = ['up', 'down', 'left', 'right']
+		return allDirections.filter(dir => !occupiedDirections.includes(dir))
 	},
 }))

@@ -75,7 +75,7 @@ const Current: React.FC<CurrentProps> = ({
 
 			{/* Символ источника тока (двойная стрелка) */}
 			<Arrow
-				points='0,-6 10,0 0,6'
+				points='-10,0 0,-6 0,6'
 				style={{
 					fill: selected ? 'var(--primary-color)' : 'var(--text-primary)',
 				}}

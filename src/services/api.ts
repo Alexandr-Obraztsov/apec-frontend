@@ -1,5 +1,12 @@
 import axios from 'axios'
-import { AnyCircuitElement, Node } from '../types'
+import {
+	AnyCircuitElement,
+	Direction,
+	LCapyCircuit,
+	LCapyElement,
+	Node,
+	SavedCircuit,
+} from '../types'
 
 // Базовый URL API
 export const API_BASE_URL = 'http://localhost:8000/api'
@@ -34,6 +41,7 @@ export interface CircuitSolutionResult {
 export interface SolutionResponse {
 	status?: string
 	solution?: CircuitSolutionResult
+	lcapyCircuit?: LCapyCircuit
 }
 
 export enum RootType {
@@ -160,6 +168,177 @@ export const formatCircuitToString = (
 	return circuitLines.join('\n')
 }
 
+// Функция для преобразования цепи в формат LCapy с учетом направлений
+export const formatCircuitToLCapy = (
+	nodes: Node[],
+	elements: AnyCircuitElement[]
+): LCapyCircuit => {
+	const lcapyElements: LCapyElement[] = []
+	const nodeNames = nodes.map(node => node.name)
+
+	// Преобразуем каждый элемент
+	elements.forEach(element => {
+		const startNode = nodes.find(n => n.id === element.startNodeId)
+		const endNode = nodes.find(n => n.id === element.endNodeId)
+
+		if (!startNode || !endNode) return
+
+		// Определяем направление элемента на основе позиций узлов
+		let direction: Direction
+		const dx = endNode.position.x - startNode.position.x
+		const dy = endNode.position.y - startNode.position.y
+
+		// Определяем основное направление
+		if (Math.abs(dx) > Math.abs(dy)) {
+			direction = dx > 0 ? 'right' : 'left'
+		} else {
+			direction = dy > 0 ? 'down' : 'up'
+		}
+
+		// Если элемент имеет свойство direction, используем его
+		if ('direction' in element) {
+			direction = element.direction as Direction
+		}
+
+		const lcapyElement: LCapyElement = {
+			name: element.name,
+			type: element.type,
+			startNode: startNode.name,
+			endNode: endNode.name,
+			value: element.value,
+			direction: direction,
+		}
+
+		// Добавляем специальные свойства для определенных типов элементов
+		if (element.type === 'switch') {
+			lcapyElement.isOpen = element.isOpen
+		}
+
+		lcapyElements.push(lcapyElement)
+	})
+
+	// Создаем строковое представление для LCapy
+	const circuitString = formatLCapyElementsToString(lcapyElements)
+
+	// Анализируем топологию цепи
+	const topology = analyzeCircuitTopology(lcapyElements, nodeNames)
+
+	return {
+		elements: lcapyElements,
+		nodes: nodeNames,
+		circuitString,
+		topology,
+	}
+}
+
+// Функция для преобразования LCapy элементов в строковое представление
+const formatLCapyElementsToString = (elements: LCapyElement[]): string => {
+	const circuitLines: string[] = []
+
+	elements.forEach(element => {
+		let valueStr: string
+
+		if (typeof element.value === 'number') {
+			valueStr = element.value.toString()
+		} else {
+			const stringValue = element.value.toString().trim()
+			valueStr = isNumericString(stringValue) ? stringValue : `{${stringValue}}`
+		}
+
+		let line: string
+
+		if (element.type === 'switch') {
+			line = `${element.name} ${element.startNode} ${element.endNode} ${
+				element.isOpen ? 'no' : 'nc'
+			}; ${element.direction}`
+		} else if (element.type === 'wire') {
+			line = `W ${element.startNode} ${element.endNode}; ${element.direction}`
+		} else {
+			line = `${element.name} ${element.startNode} ${element.endNode} ${valueStr}; ${element.direction}`
+		}
+
+		circuitLines.push(line)
+	})
+
+	return circuitLines.join('\n')
+}
+
+// Функция для анализа топологии цепи
+const analyzeCircuitTopology = (elements: LCapyElement[], nodes: string[]) => {
+	// Создаем граф соединений
+	const connections: Map<string, string[]> = new Map()
+
+	// Инициализируем все узлы
+	nodes.forEach(node => {
+		connections.set(node, [])
+	})
+
+	// Добавляем соединения
+	elements.forEach(element => {
+		const startConnections = connections.get(element.startNode) || []
+		const endConnections = connections.get(element.endNode) || []
+
+		startConnections.push(element.endNode)
+		endConnections.push(element.startNode)
+
+		connections.set(element.startNode, startConnections)
+		connections.set(element.endNode, endConnections)
+	})
+
+	// Простой алгоритм для поиска петель (можно улучшить)
+	const loops: string[][] = []
+	const branches: string[][] = []
+
+	// Добавляем ветви
+	elements.forEach(element => {
+		branches.push([element.startNode, element.endNode])
+	})
+
+	// TODO: Реализовать более сложный алгоритм поиска петель
+	// Пока возвращаем простую структуру
+
+	return {
+		loops,
+		branches,
+	}
+}
+
+// Функция для создания сохраненной цепи
+export const createSavedCircuit = (
+	name: string,
+	nodes: Node[],
+	elements: AnyCircuitElement[],
+	description?: string
+): SavedCircuit => {
+	const now = new Date().toISOString()
+
+	return {
+		id: `circuit_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+		name,
+		description,
+		createdAt: now,
+		updatedAt: now,
+		circuit: {
+			nodes: [...nodes], // создаем копии
+			elements: [...elements],
+		},
+		metadata: {
+			canvasSize: { width: 1200, height: 800 }, // можно получать из компонента
+			viewBox: { x: 0, y: 0, width: 1200, height: 800 },
+			version: '1.0.0',
+		},
+	}
+}
+
+// Функция для восстановления цепи из сохраненного формата
+export const restoreCircuitFromSaved = (savedCircuit: SavedCircuit) => {
+	return {
+		nodes: savedCircuit.circuit.nodes,
+		elements: savedCircuit.circuit.elements,
+		metadata: savedCircuit.metadata,
+	}
+}
+
 // Сервис для работы с API
 export const circuitApi = {
 	// Метод для решения схемы
@@ -168,26 +347,28 @@ export const circuitApi = {
 		latex: boolean = true
 	): Promise<SolutionResponse> => {
 		try {
-			// Форматируем данные схемы в нужный формат
-			const circuitString = formatCircuitToString(
+			// Используем новую функцию с учетом направлений
+			const lcapyCircuit = formatCircuitToLCapy(
 				circuitData.nodes,
 				circuitData.elements
 			)
 
-			console.log('Отправляемые данные схемы:', circuitString)
+			console.log('LCapy цепь с направлениями:', lcapyCircuit)
+			console.log('Отправляемые данные схемы:', lcapyCircuit.circuitString)
 
 			// Отправляем POST запрос с требуемой структурой
 			const response = await axios.post<SolutionResponse>(
 				`${API_BASE_URL}/solve`,
 				{
-					circuit: circuitString,
+					circuit: lcapyCircuit.circuitString,
 					latex: latex,
 				}
 			)
 
-			// Добавляем форматированные данные к ответу
+			// Добавляем LCapy данные к ответу
 			return {
 				...response.data,
+				lcapyCircuit, // добавляем информацию о направлениях для отладки
 			}
 		} catch (error) {
 			console.error('Ошибка при запросе к API:', error)
@@ -264,6 +445,63 @@ export const circuitApi = {
 			return response.data
 		} catch (error) {
 			console.error('Ошибка при запросе генерации задачи:', error)
+			throw error
+		}
+	},
+
+	// Новый метод для сохранения цепи
+	saveCircuit: async (
+		savedCircuit: SavedCircuit
+	): Promise<{ success: boolean; id: string }> => {
+		try {
+			// В будущем здесь будет запрос к API для сохранения в базе данных
+			// Пока сохраняем в localStorage
+			const savedCircuits = JSON.parse(
+				localStorage.getItem('savedCircuits') || '[]'
+			)
+			savedCircuits.push(savedCircuit)
+			localStorage.setItem('savedCircuits', JSON.stringify(savedCircuits))
+
+			console.log('Цепь сохранена:', savedCircuit)
+
+			return { success: true, id: savedCircuit.id }
+		} catch (error) {
+			console.error('Ошибка при сохранении цепи:', error)
+			throw error
+		}
+	},
+
+	// Метод для загрузки сохраненных цепей
+	loadSavedCircuits: async (): Promise<SavedCircuit[]> => {
+		try {
+			// В будущем здесь будет запрос к API
+			// Пока загружаем из localStorage
+			const savedCircuits = JSON.parse(
+				localStorage.getItem('savedCircuits') || '[]'
+			)
+			return savedCircuits
+		} catch (error) {
+			console.error('Ошибка при загрузке сохраненных цепей:', error)
+			return []
+		}
+	},
+
+	// Метод для удаления сохраненной цепи
+	deleteSavedCircuit: async (
+		circuitId: string
+	): Promise<{ success: boolean }> => {
+		try {
+			const savedCircuits = JSON.parse(
+				localStorage.getItem('savedCircuits') || '[]'
+			)
+			const filteredCircuits = savedCircuits.filter(
+				(circuit: SavedCircuit) => circuit.id !== circuitId
+			)
+			localStorage.setItem('savedCircuits', JSON.stringify(filteredCircuits))
+
+			return { success: true }
+		} catch (error) {
+			console.error('Ошибка при удалении цепи:', error)
 			throw error
 		}
 	},

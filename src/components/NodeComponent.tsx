@@ -2,7 +2,6 @@ import React, { useRef, memo, useCallback } from 'react'
 import styled from 'styled-components'
 import { Node } from '../types'
 import { useCircuitStore } from '../store/circuitStore'
-import { useDragNode } from '../hooks/useDragNode'
 
 interface NodeComponentProps {
 	node: Node
@@ -89,13 +88,6 @@ const NodeComponent: React.FC<NodeComponentProps> = memo(
 
 		const nodeRef = useRef<SVGCircleElement>(null)
 
-		// Используем хук для управления перетаскиванием
-		const { isDragging, handleMouseDown, handleMouseMove, handleMouseUp } =
-			useDragNode({
-				node,
-				isInPlacementMode: placementMode.active,
-			})
-
 		// Обработка клика по узлу - мемоизируем функцию
 		const handleClick = useCallback(
 			(e: React.MouseEvent) => {
@@ -104,17 +96,6 @@ const NodeComponent: React.FC<NodeComponentProps> = memo(
 				// Если в режиме размещения и первый узел не выбран
 				if (placementMode.active && !placementMode.startNodeId) {
 					setPlacementStartNode(node.id)
-					return
-				}
-
-				// Если в режиме размещения и первый узел выбран - завершаем размещение
-				if (
-					placementMode.active &&
-					placementMode.startNodeId &&
-					placementMode.startNodeId !== node.id
-				) {
-					// Получаем функцию placeElement из store напрямую
-					useCircuitStore.getState().placeElement(node.id)
 					return
 				}
 
@@ -133,10 +114,10 @@ const NodeComponent: React.FC<NodeComponentProps> = memo(
 		return (
 			<g
 				style={{
-					cursor: isDragging ? 'grabbing' : 'grab',
+					cursor: 'pointer',
 					pointerEvents: 'all',
 				}}
-				className='draggable-container'
+				className='node-container'
 				data-node-id={node.id}
 			>
 				{(isSelected || isPlacementStart || isHighlighted) && (
@@ -158,9 +139,6 @@ const NodeComponent: React.FC<NodeComponentProps> = memo(
 					$isPlacementStart={isPlacementStart}
 					$isHighlighted={isHighlighted}
 					onClick={handleClick}
-					onMouseDown={handleMouseDown}
-					onMouseMove={handleMouseMove}
-					onMouseUp={handleMouseUp}
 				/>
 
 				{/* Отображение имени узла */}

@@ -5,30 +5,42 @@ import { ElementType } from '../types'
 
 const PanelContainer = styled.div`
 	position: fixed;
-	right: 20px;
-	top: 80px;
+	right: 0;
+	top: 60px;
 	width: 280px;
-	background-color: var(--surface-color);
-	border-radius: var(--radius-md);
-	box-shadow: var(--shadow-md);
-	padding: 0;
-	z-index: 100;
+	height: calc(100vh - 60px);
+	background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+	border-left: 1px solid var(--border-color);
+	box-shadow: -4px 0 20px rgba(0, 0, 0, 0.08);
+	padding: 20px;
 	overflow: hidden;
 	display: flex;
 	flex-direction: column;
+	z-index: 200;
 `
 
 const PanelHeader = styled.div`
-	padding: 16px 20px;
-	border-bottom: 1px solid var(--border-color);
-	background-color: var(--bg-color);
+	margin-bottom: 20px;
+	padding-bottom: 16px;
+	border-bottom: 2px solid var(--border-color);
 `
 
 const Title = styled.h3`
 	margin: 0;
 	color: var(--text-primary);
-	font-size: 1.1rem;
-	font-weight: 600;
+	font-size: 1.3rem;
+	font-weight: 700;
+	background: linear-gradient(135deg, #1e40af, #3b82f6);
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	background-clip: text;
+`
+
+const SubTitle = styled.p`
+	margin: 8px 0 0 0;
+	color: var(--text-secondary);
+	font-size: 0.9rem;
+	font-weight: 500;
 `
 
 const TitleInfo = styled.span`
@@ -37,9 +49,8 @@ const TitleInfo = styled.span`
 `
 
 const PanelContent = styled.div`
-	padding: 20px;
 	overflow-y: auto;
-	max-height: calc(100vh - 200px);
+	flex: 1;
 `
 
 const FormGroup = styled.div`
@@ -297,6 +308,7 @@ const PropertiesPanel: React.FC = () => {
 			<PanelContainer>
 				<PanelHeader>
 					<Title>Свойства</Title>
+					<SubTitle>Выберите элемент для редактирования</SubTitle>
 				</PanelHeader>
 				<Message>Выберите элемент или узел для просмотра свойств</Message>
 			</PanelContainer>
@@ -311,6 +323,7 @@ const PropertiesPanel: React.FC = () => {
 					<Title>
 						Узел <TitleInfo>{selectedNode.name}</TitleInfo>
 					</Title>
+					<SubTitle>Информация о выбранном узле</SubTitle>
 				</PanelHeader>
 				<PanelContent>
 					<FormGroup>
@@ -386,6 +399,7 @@ const PropertiesPanel: React.FC = () => {
 		<PanelContainer>
 			<PanelHeader>
 				<Title>Свойства элемента</Title>
+				<SubTitle>Настройка параметров компонента</SubTitle>
 			</PanelHeader>
 			<PanelContent>
 				<ElementHeader>

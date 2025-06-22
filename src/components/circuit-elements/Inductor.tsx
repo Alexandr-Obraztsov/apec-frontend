@@ -1,6 +1,6 @@
-import React, { useMemo } from 'react'
+import React, { memo, useMemo } from 'react'
 import styled from 'styled-components'
-import { InductorElement, Node } from '../../types'
+import { InductorElement, Node, FIXED_ELEMENT_LENGTH } from '../../types'
 import CircuitValue from '../CircuitValue'
 import { formatValue } from '../../utils/formatters'
 
@@ -19,120 +19,96 @@ const InductorContainer = styled.g<{ selected: boolean }>`
 	transition: stroke 0.1s ease, stroke-width 0.1s ease, fill 0.1s ease;
 `
 
-const InductorPath = styled.path<{ selected: boolean }>`
-	stroke: ${({ selected }) =>
-		selected ? 'var(--primary-color)' : 'var(--text-primary)'};
-	fill: none;
-	stroke-width: 2px;
-`
+const Inductor: React.FC<InductorProps> = memo(
+	({ element, startNode, endNode, selected }) => {
+		// Вычисляем все характеристики элемента с мемоизацией
+		const elementProps = useMemo(() => {
+			// Вычисляем центр для размещения катушки
+			const centerX = (startNode.position.x + endNode.position.x) / 2
+			const centerY = (startNode.position.y + endNode.position.y) / 2
 
-const InductorComponent = ({
-	element,
-	startNode,
-	endNode,
-	selected,
-}: InductorProps) => {
-	// Мемоизируем все вычисления
-	const {
-		angle,
-		wireLength,
-		inductorBodySize,
-		transform,
-		inductorPath,
-		valueText,
-	} = useMemo(() => {
-		// Вычисляем угол между узлами
-		const dx = endNode.position.x - startNode.position.x
-		const dy = endNode.position.y - startNode.position.y
-		// Округляем угол до 2 знаков после запятой
-		const angle = parseFloat(((Math.atan2(dy, dx) * 180) / Math.PI).toFixed(2))
+			// Используем угол поворота из элемента (уже рассчитан по направлению)
+			const angle = element.rotation
 
-		// Вычисляем центр для размещения индуктора (округляем для стабильности)
-		const centerX = parseFloat(
-			((startNode.position.x + endNode.position.x) / 2).toFixed(1)
+			// Размер тела катушки
+			const inductorBodySize = 30
+			const coilRadius = 6
+			const coilCount = 4
+
+			// Вычисляем длину проводов по обе стороны от тела катушки
+			const wireLength = (FIXED_ELEMENT_LENGTH - inductorBodySize) / 2
+
+			// Создаем трансформацию для поворота компонента
+			const transform = `translate(${centerX}, ${centerY}) rotate(${angle})`
+
+			// Создаем путь для спиралей катушки
+			let coilPath = ''
+			const coilSpacing = inductorBodySize / coilCount
+			for (let i = 0; i < coilCount; i++) {
+				const x = -inductorBodySize / 2 + i * coilSpacing + coilSpacing / 2
+				coilPath += `M ${
+					x - coilRadius
+				},0 A ${coilRadius},${coilRadius} 0 0,1 ${x + coilRadius},0 `
+			}
+
+			return {
+				angle,
+				centerX,
+				centerY,
+				inductorBodySize,
+				wireLength,
+				transform,
+				coilPath,
+			}
+		}, [
+			startNode.position.x,
+			startNode.position.y,
+			endNode.position.x,
+			endNode.position.y,
+			element.rotation,
+		])
+
+		// Мемоизируем форматированное значение
+		const valueText = useMemo(
+			() => `${formatValue(element.value, element.unit)} ${element.name}`,
+			[element.name, element.value, element.unit]
 		)
-		const centerY = parseFloat(
-			((startNode.position.y + endNode.position.y) / 2).toFixed(1)
+
+		return (
+			<InductorContainer selected={selected} transform={elementProps.transform}>
+				{/* Левый провод */}
+				<line
+					x1={-elementProps.inductorBodySize / 2 - elementProps.wireLength}
+					y1='0'
+					x2={-elementProps.inductorBodySize / 2}
+					y2='0'
+				/>
+
+				{/* Спирали катушки */}
+				<path
+					d={elementProps.coilPath}
+					stroke={selected ? 'var(--primary-color)' : 'var(--text-primary)'}
+					strokeWidth={2}
+					fill='none'
+				/>
+
+				{/* Правый провод */}
+				<line
+					x1={elementProps.inductorBodySize / 2}
+					y1='0'
+					x2={elementProps.inductorBodySize / 2 + elementProps.wireLength}
+					y2='0'
+				/>
+
+				{/* Значение текстом с фоном */}
+				<CircuitValue
+					value={valueText}
+					angle={elementProps.angle}
+					yOffset={20}
+				/>
+			</InductorContainer>
 		)
-
-		// Расчет длины линии (расстояние между узлами)
-		const length = Math.sqrt(dx * dx + dy * dy)
-
-		// Размер тела катушки индуктивности
-		const inductorBodySize = 40
-
-		// Вычисляем длину проводов по обе стороны от тела катушки
-		const wireLength = parseFloat(((length - inductorBodySize) / 2).toFixed(1))
-
-		// Создаем трансформацию для поворота компонента
-		const transform = `translate(${centerX}, ${centerY}) rotate(${angle})`
-
-		// Создаем более гладкую кривую для катушки
-		const arcRadius = 6
-		const inductorPath = `
-			M${-inductorBodySize / 2},0 
-			C${-inductorBodySize / 2 + arcRadius},-8 ${
-			-inductorBodySize / 2 + arcRadius * 2
-		},8 ${-inductorBodySize / 2 + arcRadius * 3},0
-			C${-inductorBodySize / 2 + arcRadius * 4},-8 ${
-			-inductorBodySize / 2 + arcRadius * 5
-		},8 ${-inductorBodySize / 2 + arcRadius * 6},0
-			C${-inductorBodySize / 2 + arcRadius * 7},-8 ${
-			-inductorBodySize / 2 + arcRadius * 8
-		},8 ${-inductorBodySize / 2 + arcRadius * 9},0
-		`
-
-		// Форматированное значение
-		const valueText = `${formatValue(element.value, element.unit)} ${
-			element.name
-		}`
-
-		return {
-			angle,
-			wireLength,
-			inductorBodySize,
-			transform,
-			inductorPath,
-			valueText,
-		}
-	}, [
-		startNode.position.x,
-		startNode.position.y,
-		endNode.position.x,
-		endNode.position.y,
-		element.value,
-		element.unit,
-		element.name,
-	])
-
-	return (
-		<InductorContainer selected={selected} transform={transform}>
-			{/* Левый провод */}
-			<line
-				x1={-inductorBodySize / 2 - wireLength}
-				y1='0'
-				x2={-inductorBodySize / 2}
-				y2='0'
-			/>
-
-			{/* Катушка индуктивности */}
-			<InductorPath d={inductorPath} selected={selected} />
-
-			{/* Правый провод */}
-			<line
-				x1={inductorBodySize / 2}
-				y1='0'
-				x2={inductorBodySize / 2 + wireLength}
-				y2='0'
-			/>
-
-			{/* Значение текстом с фоном */}
-			<CircuitValue value={valueText} angle={angle} yOffset={10} />
-		</InductorContainer>
-	)
-}
-
-// Применяем мемоизацию к компоненту
-const Inductor = React.memo(InductorComponent)
+	}
+)
 
 export default Inductor

@@ -3,8 +3,6 @@ import styled from 'styled-components'
 import CircuitBoard from './components/CircuitBoard'
 import Toolbox from './components/Toolbox'
 import PropertiesPanel from './components/PropertiesPanel'
-import ConnectionsPanel from './components/ConnectionsPanel'
-import CircuitSolver from './components/CircuitSolver'
 import Header from './components/Header'
 import TaskGenerator from './components/TaskGenerator'
 
@@ -24,10 +22,15 @@ const MainContent = styled.main`
 	background-color: white;
 `
 
+const CircuitSection = styled.div`
+	display: flex;
+	flex: 1;
+	height: 100%;
+`
+
 // Мемоизированные компоненты
 const MemoizedToolbox = memo(Toolbox)
 const MemoizedPropertiesPanel = memo(PropertiesPanel)
-const MemoizedConnectionsPanel = memo(ConnectionsPanel)
 
 function App() {
 	const [activeTab, setActiveTab] = useState<'circuit' | 'tasks'>('circuit')
@@ -38,11 +41,11 @@ function App() {
 			<MainContent>
 				{activeTab === 'circuit' && (
 					<>
-						<CircuitBoard />
-						<MemoizedToolbox />
+						<CircuitSection>
+							<MemoizedToolbox />
+							<CircuitBoard />
+						</CircuitSection>
 						<MemoizedPropertiesPanel />
-						<MemoizedConnectionsPanel />
-						<CircuitSolver />
 					</>
 				)}
 				{activeTab === 'tasks' && <TaskGenerator />}
