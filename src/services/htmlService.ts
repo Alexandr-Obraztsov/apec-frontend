@@ -118,7 +118,7 @@ export const htmlService = {
 			
 			.task, .solution-task {
 				background: #ffffff;
-				border: 2px solid #000000;
+				border: 1px solid #000000;
 				margin: 1.5rem 0;
 				padding: 1.5rem;
 				page-break-inside: avoid;
@@ -138,15 +138,13 @@ export const htmlService = {
 				text-align: center;
 				margin: 1.5rem 0;
 				padding: 1rem;
-				border: 1px solid #cccccc;
-				background: #f9f9f9;
+				background: #ffffff;
 			}
 			
 			.circuit-image img {
 				max-width: 100%;
 				height: auto;
-				max-height: 250px;
-				border: 1px solid #000000;
+				max-height: 400px;
 			}
 			
 			.section-title {
@@ -154,7 +152,7 @@ export const htmlService = {
 				color: #000000;
 				margin: 1.5rem 0 0.8rem 0;
 				padding-bottom: 0.3rem;
-				border-bottom: 2px solid #000000;
+				border-bottom: 1px solid #000000;
 				font-weight: bold;
 				text-transform: uppercase;
 			}
@@ -169,7 +167,6 @@ export const htmlService = {
 			.component-item {
 				background: #f5f5f5;
 				padding: 0.8rem;
-				border: 1px solid #000000;
 				font-weight: 500;
 				font-size: 0.9rem;
 			}
@@ -184,7 +181,6 @@ export const htmlService = {
 			.condition-item {
 				background: #f0f0f0;
 				padding: 0.8rem;
-				border: 1px solid #000000;
 				font-weight: 500;
 				font-size: 0.9rem;
 			}
@@ -195,7 +191,7 @@ export const htmlService = {
 			
 			.solution-block {
 				background: #fafafa;
-				border: 2px solid #000000;
+				border: 1px solid #000000;
 				padding: 1rem;
 				margin: 0.8rem 0;
 			}
@@ -212,22 +208,18 @@ export const htmlService = {
 			
 			.poly-block {
 				background: #f8f8f8;
-				border-left: 5px solid #000000;
 			}
 			
 			.roots-block {
 				background: #f5f5f5;
-				border-left: 5px solid #333333;
 			}
 			
 			.initial-values-block {
 				background: #f2f2f2;
-				border-left: 5px solid #666666;
 			}
 			
 			.coefficients-block {
 				background: #f0f0f0;
-				border-left: 5px solid #444444;
 			}
 			
 			.solution-block ul {
@@ -240,7 +232,6 @@ export const htmlService = {
 				background: #ffffff;
 				margin: 0.4rem 0;
 				padding: 0.6rem;
-				border: 1px solid #cccccc;
 				font-family: 'Courier New', monospace;
 				font-size: 0.9rem;
 			}
@@ -251,7 +242,7 @@ export const htmlService = {
 			
 			.answer-item {
 				background: #ffffff;
-				border: 2px solid #000000;
+				border: 1px solid #000000;
 				padding: 1rem;
 				margin: 0.8rem 0;
 			}
@@ -270,7 +261,6 @@ export const htmlService = {
 				padding: 0.2rem 0.6rem;
 				font-size: 0.85rem;
 				margin-top: 0.4rem;
-				border: 1px solid #000000;
 				font-style: italic;
 			}
 			
@@ -304,7 +294,7 @@ export const htmlService = {
 				background: #ffffff;
 				padding: 0.8rem;
 				margin: 0.4rem 0;
-				border: 1px solid #000000;
+				border: 1px solid #cccccc;
 				font-family: 'Courier New', monospace;
 				font-size: 0.9rem;
 			}
@@ -325,7 +315,13 @@ export const htmlService = {
 				}
 				.header { margin-bottom: 1.5rem; }
 				.header h1 { font-size: 1.6rem; }
-				.circuit-image { background: #ffffff; padding: 0.5rem; }
+				.circuit-image { 
+					background: #ffffff; 
+					padding: 0.5rem; 
+				}
+				.circuit-image img {
+					max-height: 350px;
+				}
 				.page-divider { 
 					page-break-before: always; 
 					height: 1px; 
@@ -381,10 +377,10 @@ export const htmlService = {
 						task.detailedSolution
 
 					const rootsHtml = roots
-						.map((root, i) => `<li>p_{${i + 1}} = ${root}</li>`)
+						.map((root, i) => `<li>$$p_{${i + 1}} = ${root}$$</li>`)
 						.join('')
 					const initialValuesHtml = Object.entries(initial_values)
-						.map(([key, value]) => `<li>${key} = ${value}</li>`)
+						.map(([key, value]) => `<li>$$${key} = ${value}$$</li>`)
 						.join('')
 
 					// Собираем все коэффициенты A из всех элементов
@@ -411,9 +407,9 @@ export const htmlService = {
 						const coefficientsListHtml = allCoefficients
 							.map(
 								(coeff, i) =>
-									`<li>A_{${i + 1}} (для ${coeff.element}) = ${
+									`<li>$$A_{${i + 1}} \\text{ (для ${coeff.element})} = ${
 										coeff.value
-									}</li>`
+									}$$</li>`
 							)
 							.join('')
 
