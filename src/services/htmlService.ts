@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { API_BASE_URL, CircuitSolutionResult } from './api'
+import { API_BASE_URL } from './api'
 import { Task } from '../store/tasksStore'
 import { generateConditions } from '../utils/generateConditions'
 import { getElementUnit } from '../utils/getElementUnit'
@@ -8,8 +8,8 @@ export interface TaskData {
 	image: string
 	conditions: string[]
 	component_values: Record<string, string>
-	solutions: CircuitSolutionResult
-	detailedSolution?: Task['detailedSolution']
+	detailed_solution: Task['detailedSolution']
+	required_parameters: Task['requiredParameters']
 }
 
 export const htmlService = {
@@ -23,31 +23,13 @@ export const htmlService = {
 					},
 					{} as Record<string, string>
 				)
-				const solutions: CircuitSolutionResult = Object.entries(
-					task.requiredParameters
-				).reduce((acc, [elementName, values]) => {
-					if (task.detailedSolution && task.detailedSolution.elements) {
-						const elementSolution = task.detailedSolution.elements[elementName]
-						if (elementSolution) {
-							if (!acc[elementName]) {
-								acc[elementName] = { 'i(t)': '', 'V(t)': '' }
-							}
-							if (values.current && elementSolution.type === 'i') {
-								acc[elementName]['i(t)'] = elementSolution.expr
-							}
-							if (values.voltage && elementSolution.type === 'v') {
-								acc[elementName]['V(t)'] = elementSolution.expr
-							}
-						}
-					}
-					return acc
-				}, {} as CircuitSolutionResult)
+
 				return {
 					image: task.imageUrl,
 					component_values,
 					conditions: generateConditions(task) || [],
-					solutions,
-					detailedSolution: task.detailedSolution,
+					detailed_solution: task.detailedSolution,
+					required_parameters: task.requiredParameters,
 				}
 			})
 			const response = await axios.post(
@@ -443,7 +425,11 @@ export const htmlService = {
 
 				Object.entries(task.requiredParameters).forEach(
 					([elementName, params]) => {
-						if (task.detailedSolution?.elements[elementName]) {
+						// Проверяем флаг show_in_conditions - показываем только те элементы, где он true
+						if (
+							params.show_in_conditions &&
+							task.detailedSolution?.elements[elementName]
+						) {
 							const elemSolution = task.detailedSolution.elements[elementName]
 
 							if (params.current && elemSolution.type === 'i') {
