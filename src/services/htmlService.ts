@@ -298,6 +298,27 @@ export const htmlService = {
 				font-family: 'Courier New', monospace;
 				font-size: 0.9rem;
 			}
+			
+			.element-solution {
+				display: flex;
+				flex-direction: column;
+				gap: 0.8rem;
+			}
+			
+			.solution-step {
+				font-size: 0.95rem;
+				line-height: 1.4;
+			}
+			
+			.solution-step ul {
+				margin: 0.5rem 0 0 1rem;
+				padding: 0;
+			}
+			
+			.solution-step li {
+				margin: 0.3rem 0;
+				font-family: 'Courier New', monospace;
+			}
 
 			@media print {
 				body { 
@@ -440,37 +461,118 @@ export const htmlService = {
 				`
 				}
 
-				// Получаем все уравнения из detailedSolution для полного отображения
-				let allEquationsHtml = ''
+				// Получаем промежуточные результаты (как в TaskModal)
+				let intermediateResultsHtml = ''
 				if (task.detailedSolution?.elements) {
-					const equationElements = Object.entries(
+					const intermediateElements = Object.entries(
 						task.detailedSolution.elements
 					)
+						.filter(([element]) => {
+							// Фильтруем элементы по флагу show_in_conditions (как в TaskModal)
+							const params = task.requiredParameters?.[element]
+							const isReactive =
+								element.startsWith('L') || element.startsWith('C')
+							return params?.show_in_conditions === true || isReactive
+						})
+						.sort((a, b) => {
+							const isReactiveA = a[0].startsWith('L') || a[0].startsWith('C')
+							const isReactiveB = b[0].startsWith('L') || b[0].startsWith('C')
+							return isReactiveA ? 1 : isReactiveB ? -1 : 0
+						})
 						.map(([elementName, elemSolution]) => {
-							const steadyStateHtml = `<span class="steady-state">установившийся режим: ${elemSolution.steady_state}</span>`
-							const typeLabel = elemSolution.type === 'i' ? 'Ток' : 'Напряжение'
-							const symbol = elemSolution.type === 'i' ? 'i(t)' : 'V(t)'
+							const isReactive =
+								elementName.startsWith('L') || elementName.startsWith('C')
+							const isResistor = elementName.startsWith('R')
+
+							let content = ''
+
+							if (isReactive) {
+								// Для L и C: установившееся → начальное → коэффициенты → уравнение
+								const initialValue =
+									task.detailedSolution.initial_values[elementName]
+								const coefficientsHtml =
+									elemSolution.coefficients.length > 0
+										? elemSolution.coefficients
+												.map(
+													(coeff, idx) =>
+														`<li>$$${coeff.type}_{${idx + 1}} = ${
+															coeff.value
+														} \\text{ ${
+															coeff.type === 'A'
+																? elemSolution.type === 'i'
+																	? 'А'
+																	: 'В'
+																: 'рад'
+														}}$$</li>`
+												)
+												.join('')
+										: ''
+
+								content = `
+									<div class="element-solution">
+										<div class="solution-step">1. Установившееся значение: $$${
+											elemSolution.steady_state
+										} \\text{ ${elemSolution.type === 'i' ? 'А' : 'В'}}$$</div>
+										<div class="solution-step">2. Начальное значение: $$${initialValue} \\text{ ${
+									elementName.startsWith('L') ? 'А' : 'В'
+								}}$$</div>
+										${
+											coefficientsHtml
+												? `<div class="solution-step">3. Коэффициенты:<ul>${coefficientsHtml}</ul></div>`
+												: ''
+										}
+										<div class="solution-step">4. ${
+											elemSolution.type === 'i' ? 'i(t)' : 'V(t)'
+										} = <div class="equation-display">$$${
+									elemSolution.expr
+								}$$</div></div>
+									</div>
+								`
+							} else if (isResistor) {
+								// Для резисторов: уравнение → значение в момент времени
+								const atTimeHtml =
+									elemSolution.at_time !== undefined &&
+									elemSolution.value_at_time !== undefined
+										? `<div class="solution-step">2. Значение в момент t = ${
+												elemSolution.at_time
+										  } с: $$${elemSolution.value_at_time} \\text{ ${
+												elemSolution.type === 'i' ? 'А' : 'В'
+										  }}$$</div>`
+										: ''
+
+								content = `
+									<div class="element-solution">
+										<div class="solution-step">1. ${
+											elemSolution.type === 'i' ? 'i(t)' : 'V(t)'
+										} = <div class="equation-display">$$${
+									elemSolution.expr
+								}$$</div></div>
+										${atTimeHtml}
+									</div>
+								`
+							}
 
 							return `
 								<div class="answer-item">
-									<strong>${typeLabel} ${symbol} для элемента ${elementName}:</strong>
-									<div class="equation-display">$$${elemSolution.expr}$$</div>
-									${steadyStateHtml}
+									<strong>${elementName}:</strong>
+									${content}
 								</div>
 							`
 						})
 						.join('')
 
-					allEquationsHtml = `
-						<div class="answers">
-							<h3 class="section-title">Результаты расчета</h3>
-							${equationElements}
-						</div>
-					`
+					if (intermediateElements) {
+						intermediateResultsHtml = `
+							<div class="answers">
+								<h3 class="section-title">Промежуточные результаты</h3>
+								${intermediateElements}
+							</div>
+						`
+					}
 				}
 
-				// Отображаем только требуемые параметры
-				const requiredAnswersHtml = Object.entries(task.requiredParameters)
+				// Отображаем только требуемые финальные ответы
+				const finalAnswersHtml = Object.entries(task.requiredParameters)
 					.map(([elementName, params]) => {
 						let answer = ''
 						if (task.detailedSolution?.elements[elementName]) {
@@ -505,13 +607,13 @@ export const htmlService = {
 					<div class="solution-number">Решение задачи ${index + 1}</div>
 					<h3 class="section-title">Подробное решение</h3>
 					${detailedSolutionHtml}
-					${allEquationsHtml}
+					${intermediateResultsHtml}
 					${
-						requiredAnswersHtml
+						finalAnswersHtml
 							? `
 						<div class="answers">
 							<h3 class="section-title">Требуемые ответы</h3>
-							${requiredAnswersHtml}
+							${finalAnswersHtml}
 						</div>
 					`
 							: ''
