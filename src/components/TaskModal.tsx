@@ -3,6 +3,9 @@ import styled from 'styled-components'
 import { EquationDisplay } from '../utils/components'
 import { Task } from '../store/tasksStore'
 import { getElementUnit } from '../utils/getElementUnit'
+import { generateConditions } from '../utils/generateConditions'
+import { formatValue } from '../utils/formatters'
+import { prettifyEquation } from '../utils/mathFormatters'
 
 const Section = styled.div`
 	h4 {
@@ -78,6 +81,45 @@ const ConditionItem = styled.div`
 	font-size: 0.9rem;
 	text-align: center;
 	border: 1px solid var(--border-color);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.25rem;
+
+	.element-name {
+		font-weight: 500;
+		color: var(--primary-color);
+	}
+
+	.element-value {
+		font-size: 0.85rem;
+		color: var(--text-primary);
+	}
+`
+
+const FindConditionsList = styled.ul`
+	list-style: none;
+	padding: 0;
+	margin: 0;
+
+	li {
+		margin-bottom: 0.5rem;
+		padding-left: 1.2rem;
+		position: relative;
+
+		&:before {
+			content: '•';
+			position: absolute;
+			left: 0;
+			color: var(--primary-color);
+			font-weight: bold;
+		}
+
+		mjx-container {
+			font-size: 1em !important;
+			color: var(--text-primary) !important;
+		}
+	}
 `
 
 const SolutionContent = styled.div`
@@ -203,16 +245,29 @@ export const TaskModal: React.FC<TaskModalProps> = ({
 				<CloseButton onClick={onClose}>✕</CloseButton>
 				<TaskImage src={task.imageUrl} alt='Схема цепи' />
 				<Section>
-					<h4>Условия:</h4>
+					<h4>Дано:</h4>
 					<ConditionsList>
 						{task.componentValues &&
 							Object.entries(task.componentValues).map(([element, value]) => (
 								<ConditionItem key={element}>
-									{element}: {value} {getElementUnit(element)}
+									<span className='element-name'>{element}:</span>
+									<span className='element-value'>
+										{formatValue(value, getElementUnit(element))}
+									</span>
 								</ConditionItem>
 							))}
 					</ConditionsList>
 				</Section>
+				{generateConditions(task) && (
+					<Section>
+						<h4>Найти:</h4>
+						<FindConditionsList>
+							{generateConditions(task)!.map(condition => (
+								<li key={condition}>{condition}</li>
+							))}
+						</FindConditionsList>
+					</Section>
+				)}
 				{task.detailedSolution && (
 					<Section>
 						<h4>Решение:</h4>
@@ -277,16 +332,26 @@ export const TaskModal: React.FC<TaskModalProps> = ({
 														{/* Для L и C: установившееся → начальное → коэффициенты → уравнение */}
 														<SteadyStateValue>
 															<span>1. Установившееся значение:</span>
-															{solution.steady_state}{' '}
-															{solution.type === 'i' ? 'А' : 'В'}
+															<EquationDisplay
+																equation={prettifyEquation(
+																	`${solution.steady_state} ${
+																		solution.type === 'i' ? 'А' : 'В'
+																	}`
+																)}
+															/>
 														</SteadyStateValue>
 
 														<SteadyStateValue>
 															<span>2. Начальное значение:</span>
-															{
-																task.detailedSolution.initial_values[element]
-															}{' '}
-															{element.startsWith('L') ? 'А' : 'В'}
+															<EquationDisplay
+																equation={prettifyEquation(
+																	`${
+																		task.detailedSolution.initial_values[
+																			element
+																		]
+																	} ${element.startsWith('L') ? 'А' : 'В'}`
+																)}
+															/>
 														</SteadyStateValue>
 
 														{solution.coefficients.length > 0 && (
@@ -310,12 +375,17 @@ export const TaskModal: React.FC<TaskModalProps> = ({
 																						: 'Фаза'}
 																				</td>
 																				<td>
-																					{coef.value}{' '}
-																					{coef.type === 'A'
-																						? solution.type === 'i'
-																							? 'А'
-																							: 'В'
-																						: 'рад'}
+																					<EquationDisplay
+																						equation={prettifyEquation(
+																							`${coef.value} ${
+																								coef.type === 'A'
+																									? solution.type === 'i'
+																										? 'А'
+																										: 'В'
+																									: 'рад'
+																							}`
+																						)}
+																					/>
 																				</td>
 																			</tr>
 																		))}
@@ -350,8 +420,13 @@ export const TaskModal: React.FC<TaskModalProps> = ({
 																		2. Значение в момент t = {solution.at_time}{' '}
 																		с:
 																	</span>
-																	{solution.value_at_time}{' '}
-																	{solution.type === 'i' ? 'А' : 'В'}
+																	<EquationDisplay
+																		equation={prettifyEquation(
+																			`${solution.value_at_time} ${
+																				solution.type === 'i' ? 'А' : 'В'
+																			}`
+																		)}
+																	/>
 																</SteadyStateValue>
 															)}
 													</>

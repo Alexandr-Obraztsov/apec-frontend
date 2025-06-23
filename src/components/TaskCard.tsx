@@ -3,6 +3,7 @@ import styled from 'styled-components'
 import { Task, useTasksStore } from '../store/tasksStore'
 import { generateConditions } from '../utils/generateConditions'
 import { getElementUnit } from '../utils/getElementUnit'
+import { formatValue } from '../utils/formatters'
 
 const Card = styled.div`
 	background: var(--surface-color);
@@ -51,6 +52,20 @@ const ConditionItem = styled.div`
 	font-size: 0.9rem;
 	text-align: center;
 	border: 1px solid var(--border-color);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.25rem;
+
+	.element-name {
+		font-weight: 500;
+		color: var(--primary-color);
+	}
+
+	.element-value {
+		font-size: 0.85rem;
+		color: var(--text-primary);
+	}
 `
 
 const TaskCardActions = styled.div`
@@ -109,7 +124,10 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onClick }) => {
 						{task.componentValues &&
 							Object.entries(task.componentValues).map(([element, value]) => (
 								<ConditionItem key={element}>
-									{element}: {value} {getElementUnit(element)}
+									<span className='element-name'>{element}:</span>
+									<span className='element-value'>
+										{formatValue(value, getElementUnit(element))}
+									</span>
 								</ConditionItem>
 							))}
 					</ConditionsList>
