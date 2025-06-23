@@ -213,6 +213,33 @@ export const htmlService = {
 				font-size: 0.85rem;
 			}
 			
+			.elements-table {
+				width: 100%;
+				border-collapse: collapse;
+				margin: 0.8rem 0;
+				font-size: 0.85rem;
+			}
+			
+			.elements-table th {
+				background: #f8f8f8;
+				border: 1px solid #000000;
+				padding: 0.4rem;
+				text-align: center;
+				font-weight: bold;
+			}
+			
+			.elements-table td {
+				border: 1px solid #000000;
+				padding: 0.4rem;
+				text-align: center;
+			}
+			
+			.elements-table .equation-col {
+				text-align: left;
+				font-family: 'Courier New', monospace;
+				font-size: 0.8rem;
+			}
+			
 			.results-table {
 				width: 100%;
 				border-collapse: collapse;
@@ -285,7 +312,7 @@ export const htmlService = {
 					margin: 1rem 0;
 				}
 				.section-title { font-size: 0.9rem; margin: 0.8rem 0 0.3rem 0; }
-				.solution-table, .results-table { font-size: 8pt; }
+				.solution-table, .results-table, .elements-table { font-size: 8pt; }
 			}
 		`
 
@@ -326,10 +353,9 @@ export const htmlService = {
 			.map((task, index) => {
 				let solutionHtml = ''
 				if (task.detailedSolution) {
-					const { poly, roots, initial_values, elements } =
-						task.detailedSolution
+					const { poly, roots, initial_values } = task.detailedSolution
 
-					// Компактная таблица с основными результатами
+					// Основные результаты расчета без коэффициентов
 					const rootsRows = roots
 						.map(
 							(root, i) =>
@@ -346,42 +372,68 @@ export const htmlService = {
 						)
 						.join('')
 
-					// Собираем коэффициенты A
-					const allCoefficients: Array<{
-						element: string
-						value: number
-						index: number
-					}> = []
-					Object.entries(elements).forEach(([elementName, elemSolution]) => {
-						elemSolution.coefficients.forEach((coeff, idx) => {
-							if (coeff.type === 'A') {
-								allCoefficients.push({
-									element: elementName,
-									value: coeff.value,
-									index: idx + 1,
-								})
-							}
-						})
-					})
-
-					const coefficientsRows = allCoefficients
-						.map(
-							coeff =>
-								`<tr><td>$$A_{${coeff.index}}$$ (${coeff.element})</td><td class="equation-cell">$$${coeff.value}$$</td></tr>`
-						)
-						.join('')
-
 					solutionHtml = `
 						<table class="solution-table">
 							<tr><th>Характеристический многочлен</th><td class="equation-cell">$$${poly}$$</td></tr>
 							${rootsRows}
 							${initialRows}
-							${coefficientsRows}
 						</table>
 					`
 				}
 
-				// Только требуемые ответы в компактной таблице
+				// Промежуточные результаты: уравнения для L, C и резисторов
+				let elementsHtml = ''
+				if (task.detailedSolution?.elements) {
+					const elementsToShow = Object.entries(task.detailedSolution.elements)
+						.filter(([elementName]) => {
+							// Показываем L, C и резисторы (R)
+							return (
+								elementName.startsWith('L') ||
+								elementName.startsWith('C') ||
+								elementName.startsWith('R')
+							)
+						})
+						.sort((a, b) => {
+							// Сортировка: L, C, потом R
+							const getOrder = (name: string) => {
+								if (name.startsWith('L')) return 1
+								if (name.startsWith('C')) return 2
+								if (name.startsWith('R')) return 3
+								return 4
+							}
+							return getOrder(a[0]) - getOrder(b[0])
+						})
+
+					if (elementsToShow.length > 0) {
+						const elementsRows = elementsToShow
+							.map(([elementName, elemSolution]) => {
+								const paramType =
+									elemSolution.type === 'i' ? 'Ток' : 'Напряжение'
+								return `
+									<tr>
+										<td><strong>${elementName}</strong></td>
+										<td>${paramType}</td>
+										<td class="equation-col">$$${elemSolution.expr}$$</td>
+									</tr>
+								`
+							})
+							.join('')
+
+						elementsHtml = `
+							<h3 class="section-title">Уравнения элементов</h3>
+							<table class="elements-table">
+								<tr>
+									<th>Элемент</th>
+									<th>Параметр</th>
+									<th>Уравнение</th>
+								</tr>
+								${elementsRows}
+							</table>
+						`
+					}
+				}
+
+				// Только требуемые окончательные ответы
 				const requiredAnswers: Array<{
 					element: string
 					type: string
@@ -402,16 +454,17 @@ export const htmlService = {
 									// Если нужно значение в момент времени
 									requiredAnswers.push({
 										element: elementName,
-										type: `i(${params.at_time})`,
-										expr: `${elemSolution.value_at_time} А`,
-										value: `t = ${params.at_time} с`,
+										type: `Ток i(${params.at_time})`,
+										expr: `${elemSolution.value_at_time}`,
+										value: `А при t = ${params.at_time} с`,
 									})
 								} else {
 									// Если нужна функция
 									requiredAnswers.push({
 										element: elementName,
-										type: 'i(t)',
+										type: 'Ток i(t)',
 										expr: elemSolution.expr,
+										value: 'А',
 									})
 								}
 							}
@@ -424,16 +477,17 @@ export const htmlService = {
 									// Если нужно значение в момент времени
 									requiredAnswers.push({
 										element: elementName,
-										type: `V(${params.at_time})`,
-										expr: `${elemSolution.value_at_time} В`,
-										value: `t = ${params.at_time} с`,
+										type: `Напряжение V(${params.at_time})`,
+										expr: `${elemSolution.value_at_time}`,
+										value: `В при t = ${params.at_time} с`,
 									})
 								} else {
 									// Если нужна функция
 									requiredAnswers.push({
 										element: elementName,
-										type: 'V(t)',
+										type: 'Напряжение V(t)',
 										expr: elemSolution.expr,
+										value: 'В',
 									})
 								}
 							}
@@ -446,9 +500,9 @@ export const htmlService = {
 						answer => `
 						<tr>
 							<td><strong>${answer.element}</strong></td>
-							<td><strong>${answer.type}</strong></td>
+							<td>${answer.type}</td>
 							<td class="equation-cell">$$${answer.expr}$$</td>
-							${answer.value ? `<td>${answer.value}</td>` : '<td>—</td>'}
+							<td>${answer.value}</td>
 						</tr>
 					`
 					)
@@ -457,13 +511,13 @@ export const htmlService = {
 				const answersTable =
 					requiredAnswers.length > 0
 						? `
-					<h3 class="section-title">Ответы</h3>
+					<h3 class="section-title">Окончательные ответы</h3>
 					<table class="results-table">
 						<tr>
 							<th>Элемент</th>
-							<th>Параметр</th>
+							<th>Что найти</th>
 							<th>Результат</th>
-							<th>Условие</th>
+							<th>Единицы</th>
 						</tr>
 						${answersRows}
 					</table>
@@ -473,8 +527,9 @@ export const htmlService = {
 				return `
 				<div class="solution-task">
 					<div class="solution-number">Решение задачи ${index + 1}</div>
-					<h3 class="section-title">Расчет</h3>
+					<h3 class="section-title">Основные расчеты</h3>
 					${solutionHtml}
+					${elementsHtml}
 					${answersTable}
 				</div>
 			`
