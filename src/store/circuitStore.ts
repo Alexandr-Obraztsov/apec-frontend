@@ -21,9 +21,9 @@ import { ELEMENT_NAME_PREFIXES, NODE_NAME_PREFIX } from '../types'
 // Дефолтные значения для компонентов в единицах СИ
 const DEFAULT_VALUES = {
 	wire: { value: 0.1, unit: 'м' },
-	resistor: { value: 1000, unit: 'Ом' },
-	capacitor: { value: 0.00001, unit: 'Ф' },
-	inductor: { value: 0.001, unit: 'Гн' },
+	resistor: { value: 100, unit: 'Ом' },
+	capacitor: { value: 0.000001, unit: 'Ф' }, // 1 мкФ вместо 10 мкФ
+	inductor: { value: 0.01, unit: 'Гн' }, // 10 мГн вместо 1 мГн
 	voltage: { value: 5, unit: 'В' },
 
 	switch: { value: 0, unit: '', isOpen: true },

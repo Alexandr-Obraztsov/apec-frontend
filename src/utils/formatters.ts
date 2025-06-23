@@ -38,27 +38,46 @@ export const formatValue = (value: number | string, unit: string): string => {
 	const numValue =
 		typeof value === 'number' ? value : parseFloat(value.toString())
 
-	// Если значение равно 0, просто возвращаем
-	if (numValue === 0) {
+	// Проверяем что получили валидное число
+	if (isNaN(numValue) || !isFinite(numValue)) {
+		return `${value} ${unit}`
+	}
+
+	// Если значение равно 0 или очень близко к 0, просто возвращаем
+	if (numValue === 0 || Math.abs(numValue) < 1e-15) {
 		return `0 ${unit}`
 	}
 
 	// Получаем абсолютное значение
 	const absValue = Math.abs(numValue)
 
-	// Находим подходящий префикс
-	const prefix =
-		SI_PREFIXES.find(
-			(p, i) =>
-				absValue >= p.value &&
-				(i === SI_PREFIXES.length - 1 || absValue < SI_PREFIXES[i + 1].value)
-		) || SI_PREFIXES[4] // По умолчанию - без префикса
+	// Находим подходящий префикс (ищем наибольший подходящий)
+	let prefix = SI_PREFIXES[4] // По умолчанию - без префикса
+	for (let i = SI_PREFIXES.length - 1; i >= 0; i--) {
+		if (absValue >= SI_PREFIXES[i].value) {
+			prefix = SI_PREFIXES[i]
+			break
+		}
+	}
 
 	// Вычисляем новое значение
 	const scaledValue = numValue / prefix.value
 
-	// Удаляем лишние нули после запятой
-	const formattedValue = scaledValue.toFixed(2)
+	// Форматируем значение с удалением незначащих нулей
+	let formattedValue: string
+	if (scaledValue >= 100) {
+		// Для больших значений - без дробной части
+		formattedValue = scaledValue.toFixed(0)
+	} else if (scaledValue >= 10) {
+		// Для средних значений - 1 знак после запятой
+		formattedValue = scaledValue.toFixed(1)
+	} else {
+		// Для маленьких значений - 2-3 знака после запятой
+		formattedValue = scaledValue.toFixed(3)
+	}
+
+	// Удаляем незначащие нули в конце
+	formattedValue = formattedValue.replace(/\.?0+$/, '')
 
 	// Формируем итоговую строку
 	return `${formattedValue} ${prefix.symbol}${unit}`

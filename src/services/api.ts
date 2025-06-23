@@ -649,9 +649,9 @@ export const circuitApi = {
 	// Получить топологии, которые имеют схемы определенного порядка
 	getTopologiesWithOrder: async (order: number): Promise<Topology[]> => {
 		try {
-			// Сначала получаем все схемы с нужным порядком
+			// Сначала получаем все схемы с нужным порядком (устанавливаем большой лимит)
 			const circuitsResponse = await axios.get<CircuitListResponse>(
-				`http://localhost:8000/circuits/?order=${order}`
+				`http://localhost:8000/circuits/?order=${order}&limit=1000`
 			)
 
 			// Извлекаем уникальные topology_id
@@ -703,9 +703,9 @@ export const circuitApi = {
 		topologyId?: number
 	): Promise<Circuit | null> => {
 		try {
-			let url = `http://localhost:8000/circuits/?order=${order}`
+			let url = `http://localhost:8000/circuits/?order=${order}&limit=1000`
 			if (topologyId) {
-				url = `http://localhost:8000/circuits/topologies/${topologyId}/circuits/?order=${order}`
+				url = `http://localhost:8000/circuits/topologies/${topologyId}/circuits/?order=${order}&limit=1000`
 			}
 
 			const response = await axios.get<CircuitListResponse | Circuit[]>(url)
