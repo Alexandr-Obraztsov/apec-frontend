@@ -86,32 +86,32 @@ export const htmlService = {
 				padding: 0;
 				background: #ffffff;
 				color: #000000;
-				line-height: 1.6;
+				line-height: 1.5;
 			}
 			
 			.container {
 				max-width: 1000px;
 				margin: 0 auto;
-				padding: 2rem;
+				padding: 1.5rem;
 			}
 			
 			.header {
 				text-align: center;
-				margin-bottom: 3rem;
+				margin-bottom: 2rem;
 				border-bottom: 3px solid #000000;
 				padding-bottom: 1rem;
 			}
 			
 			.header h1 {
-				font-size: 2.5rem;
+				font-size: 2rem;
 				margin: 0;
 				color: #000000;
 				font-weight: bold;
 			}
 			
 			.header p {
-				font-size: 1.1rem;
-				margin: 1rem 0 0 0;
+				font-size: 1rem;
+				margin: 0.5rem 0 0 0;
 				color: #333333;
 				font-style: italic;
 			}
@@ -119,8 +119,8 @@ export const htmlService = {
 			.task, .solution-task {
 				background: #ffffff;
 				border: 2px solid #000000;
-				margin: 2rem 0;
-				padding: 2rem;
+				margin: 1.5rem 0;
+				padding: 1.5rem;
 				page-break-inside: avoid;
 			}
 			
@@ -128,16 +128,16 @@ export const htmlService = {
 				display: inline-block;
 				background: #000000;
 				color: #ffffff;
-				padding: 0.5rem 1.5rem;
-				font-size: 1.2rem;
+				padding: 0.4rem 1rem;
+				font-size: 1.1rem;
 				font-weight: bold;
-				margin-bottom: 1.5rem;
+				margin-bottom: 1rem;
 			}
 			
 			.circuit-image {
 				text-align: center;
-				margin: 2rem 0;
-				padding: 1.5rem;
+				margin: 1.5rem 0;
+				padding: 1rem;
 				border: 1px solid #cccccc;
 				background: #f9f9f9;
 			}
@@ -145,15 +145,15 @@ export const htmlService = {
 			.circuit-image img {
 				max-width: 100%;
 				height: auto;
-				max-height: 300px;
+				max-height: 250px;
 				border: 1px solid #000000;
 			}
 			
 			.section-title {
-				font-size: 1.3rem;
+				font-size: 1.2rem;
 				color: #000000;
-				margin: 2rem 0 1rem 0;
-				padding-bottom: 0.5rem;
+				margin: 1.5rem 0 0.8rem 0;
+				padding-bottom: 0.3rem;
 				border-bottom: 2px solid #000000;
 				font-weight: bold;
 				text-transform: uppercase;
@@ -161,49 +161,51 @@ export const htmlService = {
 			
 			.component-values {
 				display: grid;
-				grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-				gap: 1rem;
-				margin: 1.5rem 0;
+				grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+				gap: 0.8rem;
+				margin: 1rem 0;
 			}
 			
 			.component-item {
 				background: #f5f5f5;
-				padding: 1rem;
+				padding: 0.8rem;
 				border: 1px solid #000000;
 				font-weight: 500;
+				font-size: 0.9rem;
 			}
 			
 			.conditions {
 				display: grid;
-				grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-				gap: 1rem;
-				margin: 1.5rem 0;
+				grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+				gap: 0.8rem;
+				margin: 1rem 0;
 			}
 			
 			.condition-item {
 				background: #f0f0f0;
-				padding: 1rem;
+				padding: 0.8rem;
 				border: 1px solid #000000;
 				font-weight: 500;
+				font-size: 0.9rem;
 			}
 			
 			.solution-details {
-				margin: 2rem 0;
+				margin: 1.5rem 0;
 			}
 			
 			.solution-block {
 				background: #fafafa;
 				border: 2px solid #000000;
-				padding: 1.5rem;
-				margin: 1rem 0;
+				padding: 1rem;
+				margin: 0.8rem 0;
 			}
 			
 			.solution-block h4 {
-				margin: 0 0 1rem 0;
+				margin: 0 0 0.8rem 0;
 				color: #000000;
-				font-size: 1.1rem;
+				font-size: 1rem;
 				font-weight: bold;
-				padding-bottom: 0.5rem;
+				padding-bottom: 0.3rem;
 				border-bottom: 1px solid #000000;
 				text-transform: uppercase;
 			}
@@ -223,6 +225,11 @@ export const htmlService = {
 				border-left: 5px solid #666666;
 			}
 			
+			.coefficients-block {
+				background: #f0f0f0;
+				border-left: 5px solid #444444;
+			}
+			
 			.solution-block ul {
 				list-style: none;
 				padding: 0;
@@ -231,26 +238,27 @@ export const htmlService = {
 			
 			.solution-block li {
 				background: #ffffff;
-				margin: 0.5rem 0;
-				padding: 0.8rem;
+				margin: 0.4rem 0;
+				padding: 0.6rem;
 				border: 1px solid #cccccc;
 				font-family: 'Courier New', monospace;
+				font-size: 0.9rem;
 			}
 			
 			.answers {
-				margin: 2rem 0;
+				margin: 1.5rem 0;
 			}
 			
 			.answer-item {
 				background: #ffffff;
 				border: 2px solid #000000;
-				padding: 1.5rem;
-				margin: 1rem 0;
+				padding: 1rem;
+				margin: 0.8rem 0;
 			}
 			
 			.answer-item strong {
 				color: #000000;
-				font-size: 1.1rem;
+				font-size: 1rem;
 				display: block;
 				margin-bottom: 0.5rem;
 			}
@@ -259,23 +267,23 @@ export const htmlService = {
 				display: inline-block;
 				background: #e0e0e0;
 				color: #000000;
-				padding: 0.3rem 0.8rem;
-				font-size: 0.9rem;
-				margin-top: 0.5rem;
+				padding: 0.2rem 0.6rem;
+				font-size: 0.85rem;
+				margin-top: 0.4rem;
 				border: 1px solid #000000;
 				font-style: italic;
 			}
 			
 			.print-button {
 				position: fixed;
-				top: 2rem;
-				right: 2rem;
+				top: 1.5rem;
+				right: 1.5rem;
 				background: #000000;
 				color: #ffffff;
 				border: 2px solid #000000;
-				padding: 1rem 2rem;
+				padding: 0.8rem 1.5rem;
 				cursor: pointer;
-				font-size: 1rem;
+				font-size: 0.9rem;
 				font-weight: bold;
 				z-index: 1000;
 			}
@@ -288,44 +296,47 @@ export const htmlService = {
 			.page-divider {
 				height: 3px;
 				background: #000000;
-				margin: 4rem 0;
+				margin: 3rem 0;
 				page-break-before: always;
 			}
 			
 			.equation-display {
 				background: #ffffff;
-				padding: 1rem;
-				margin: 0.5rem 0;
+				padding: 0.8rem;
+				margin: 0.4rem 0;
 				border: 1px solid #000000;
 				font-family: 'Courier New', monospace;
+				font-size: 0.9rem;
 			}
 
 			@media print {
 				body { 
 					background: white !important;
-					font-size: 11pt;
-					line-height: 1.4;
+					font-size: 10pt;
+					line-height: 1.3;
 				}
 				.print-button { display: none; }
 				.container { max-width: 100%; padding: 1rem; }
 				.task, .solution-task {
 					border: 1px solid #000000;
 					page-break-inside: avoid;
-					margin: 1rem 0;
-					padding: 1.5rem;
+					margin: 0.8rem 0;
+					padding: 1rem;
 				}
-				.header { margin-bottom: 2rem; }
-				.header h1 { font-size: 1.8rem; }
-				.circuit-image { background: #ffffff; }
+				.header { margin-bottom: 1.5rem; }
+				.header h1 { font-size: 1.6rem; }
+				.circuit-image { background: #ffffff; padding: 0.5rem; }
 				.page-divider { 
 					page-break-before: always; 
 					height: 1px; 
 					background: #000000; 
-					margin: 2rem 0;
+					margin: 1.5rem 0;
 				}
 				.solution-block, .answer-item, .component-item, .condition-item {
 					background: #ffffff !important;
+					padding: 0.6rem;
 				}
+				.section-title { font-size: 1rem; margin: 1rem 0 0.5rem 0; }
 			}
 		`
 
@@ -366,7 +377,8 @@ export const htmlService = {
 			.map((task, index) => {
 				let detailedSolutionHtml = ''
 				if (task.detailedSolution) {
-					const { poly, roots, initial_values } = task.detailedSolution
+					const { poly, roots, initial_values, elements } =
+						task.detailedSolution
 
 					const rootsHtml = roots
 						.map((root, i) => `<li>p_{${i + 1}} = ${root}</li>`)
@@ -374,6 +386,44 @@ export const htmlService = {
 					const initialValuesHtml = Object.entries(initial_values)
 						.map(([key, value]) => `<li>${key} = ${value}</li>`)
 						.join('')
+
+					// Собираем все коэффициенты A из всех элементов
+					let allCoefficientsHtml = ''
+					const allCoefficients: Array<{
+						element: string
+						type: string
+						value: number
+					}> = []
+
+					Object.entries(elements).forEach(([elementName, elemSolution]) => {
+						elemSolution.coefficients.forEach(coeff => {
+							if (coeff.type === 'A') {
+								allCoefficients.push({
+									element: elementName,
+									type: coeff.type,
+									value: coeff.value,
+								})
+							}
+						})
+					})
+
+					if (allCoefficients.length > 0) {
+						const coefficientsListHtml = allCoefficients
+							.map(
+								(coeff, i) =>
+									`<li>A_{${i + 1}} (для ${coeff.element}) = ${
+										coeff.value
+									}</li>`
+							)
+							.join('')
+
+						allCoefficientsHtml = `
+							<div class="solution-block coefficients-block">
+								<h4>Коэффициенты A</h4>
+								<ul>${coefficientsListHtml}</ul>
+							</div>
+						`
+					}
 
 					detailedSolutionHtml = `
 					<div class="solution-details">
@@ -389,6 +439,7 @@ export const htmlService = {
 							<h4>Начальные условия</h4>
 							<ul>${initialValuesHtml}</ul>
 						</div>
+						${allCoefficientsHtml}
 					</div>
 				`
 				}
