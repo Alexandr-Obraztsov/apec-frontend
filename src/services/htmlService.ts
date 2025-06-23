@@ -81,17 +81,16 @@ export const htmlService = {
 			* { box-sizing: border-box; }
 			
 			body { 
-				font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+				font-family: 'Times New Roman', 'Georgia', serif; 
 				margin: 0; 
 				padding: 0;
-				background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-				min-height: 100vh;
-				color: #333;
+				background: #ffffff;
+				color: #000000;
 				line-height: 1.6;
 			}
 			
 			.container {
-				max-width: 1200px;
+				max-width: 1000px;
 				margin: 0 auto;
 				padding: 2rem;
 			}
@@ -99,89 +98,65 @@ export const htmlService = {
 			.header {
 				text-align: center;
 				margin-bottom: 3rem;
-				color: white;
+				border-bottom: 3px solid #000000;
+				padding-bottom: 1rem;
 			}
 			
 			.header h1 {
-				font-size: 3rem;
+				font-size: 2.5rem;
 				margin: 0;
-				text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-				font-weight: 300;
+				color: #000000;
+				font-weight: bold;
 			}
 			
 			.header p {
-				font-size: 1.2rem;
+				font-size: 1.1rem;
 				margin: 1rem 0 0 0;
-				opacity: 0.9;
+				color: #333333;
+				font-style: italic;
 			}
 			
 			.task, .solution-task {
-				background: white;
-				border-radius: 20px;
+				background: #ffffff;
+				border: 2px solid #000000;
 				margin: 2rem 0;
-				padding: 2.5rem;
-				box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-				transition: transform 0.3s ease, box-shadow 0.3s ease;
-				position: relative;
-				overflow: hidden;
-			}
-			
-			.task::before, .solution-task::before {
-				content: '';
-				position: absolute;
-				top: 0;
-				left: 0;
-				right: 0;
-				height: 5px;
-				background: linear-gradient(90deg, #667eea, #764ba2, #f093fb, #f5576c);
-			}
-			
-			.task:hover, .solution-task:hover {
-				transform: translateY(-5px);
-				box-shadow: 0 30px 60px rgba(0,0,0,0.15);
+				padding: 2rem;
+				page-break-inside: avoid;
 			}
 			
 			.task-number, .solution-number {
 				display: inline-block;
-				background: linear-gradient(135deg, #667eea, #764ba2);
-				color: white;
+				background: #000000;
+				color: #ffffff;
 				padding: 0.5rem 1.5rem;
-				border-radius: 50px;
-				font-size: 1.1rem;
-				font-weight: 600;
+				font-size: 1.2rem;
+				font-weight: bold;
 				margin-bottom: 1.5rem;
-				box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
 			}
 			
 			.circuit-image {
 				text-align: center;
 				margin: 2rem 0;
 				padding: 1.5rem;
-				background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
-				border-radius: 15px;
-				box-shadow: inset 0 2px 10px rgba(0,0,0,0.1);
+				border: 1px solid #cccccc;
+				background: #f9f9f9;
 			}
 			
 			.circuit-image img {
 				max-width: 100%;
 				height: auto;
 				max-height: 300px;
-				border-radius: 10px;
-				box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+				border: 1px solid #000000;
 			}
 			
 			.section-title {
-				font-size: 1.4rem;
-				color: #2c3e50;
+				font-size: 1.3rem;
+				color: #000000;
 				margin: 2rem 0 1rem 0;
 				padding-bottom: 0.5rem;
-				border-bottom: 3px solid transparent;
-				background: linear-gradient(90deg, #667eea, #764ba2) padding-box,
-							linear-gradient(90deg, #667eea, #764ba2) border-box;
-				border-image: linear-gradient(90deg, #667eea, #764ba2) 1;
-				border-bottom: 3px solid;
-				display: inline-block;
-				font-weight: 600;
+				border-bottom: 2px solid #000000;
+				font-weight: bold;
+				text-transform: uppercase;
 			}
 			
 			.component-values {
@@ -192,18 +167,10 @@ export const htmlService = {
 			}
 			
 			.component-item {
-				background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+				background: #f5f5f5;
 				padding: 1rem;
-				border-radius: 12px;
-				border-left: 4px solid #2196f3;
+				border: 1px solid #000000;
 				font-weight: 500;
-				transition: all 0.3s ease;
-				box-shadow: 0 2px 10px rgba(33, 150, 243, 0.1);
-			}
-			
-			.component-item:hover {
-				transform: translateY(-2px);
-				box-shadow: 0 5px 20px rgba(33, 150, 243, 0.2);
 			}
 			
 			.conditions {
@@ -214,18 +181,10 @@ export const htmlService = {
 			}
 			
 			.condition-item {
-				background: linear-gradient(135deg, #fff3e0, #ffe0b2);
+				background: #f0f0f0;
 				padding: 1rem;
-				border-radius: 12px;
-				border-left: 4px solid #ff9800;
+				border: 1px solid #000000;
 				font-weight: 500;
-				transition: all 0.3s ease;
-				box-shadow: 0 2px 10px rgba(255, 152, 0, 0.1);
-			}
-			
-			.condition-item:hover {
-				transform: translateY(-2px);
-				box-shadow: 0 5px 20px rgba(255, 152, 0, 0.2);
 			}
 			
 			.solution-details {
@@ -233,42 +192,35 @@ export const htmlService = {
 			}
 			
 			.solution-block {
-				background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-				border: 1px solid #dee2e6;
-				border-radius: 15px;
+				background: #fafafa;
+				border: 2px solid #000000;
 				padding: 1.5rem;
 				margin: 1rem 0;
-				box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-				transition: all 0.3s ease;
-			}
-			
-			.solution-block:hover {
-				transform: translateY(-2px);
-				box-shadow: 0 10px 25px rgba(0,0,0,0.1);
 			}
 			
 			.solution-block h4 {
 				margin: 0 0 1rem 0;
-				color: #495057;
+				color: #000000;
 				font-size: 1.1rem;
-				font-weight: 600;
+				font-weight: bold;
 				padding-bottom: 0.5rem;
-				border-bottom: 2px solid #e9ecef;
+				border-bottom: 1px solid #000000;
+				text-transform: uppercase;
 			}
 			
 			.poly-block {
-				background: linear-gradient(135deg, #e8f5e8, #c8e6c9);
-				border-left: 4px solid #4caf50;
+				background: #f8f8f8;
+				border-left: 5px solid #000000;
 			}
 			
 			.roots-block {
-				background: linear-gradient(135deg, #fff8e1, #ffecb3);
-				border-left: 4px solid #ffc107;
+				background: #f5f5f5;
+				border-left: 5px solid #333333;
 			}
 			
 			.initial-values-block {
-				background: linear-gradient(135deg, #fce4ec, #f8bbd9);
-				border-left: 4px solid #e91e63;
+				background: #f2f2f2;
+				border-left: 5px solid #666666;
 			}
 			
 			.solution-block ul {
@@ -278,12 +230,11 @@ export const htmlService = {
 			}
 			
 			.solution-block li {
-				background: rgba(255,255,255,0.7);
+				background: #ffffff;
 				margin: 0.5rem 0;
 				padding: 0.8rem;
-				border-radius: 8px;
-				border-left: 3px solid currentColor;
-				font-family: 'Consolas', 'Monaco', monospace;
+				border: 1px solid #cccccc;
+				font-family: 'Courier New', monospace;
 			}
 			
 			.answers {
@@ -291,94 +242,90 @@ export const htmlService = {
 			}
 			
 			.answer-item {
-				background: linear-gradient(135deg, #e8f5e8, #c8e6c9);
-				border: 1px solid #4caf50;
-				border-radius: 15px;
+				background: #ffffff;
+				border: 2px solid #000000;
 				padding: 1.5rem;
 				margin: 1rem 0;
-				box-shadow: 0 5px 15px rgba(76, 175, 80, 0.1);
-				transition: all 0.3s ease;
-			}
-			
-			.answer-item:hover {
-				transform: translateY(-2px);
-				box-shadow: 0 10px 25px rgba(76, 175, 80, 0.2);
 			}
 			
 			.answer-item strong {
-				color: #2e7d32;
+				color: #000000;
 				font-size: 1.1rem;
+				display: block;
+				margin-bottom: 0.5rem;
 			}
 			
 			.steady-state {
 				display: inline-block;
-				background: rgba(76, 175, 80, 0.1);
-				color: #2e7d32;
+				background: #e0e0e0;
+				color: #000000;
 				padding: 0.3rem 0.8rem;
-				border-radius: 20px;
 				font-size: 0.9rem;
-				margin-left: 1rem;
-				border: 1px solid rgba(76, 175, 80, 0.3);
+				margin-top: 0.5rem;
+				border: 1px solid #000000;
+				font-style: italic;
 			}
 			
 			.print-button {
 				position: fixed;
 				top: 2rem;
 				right: 2rem;
-				background: linear-gradient(135deg, #667eea, #764ba2);
-				color: white;
-				border: none;
+				background: #000000;
+				color: #ffffff;
+				border: 2px solid #000000;
 				padding: 1rem 2rem;
-				border-radius: 50px;
 				cursor: pointer;
 				font-size: 1rem;
-				font-weight: 600;
-				box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
-				transition: all 0.3s ease;
+				font-weight: bold;
 				z-index: 1000;
 			}
 			
 			.print-button:hover {
-				transform: translateY(-3px);
-				box-shadow: 0 15px 40px rgba(102, 126, 234, 0.6);
+				background: #ffffff;
+				color: #000000;
 			}
 			
 			.page-divider {
 				height: 3px;
-				background: linear-gradient(90deg, #667eea, #764ba2, #f093fb, #f5576c);
+				background: #000000;
 				margin: 4rem 0;
-				border-radius: 2px;
+				page-break-before: always;
 			}
 			
 			.equation-display {
-				background: rgba(255,255,255,0.9);
+				background: #ffffff;
 				padding: 1rem;
-				border-radius: 10px;
 				margin: 0.5rem 0;
-				border-left: 4px solid #2196f3;
-				font-family: 'Consolas', 'Monaco', monospace;
-				box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+				border: 1px solid #000000;
+				font-family: 'Courier New', monospace;
 			}
 
 			@media print {
 				body { 
 					background: white !important;
-					font-size: 10pt;
+					font-size: 11pt;
 					line-height: 1.4;
 				}
 				.print-button { display: none; }
 				.container { max-width: 100%; padding: 1rem; }
 				.task, .solution-task {
-					box-shadow: 0 0 0 1px #ddd;
+					border: 1px solid #000000;
 					page-break-inside: avoid;
 					margin: 1rem 0;
 					padding: 1.5rem;
 				}
-				.task::before, .solution-task::before { display: none; }
-				.header { color: #333 !important; margin-bottom: 2rem; }
-				.header h1 { font-size: 2rem; text-shadow: none; }
-				.circuit-image { background: #f5f5f5; }
-				.page-divider { page-break-before: always; height: 1px; background: #ddd; }
+				.header { margin-bottom: 2rem; }
+				.header h1 { font-size: 1.8rem; }
+				.circuit-image { background: #ffffff; }
+				.page-divider { 
+					page-break-before: always; 
+					height: 1px; 
+					background: #000000; 
+					margin: 2rem 0;
+				}
+				.solution-block, .answer-item, .component-item, .condition-item {
+					background: #ffffff !important;
+				}
 			}
 		`
 
@@ -422,24 +369,24 @@ export const htmlService = {
 					const { poly, roots, initial_values } = task.detailedSolution
 
 					const rootsHtml = roots
-						.map((root, i) => `<li>$p_{${i + 1}} = ${root}$</li>`)
+						.map((root, i) => `<li>p_{${i + 1}} = ${root}</li>`)
 						.join('')
 					const initialValuesHtml = Object.entries(initial_values)
-						.map(([key, value]) => `<li>$${key} = ${value}$</li>`)
+						.map(([key, value]) => `<li>${key} = ${value}</li>`)
 						.join('')
 
 					detailedSolutionHtml = `
 					<div class="solution-details">
 						<div class="solution-block poly-block">
-							<h4>📐 Характеристический многочлен</h4>
+							<h4>Характеристический многочлен</h4>
 							<div class="equation-display">$$${poly}$$</div>
 						</div>
 						<div class="solution-block roots-block">
-							<h4>🔢 Корни характеристического уравнения</h4>
+							<h4>Корни характеристического уравнения</h4>
 							<ul>${rootsHtml}</ul>
 						</div>
 						<div class="solution-block initial-values-block">
-							<h4>⚡ Начальные условия</h4>
+							<h4>Начальные условия</h4>
 							<ul>${initialValuesHtml}</ul>
 						</div>
 					</div>
@@ -459,7 +406,7 @@ export const htmlService = {
 
 							return `
 								<div class="answer-item">
-									<strong>🔋 ${typeLabel} ${symbol} для элемента ${elementName}:</strong>
+									<strong>${typeLabel} ${symbol} для элемента ${elementName}:</strong>
 									<div class="equation-display">$$${elemSolution.expr}$$</div>
 									${steadyStateHtml}
 								</div>
@@ -486,7 +433,7 @@ export const htmlService = {
 							if (params.current && elemSolution.type === 'i') {
 								answer += `
 									<div class="answer-item">
-										<strong>⚡ Ток i(t) для элемента ${elementName}:</strong>
+										<strong>Ток i(t) для элемента ${elementName}:</strong>
 										<div class="equation-display">$$${elemSolution.expr}$$</div>
 										${steadyStateHtml}
 									</div>
@@ -495,7 +442,7 @@ export const htmlService = {
 							if (params.voltage && elemSolution.type === 'v') {
 								answer += `
 									<div class="answer-item">
-										<strong>🔌 Напряжение V(t) для элемента ${elementName}:</strong>
+										<strong>Напряжение V(t) для элемента ${elementName}:</strong>
 										<div class="equation-display">$$${elemSolution.expr}$$</div>
 										${steadyStateHtml}
 									</div>
@@ -561,7 +508,7 @@ export const htmlService = {
 				<style>${styles}</style>
 			</head>
 			<body>
-				<button class="print-button" onclick="window.print()">🖨️ Печать</button>
+				<button class="print-button" onclick="window.print()">Печать</button>
 				
 				<div class="container">
 					<div class="header">
